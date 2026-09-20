@@ -21,6 +21,11 @@ static func cell_on_ground(point: Vector3) -> Vector3i:
 	return Vector3i(roundi(point.x / CELL_M), roundi(point.z / CELL_M), roundi(point.y / LEVEL_M))
 
 
+## Water plane Y from authored `water_z` (UI §3 / plan 2.2). No magic 2.4.
+static func water_height_m(water_z: int) -> float:
+	return float(water_z) * LEVEL_M
+
+
 ## Facing is (±1,0,0) or (0,±1,0) on the data plane. Model rest faces Godot −Z.
 static func yaw_degrees(facing: Vector3i) -> float:
 	if facing.x > 0:

@@ -1,6 +1,6 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0–2.1 completed — shared camera rig on fight + p0; next is overlay honesty (2.3 remainder) then camera decision lock (2.5)
+**Status:** 2.0–2.2 completed — cutaway + water from data on a roof-deck fixture; next is overlay honesty (2.3 remainder) then camera decision lock (2.5)
 **Tracks:** GDD v1.10, UI/UX v0.5, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
@@ -59,6 +59,7 @@ presentation/
   overlay_queries.gd       # NEW: last queried cone/exposure/path/los — testable without a scene
   camera_rig.gd            # rest pose, 90° snap, 3 zooms, perspective/ortho, peek
   fight_view.gd            # input -> validate/apply
+  fixtures/cutaway_bowl.gd # street + roof for cutaway / Falling (2.2); not the scripted fight
   gallery.gd               # art-only flooded bowl (not a fight)
 scenes/p0/
   flooded_roof.tscn        # camera-test fixture
@@ -106,15 +107,11 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 ### 2.2 — Units, cutaway, water from data
 
-**Status:** partial
+**Status:** completed
 
-**What landed.** `unit_view` on the shared humanoid (pistol / machete sockets). Water plane uses `water.tres`; Dry fight sets step 3 and Y ≈ 0. Selection ring under the selected body.
+**What landed.** `unit_view` on the shared humanoid. Water plane Y = `LEVEL_M * water_z` via `PresentationCoords.water_height_m`; step updates the shader without rebuilding the kit (`F` toggles Falling ↔ Flooded). Floor cutaway (`PgUp` / `PgDn`) hides kit + units above N. Height-on-tile `Label3D` digits when a unit is selected. Deck cells draw `env_roof_deck_a`. Picking rays the cutaway floor so roof tiles select. Tab / fireteam still select a roof unit when cutaway is on the street. Fixture: `presentation/fixtures/cutaway_bowl.gd` (street + roof, FLOODED default). Exposure **word** in the height read (`hidden` / `exposed` / `no hide`). Tests: `tests/presentation/test_cutaway_water.gd`.
 
-**Still open.** Floor cutaway by `z` (UI §2, §17). Height-on-tile numbers with a unit selected. `water_z` driving plane Y in metres (`coords.LEVEL_M * water_z`, not a magic 2.4). Step change updates the shader without rebuilding the kit. Roof units stay selectable when the camera is on the street.
-
-**2.2 needs a z > 0 fixture.** The scripted fight cannot prove cutaway. Add a small authored `BowlMap` (or a resource) with a street + one roof deck + `water_step = FLOODED`, used only for this slice and for 2.3's Falling `NO_HIDE`. Do not wait on a second production bowl.
-
-**Done when:** cutaway hides higher floors; a roof unit is selectable; Flooded vs Dry is the same kit, different plane; Falling vs Flooded still splits in greyscale **and** in the exposure word.
+**Note.** `make run` opens the cutaway fixture for this slice. `_scripted_fight_opening()` is kept for 2.6's shared opening.
 
 ---
 

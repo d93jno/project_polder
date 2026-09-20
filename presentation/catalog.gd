@@ -36,6 +36,7 @@ const SLAB_IDS := [
 	"env_street_slab_b",
 	"env_street_slab_c",
 ]
+const ROOF_DECK_ID := "env_roof_deck_a"
 
 ## Tall quay for masonry runs (2.4 m). Isolated cells keep the corner prop.
 const MASONRY_RUN_ID := "env_canal_wall_tall"
@@ -71,6 +72,9 @@ static func piece_for_cell(map: BowlMap, coord: Vector3i) -> Dictionary:
 	var material: Taxonomy.CoverMaterial = map.get_cell(coord).material
 	match material:
 		Taxonomy.CoverMaterial.AIR:
+			var cell: Cell = map.get_cell(coord)
+			if cell != null and cell.has_flag(Taxonomy.CellFlags.DECK):
+				return {"id": ROOF_DECK_ID, "yaw": 0.0}
 			var slab: String = SLAB_IDS[absi(coord.x + coord.y * 3) % SLAB_IDS.size()]
 			return {"id": slab, "yaw": 0.0}
 		Taxonomy.CoverMaterial.PLANK:

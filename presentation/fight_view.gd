@@ -9,13 +9,15 @@ const _Select := preload("res://presentation/selection_ring.gd")
 const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
+const _CutawayBowl := preload("res://presentation/fixtures/cutaway_bowl.gd")
 
 const _NAMES := {
-	1: "Rifles",
-	2: "Jans",
+	1: "Street",
+	2: "Roof",
 	3: "Piet",
 	4: "Ria",
 }
+const _INVALID := Vector3i(999, 999, 999)
 
 var _state: CombatState
 var _selected_id: int = 1
@@ -23,11 +25,15 @@ var _hover: Vector3i = Vector3i.ZERO
 var _camera: Camera3D
 var _hud
 var _bowl
+var _water
 var _units_root: Node3D
 var _cones_root: Node3D
 var _preview_root: Node3D
+var _heights_root: Node3D
 var _select_ring
 var _player_ids: Array[int] = []
+var _cutaway_z: int = 99
+var _max_z: int = 0
 
 
 func _ready() -> void:
@@ -36,13 +42,15 @@ func _ready() -> void:
 	_selected_id = _player_ids[0] if not _player_ids.is_empty() else 1
 	_build_world()
 	_redraw()
-	_hud.set_note("click a tile to walk · click a hostile to shoot · Q Watch · Space ends phase · [ ] yaw · wheel zoom · O ortho · MMB peek")
+	_hud.set_note(
+		"PgUp/PgDn cutaway · click walk/shoot · Q Watch · Space phase · Tab select · [ ] yaw · wheel zoom · O ortho"
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var cell := _pick_cell()
-		if cell != Vector3i(999, 999, 999):
+		if cell != _INVALID:
 			_click_cell(cell)
 			get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo:
@@ -56,18 +64,33 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_TAB:
 				_cycle_selected()
 				get_viewport().set_input_as_handled()
+			KEY_PAGEUP:
+				_set_cutaway(_cutaway_z + 1)
+				get_viewport().set_input_as_handled()
+			KEY_PAGEDOWN:
+				_set_cutaway(_cutaway_z - 1)
+				get_viewport().set_input_as_handled()
+			KEY_F:
+				## A/B Falling vs Flooded on the same kit (exposure word + water step).
+				_toggle_falling_flooded()
+				get_viewport().set_input_as_handled()
 
 
 func _process(_dt: float) -> void:
 	var cell := _pick_cell()
-	if cell != _hover and cell != Vector3i(999, 999, 999):
+	if cell != _hover and cell != _INVALID:
 		_hover = cell
 		_draw_preview()
 		_sync_hud()
 
 
 func _opening() -> CombatState:
-	## Same street the scripted fight proves, drawn instead of asserted.
+	## Plan 2.2: street + roof deck. 2.6 restores the shared scripted-fight opening.
+	return _CutawayBowl.opening(Taxonomy.WaterStep.FLOODED)
+
+
+func _scripted_fight_opening() -> CombatState:
+	## Kept for 2.6 shared fixture. Not the current make-run default.
 	var map := BowlMap.new()
 	map.water_step = Taxonomy.WaterStep.DRY
 	map.water_z = 0
@@ -100,13 +123,16 @@ func _build_world() -> void:
 	_bowl.name = "Bowl"
 	add_child(_bowl)
 	_bowl.draw_map(_state.map)
+	_max_z = _map_max_z(_state.map)
+	_cutaway_z = _max_z
+	_bowl.set_cutaway_z(_cutaway_z)
 
-	var water := _Water.new()
-	water.name = "Water"
-	water.water_step = int(_state.map.water_step)
-	water.water_height_m = -0.04 if _state.map.water_step == Taxonomy.WaterStep.DRY else 2.4
-	water.position = Vector3(16.0, 0.0, 6.0)
-	add_child(water)
+	_water = _Water.new()
+	_water.name = "Water"
+	_water.plane_size = Vector2(24.0, 16.0)
+	_water.position = Vector3(7.0, 0.0, 3.0)
+	add_child(_water)
+	_sync_water_from_map()
 
 	var ridge := (load("res://assets/env/hero/env_ridge_farfield.glb") as PackedScene).instantiate()
 	ridge.name = "Ridge"
@@ -122,6 +148,9 @@ func _build_world() -> void:
 	_preview_root = Node3D.new()
 	_preview_root.name = "Preview"
 	add_child(_preview_root)
+	_heights_root = Node3D.new()
+	_heights_root.name = "Heights"
+	add_child(_heights_root)
 
 	_select_ring = _Select.new()
 	_select_ring.name = "Selection"
@@ -166,7 +195,7 @@ func _add_environment() -> void:
 
 	var rig = _CameraRig.new()
 	rig.name = "CameraRig"
-	rig.look_at_point = PresentationCoords.world(Vector3i(8, 3, 0)) + Vector3(0.0, 1.0, 0.0)
+	rig.look_at_point = PresentationCoords.world(Vector3i(3, 1, 0)) + Vector3(0.0, 1.5, 0.0)
 	add_child(rig)
 	_camera = rig.ensure_camera()
 
@@ -175,10 +204,12 @@ func _redraw() -> void:
 	_draw_units()
 	_draw_cones()
 	_draw_preview()
+	_draw_height_labels()
 	_sync_hud()
 	var sel: Unit = _state.get_unit(_selected_id)
 	if sel and _select_ring:
-		_select_ring.visible = not sel.extracted
+		var show_ring := not sel.extracted and sel.cell.z <= _cutaway_z
+		_select_ring.visible = show_ring
 		_select_ring.position = PresentationCoords.world_ground(sel.cell) + Vector3(0, 0.02, 0)
 
 
@@ -191,6 +222,9 @@ func _draw_units() -> void:
 		view.weapon = "machete" if u.weapon == Taxonomy.WeaponClass.MELEE else "pistol"
 		_units_root.add_child(view)
 		view.bind_unit(u, _state.live_watch_for(u.id) != null)
+		## Cutaway hides floors above N; units on those floors hide with them.
+		## Tab / fireteam still select a roof unit while the street cutaway is up.
+		view.visible = view.visible and u.cell.z <= _cutaway_z
 
 
 func _draw_cones() -> void:
@@ -365,13 +399,17 @@ func _sync_hud() -> void:
 	_hud.set_hits(u.hp, RulesConstants.HP_PIPS)
 	_hud.set_bleed_rounds(u.bleed_rounds_left if u.bleeding else 0)
 	var exp := ExposureQuery.exposure(_state.map, _state, u)
+	var exp_word := "exposed"
 	match exp.state:
 		Exposure.State.HIDDEN:
 			_hud.set_exposure("hidden")
+			exp_word = "hidden"
 		Exposure.State.NO_HIDE:
 			_hud.set_exposure("no_hide")
+			exp_word = "no hide"
 		_:
 			_hud.set_exposure("exposed")
+			exp_word = "exposed"
 	match u.pin:
 		Unit.PinState.DUCKED:
 			_hud.set_pin("ducked")
@@ -408,7 +446,13 @@ func _sync_hud() -> void:
 		else:
 			hover_txt += "  blocked: %s" % Taxonomy.material_name(los.blocker)
 	var step_name := str(Taxonomy.WaterStep.keys()[_state.map.water_step])
-	var bits: Array[String] = [hover_txt, "z %d" % u.cell.z, step_name]
+	var bits: Array[String] = [
+		hover_txt,
+		"z %d" % u.cell.z,
+		"cutaway %d" % _cutaway_z,
+		step_name,
+		exp_word,
+	]
 	if break_txt != "":
 		bits.append(break_txt)
 	if exp.count > 0 and occupant == null:
@@ -436,21 +480,77 @@ func _cover_name_at(cell: Vector3i) -> String:
 
 func _pick_cell() -> Vector3i:
 	if _camera == null:
-		return Vector3i(999, 999, 999)
+		return _INVALID
 	var mouse := get_viewport().get_mouse_position()
 	var origin := _camera.project_ray_origin(mouse)
 	var dir := _camera.project_ray_normal(mouse)
 	if absf(dir.y) < 0.0001:
-		return Vector3i(999, 999, 999)
-	var t := -origin.y / dir.y
+		return _INVALID
+	## Ray vs the cutaway floor plane so roof tiles pick when that level is open.
+	var plane_y := float(_cutaway_z) * PresentationCoords.LEVEL_M
+	var t := (plane_y - origin.y) / dir.y
 	if t < 0.0:
-		return Vector3i(999, 999, 999)
+		return _INVALID
 	var hit := origin + dir * t
-	var cell := PresentationCoords.cell_on_ground(hit)
-	cell.z = 0
-	if not _state.map.has_cell(cell):
-		return Vector3i(999, 999, 999)
-	return cell
+	var xy := PresentationCoords.cell_on_ground(hit)
+	var cell := Vector3i(xy.x, xy.y, _cutaway_z)
+	if _state.map.has_cell(cell):
+		return cell
+	## Fall back to lower authored floors under the same footprint.
+	for z in range(_cutaway_z, -1, -1):
+		var c := Vector3i(xy.x, xy.y, z)
+		if _state.map.has_cell(c):
+			return c
+	return _INVALID
+
+
+func _set_cutaway(level: int) -> void:
+	_cutaway_z = clampi(level, 0, _max_z)
+	if _bowl:
+		_bowl.set_cutaway_z(_cutaway_z)
+	_redraw()
+
+
+func _sync_water_from_map() -> void:
+	if _water == null:
+		return
+	_water.water_step = int(_state.map.water_step)
+	_water.water_height_m = PresentationCoords.water_height_m(_state.map.water_z)
+
+
+func _toggle_falling_flooded() -> void:
+	if _state.map.water_step == Taxonomy.WaterStep.FALLING:
+		_state.map.water_step = Taxonomy.WaterStep.FLOODED
+	else:
+		_state.map.water_step = Taxonomy.WaterStep.FALLING
+	_sync_water_from_map()
+	_redraw()
+
+
+func _draw_height_labels() -> void:
+	for c in _heights_root.get_children():
+		c.queue_free()
+	var sel: Unit = _state.get_unit(_selected_id)
+	if sel == null or not sel.is_active():
+		return
+	for coord in _state.map.cells.keys():
+		if coord.z > _cutaway_z:
+			continue
+		var label := Label3D.new()
+		label.text = str(coord.z)
+		label.font_size = 48
+		label.modulate = Color(0.92, 0.88, 0.78, 0.85)
+		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		label.position = PresentationCoords.world_ground(coord) + Vector3(0.0, 0.35, 0.0)
+		label.pixel_size = 0.012
+		_heights_root.add_child(label)
+
+
+func _map_max_z(map: BowlMap) -> int:
+	var m := 0
+	for coord in map.cells.keys():
+		m = maxi(m, coord.z)
+	return m
 
 
 func _ids_of(faction: Taxonomy.Faction) -> Array[int]:
