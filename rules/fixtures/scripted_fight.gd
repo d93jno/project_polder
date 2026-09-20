@@ -30,6 +30,11 @@ static func street() -> BowlMap:
 	return map
 
 
+## No multi-cell stamps yet — masonry runs stay single-cell via piece_for_cell.
+static func stamps() -> Array:
+	return []
+
+
 static func opening() -> CombatState:
 	var state := CombatState.new()
 	state.map = street()

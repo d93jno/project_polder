@@ -2,12 +2,13 @@ class_name CutawayBowl
 extends Object
 ## Street + roof for cutaway / water (2.2) and cone/exposure honesty (2.3).
 ## Not the scripted fight — that opening lives in `rules/fixtures/scripted_fight.gd` (2.6).
+## Stamps (plan 3.2): one roof deck + ladders so lint forbids walking through the ceiling.
 
 const ROOF := Vector3i(3, 1, 1)
 const STREET := Vector3i(1, 1, 0)
 const ENEMY_RIFLE := Vector3i(6, 1, 0)
 const ENEMY_SMOKE := Vector3i(2, 3, 0)
-const PLANK := Vector3i(4, 1, 0)
+const PLANK := Vector3i(5, 1, 0)
 
 
 static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED, water_z: int = 1) -> BowlMap:
@@ -25,6 +26,15 @@ static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED, water_z: 
 	## Smoke hides a watcher apex (unresolved cone).
 	map.set_cell(ENEMY_SMOKE, Cell.new(Taxonomy.CoverMaterial.SMOKE))
 	return map
+
+
+## Draw-table for this fixture. Ladders make the roof climb legal (plan 3.2 lint 4).
+static func stamps() -> Array:
+	return [
+		Stamp.new("env_roof_deck_a", ROOF, 0.0),
+		Stamp.new("env_ladder", Vector3i(3, 1, 0), 0.0),
+		Stamp.new("env_ladder", Vector3i(4, 1, 0), 0.0),
+	]
 
 
 static func opening(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> CombatState:

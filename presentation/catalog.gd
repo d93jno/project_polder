@@ -54,6 +54,25 @@ const PLANK_ID := "prop_plank_wood"
 const CRATE_ID := "prop_crate_wood"
 const METAL_ID := "env_shanty_water_tank"
 
+## Cell footprint of multi-cell kit pieces: Vector3i(cells_x, cells_y, levels).
+## Missing ids default to 1×1×1 (single-cell props / slabs). Yaw 90/270 swaps x/y.
+const FOOTPRINTS := {
+	"env_house_2storey_a": Vector3i(2, 2, 2),
+	"env_house_2storey_b": Vector3i(2, 2, 2),
+	"env_house_2storey_c": Vector3i(2, 2, 2),
+	"env_house_2storey_d": Vector3i(2, 2, 2),
+	"env_roof_deck_a": Vector3i(2, 2, 1),
+	"env_roof_deck_b": Vector3i(2, 2, 1),
+	"env_floor_interior_1": Vector3i(2, 2, 1),
+	"env_floor_interior_2": Vector3i(2, 2, 1),
+	"env_pump_house": Vector3i(2, 2, 1),
+	"env_sluice_gauge": Vector3i(2, 2, 1),
+	"env_stair": Vector3i(1, 1, 1),
+	"env_ladder": Vector3i(1, 1, 1),
+	"env_hatch": Vector3i(1, 1, 1),
+	"env_pier": Vector3i(1, 3, 1),
+}
+
 
 ## Cover class of a kit/prop id, or -1 if the piece is not cover (rail, lamp, slab).
 ## Values are Taxonomy.CoverMaterial. Keep in lockstep with assets/*/MANIFEST.md.
@@ -140,6 +159,43 @@ static func prop_scene_for_cover(material: Taxonomy.CoverMaterial) -> PackedScen
 
 static func kit_scene(piece_id: String) -> PackedScene:
 	return scene_for_piece(piece_id)
+
+
+## Footprint in cells (x, y) and levels (z), with yaw applied (90° swaps ground axes).
+static func footprint_size(piece_id: String, yaw_deg: float = 0.0) -> Vector3i:
+	var base: Vector3i = FOOTPRINTS.get(piece_id, Vector3i(1, 1, 1))
+	var quarter: int = posmod(int(round(yaw_deg / 90.0)), 4)
+	if quarter == 1 or quarter == 3:
+		return Vector3i(base.y, base.x, base.z)
+	return base
+
+
+static func is_single_cell_piece(piece_id: String) -> bool:
+	var fp: Vector3i = footprint_size(piece_id)
+	return fp.x * fp.y * fp.z <= 1
+
+
+## Every cell a stamp claims (data coords), inclusive of origin.
+static func stamp_cells(stamp: Stamp) -> Array[Vector3i]:
+	var fp: Vector3i = footprint_size(stamp.piece_id, stamp.yaw)
+	var cells: Array[Vector3i] = []
+	for dx in fp.x:
+		for dy in fp.y:
+			for dz in fp.z:
+				cells.append(stamp.origin + Vector3i(dx, dy, dz))
+	return cells
+
+
+## World position for a stamp mesh. Kit origins sit at the footprint centre (MANIFEST).
+static func stamp_world_origin(stamp: Stamp) -> Vector3:
+	var fp: Vector3i = footprint_size(stamp.piece_id, stamp.yaw)
+	var corner := PresentationCoords.world(stamp.origin)
+	var mid := Vector3(
+		float(fp.x - 1) * PresentationCoords.CELL_M * 0.5,
+		float(fp.z - 1) * PresentationCoords.LEVEL_M * 0.5,
+		float(fp.y - 1) * PresentationCoords.CELL_M * 0.5
+	)
+	return corner + mid
 
 
 ## Shader `step` uniform. Enum order matches Taxonomy.WaterStep.
