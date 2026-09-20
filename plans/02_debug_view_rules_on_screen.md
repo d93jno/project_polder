@@ -1,7 +1,7 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0–2.4 completed — path/line HUD chrome on overlay queries; next is camera decision lock (2.5) then shared opening (2.6)
-**Tracks:** GDD v1.10, UI/UX v0.5, assets inventory §16 (P0 pack)
+**Status:** 2.0–2.5 completed — camera projection + peek locked; next is shared scripted-fight opening (2.6)
+**Tracks:** GDD v1.10, UI/UX v0.6, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
 **Goal:** every load-bearing tactical read is a drawing of a value `rules/` already returns — on the terrace kit, water shader, humanoid, cone shaders, and HUD chrome — and projection + peek yaw are decided before a second bowl is authored.
@@ -141,13 +141,16 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 ### 2.5 — Camera decision lock
 
-**Status:** not started (blocked on 2.1 existing)
+**Status:** completed
 
-**Ships:** written decision in §7.1–7.2; rig defaults flipped to match; raise into UI §18 on the next UI edit.
+**What landed.** Locked on Flooded roof + Dry street (`scenes/p0/`) and the cutaway fight fixture:
 
-**Procedure:** same fight **and** p0 bowls under perspective vs orthographic, with and without peek, including a **diagonal** path / cone edge. Pick one projection and one peek policy for all later authoring.
+- **Projection:** perspective, FOV 25° (`PresentationCameraRig.FOV_DEG`). Orthographic collapses freeboard on the flooded roof into a flat parallel frame; perspective keeps water→eaves height as an angular read. `O` stays as a diagnostic toggle only; `reset_to_locked_policy()` returns to perspective.
+- **Peek:** hold-to-peek (MMB or Alt+drag, springs back). 90°-only would punish diagonal levees and force axis-aligned authorship (UI §2). Peek max 35°.
 
-**Recommend (bias, not lock):** keep perspective 25° if roof and water height read on `flooded_roof`; enable peek if diagonal authorship feels punished. Orthographic only if height collapses on that roof.
+Defaults in `camera_rig.gd` (`LOCKED_ORTHOGRAPHIC`, `LOCKED_PEEK_ENABLED`) match. Raised into UI §2 / §18. Tests in `test_camera_rig.gd` assert the lock and rest-eye clearance over flooded eaves.
+
+**Still open.** Wall fade (UI §2) — after this lock (§8).
 
 ---
 
@@ -210,12 +213,11 @@ Do not treat 2.0–2.4 as greenfield. Finish **honesty on the existing fight_vie
 
 ### 7.1 — Projection (blocks second bowl — UI §18)
 
-Perspective (25°) vs orthographic. Test on Flooded roof + Dry street. Record in 2.5.
+**Locked (2.5):** perspective, FOV 25°. Orthographic is diagnostic only (`O`), not the fight or authoring default. Height on Flooded roof (water → eaves freeboard) stays readable; ortho flattened it.
 
 ### 7.2 — Peek yaw (blocks second bowl — UI §18)
 
-90° only vs hold-to-peek. Record in 2.5.
-
+**Locked (2.5):** hold-to-peek (MMB / Alt+drag, spring-back). Not 90°-only — diagonals stay authorable.
 ### 7.3 — Entrypoints
 
 **Working default (landed):** `make run` → fight view. `gallery.gd` / `scenes/p0` remain art and lighting checks. Add `make run-gallery` only if people keep opening the wrong scene.
@@ -244,4 +246,4 @@ Move the scripted-fight `_street` / `_opening` to a module both the test and the
 
 Polish on the same join: fog peel, commit/confirm chrome, throw/interact gizmos, wall fade, animation from command outcomes. Table mode stays a separate spine (UI §8).
 
-Do not start a second production bowl until §7.1 and §7.2 are locked.
+Do not start a second production bowl until §7.1 and §7.2 are locked — **they are** (2.5).

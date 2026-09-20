@@ -38,7 +38,7 @@ Water plane uses `res://assets/shaders/water.tres`.
 
 ## Camera / light / grid
 
-- **`CameraRig`** (`presentation/camera_rig.gd`) — same code path as `make run`. Fixed pitch, 25° FOV, 90° snap (`[` `]`), three zooms (wheel), `O` for ortho, MMB / Alt-drag peek. Rest looks +X down the street. Regenerated into both scenes by `_build_p0_scenes.gd`.
+- **`CameraRig`** (`presentation/camera_rig.gd`) — same code path as `make run`. **Locked (plan 2.5):** perspective 25° FOV, hold-to-peek. Fixed pitch, 90° snap (`[` `]`), three zooms (wheel), `O` ortho **diagnostic only**, MMB / Alt-drag peek. Rest looks +X down the street. Regenerated into both scenes by `_build_p0_scenes.gd`.
 - **`LightDay`** — dusk look A, high overcast directional, cool, no golden hour. **`WorldEnvironment`** procedural sky + light fog.
 - Cell size **2.0 m**. House / pump / sluice footprints are 2×2 cells (place on even metres). Pieces are `MeshInstance3D` instances, not a GridMap.
 

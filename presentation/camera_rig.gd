@@ -1,8 +1,9 @@
 class_name PresentationCameraRig
 extends Node3D
 ## Fixed-pitch tactical camera shared by the fight view and P0 lighting scenes.
-## 90° yaw snaps, three zoom distances, perspective ↔ orthographic, hold-to-peek.
-## Wall fade (UI §2) is out of scope for 2.1.
+## Plan 2.5 lock (UI §2 / §18): perspective 25° FOV; hold-to-peek (not 90°-only).
+## Orthographic remains an `O` diagnostic — never the authoring or fight default.
+## Wall fade (UI §2) is still out of scope.
 
 const FOV_DEG := 25.0
 ## Depression from horizontal. Matches scenes/p0 rest (eye −24,30.5,2 → look 8,3,2).
@@ -17,13 +18,16 @@ const DEFAULT_LOOK := Vector3(8.0, 3.0, 2.0)
 ## Yaw 0: camera sits west of the look point, facing +X down the street.
 const REST_YAW_INDEX := 0
 const REST_ZOOM_INDEX := 1
+## Locked policy (plan 2.5). Defaults must match these; tests assert them.
+const LOCKED_ORTHOGRAPHIC := false
+const LOCKED_PEEK_ENABLED := true
 
 @export var look_at_point: Vector3 = DEFAULT_LOOK
 @export var make_current: bool = true
 
 var yaw_index: int = REST_YAW_INDEX
 var zoom_index: int = REST_ZOOM_INDEX
-var orthographic: bool = false
+var orthographic: bool = LOCKED_ORTHOGRAPHIC
 var peek_deg: float = 0.0
 
 var camera: Camera3D
@@ -127,8 +131,15 @@ func set_zoom(index: int) -> void:
 	apply_pose()
 
 
+## Diagnostic only — production play stays on the locked perspective default.
 func toggle_projection() -> void:
 	orthographic = not orthographic
+	apply_pose()
+
+
+func reset_to_locked_policy() -> void:
+	orthographic = LOCKED_ORTHOGRAPHIC
+	peek_deg = 0.0
 	apply_pose()
 
 

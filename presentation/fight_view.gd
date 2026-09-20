@@ -48,7 +48,7 @@ func _ready() -> void:
 	_build_world()
 	_redraw()
 	_hud.set_note(
-		"PgUp/PgDn cutaway · click walk/shoot · Q Watch · Space phase · Tab select · F Falling · Esc cancel confirm"
+		"PgUp/PgDn cutaway · click walk/shoot · Q Watch · Space phase · Tab select · F Falling · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
 	)
 
 

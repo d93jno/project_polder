@@ -17,8 +17,9 @@ const VEH := "res://assets/vehicles/"
 const WORLDTEXT := "res://assets/worldtext/"
 const TEX := TERRACE + "textures/"
 
-# Camera rest (UI §2): PresentationCameraRig — 25° FOV, fixed pitch, 90° snap,
-# three zooms, perspective/ortho, peek. Same look point in both scenes for A/B.
+# Camera rest (UI §2 / plan 2.5): PresentationCameraRig — perspective 25° FOV
+# (locked), fixed pitch, 90° snap, three zooms, hold-to-peek; O = ortho diagnostic.
+# Same look point in both scenes for A/B.
 const CAM_LOOK := Vector3(8.0, 3.0, 2.0)
 
 
@@ -48,7 +49,8 @@ func _build(root_name: String, flooded: bool) -> Node3D:
 	var root := Node3D.new()
 	root.name = root_name
 	root.editor_description = (
-		"P0 lighting test. Dusk look A (high overcast). PresentationCameraRig (25° / snap / zoom / ortho / peek). "
+		"P0 lighting test. Dusk look A (high overcast). PresentationCameraRig "
+		+ "(perspective 25° locked / snap / zoom / hold-peek; O ortho diagnostic). "
 		+ ("Flooded water at Y=2.4 (streets swim, roofs walkable)." if flooded
 			else "Dry ground plane at street level. Long open sightline.")
 	)

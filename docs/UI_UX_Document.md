@@ -1,6 +1,6 @@
 # Project Polder — UI/UX Document
 
-**Version:** 0.5 — matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. (0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
+**Version:** 0.6 — camera lock (plan 2.5): perspective 25° FOV and hold-to-peek are decided; orthographic is diagnostic only. (0.5: matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. 0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
 
 **Versioning.** The version lives in this header, not in the filename. This file stays `UI_UX_Document.md` for the life of the project so links, citations and git history follow one path. `Game_Design_Document.md` follows the same rule.
 
@@ -41,9 +41,9 @@ The tactical map is 3D geometry on a data grid. The camera rests at a fixed, ele
 **Camera.**
 
 - Rest pose: fixed pitch, rotation snaps in 90° steps.
-- Peek yaw (a held, in-between rotation that springs back) is *open*. Without it, diagonal dikes and canals will be authored on grid axes because the camera punished anything else. That would be a camera constraint authoring the basin.
+- Peek yaw: hold-to-peek (MMB or Alt+drag), springs back when released. Without it, diagonal dikes and canals would be authored on grid axes because the camera punished anything else. That would be a camera constraint authoring the basin — rejected (plan 2.5).
 - Zoom between set levels (*working default*: 3). No free zoom.
-- Projection: low-FOV perspective (*working default*: 25°) versus orthographic is *open*. Test both on a Flooded roof map and a Dry street.
+- Projection: low-FOV perspective (**locked**: 25° FOV). Orthographic is a diagnostic toggle only; it is not the fight or authoring default. Locked after Flooded-roof + Dry-street checks (plan 2.5 / UI §18) — roof freeboard and water height stay readable under perspective; ortho flattened them.
 - Walls between the camera and a friendly unit fade. The camera never hides a unit the player controls.
 
 **Floor cutaway.** A level selector hides everything above level N. Roof shelters, flooded interiors and overpass decks are unreadable without it.
@@ -511,13 +511,15 @@ Cost notes beside the design. None of these change a rule.
 - **Floors are separate nodes from day one,** so cutaway is a visibility toggle per floor — for the tactical map and for the base view (section 9), which is the same mechanism.
 - **Blockout with `GridMap`;** move to `MultiMeshInstance3D` if draw calls hurt. The data grid does not change when the renderer does.
 - **Camera tests are cheap.** Projection is one property on `Camera3D`. Peek yaw is a tween from the snap pose and back.
-- **Engine-shaped choices, made on purpose:** 3D raises per-asset art cost and pushes art toward modular kits. The 90° snap pushes authoring toward grid axes; peek yaw stays open so that push is a choice, not an accident.
+- **Engine-shaped choices, made on purpose:** 3D raises per-asset art cost and pushes art toward modular kits. The 90° snap pushes authoring toward grid axes; hold-to-peek is the chosen counter so that push stays optional, not an accident (plan 2.5).
 
 ## 18. Decisions and open questions
 
 **Decided:**
 
 - Tactical view is 3D on a data grid, fixed-pitch rest pose, 90° snap, set zoom levels, per-floor cutaway. The ridge and the water orient; no compass rose.
+- **Projection is perspective (25° FOV).** Orthographic is diagnostic only. Locked on Flooded roof + Dry street (plan 2.5).
+- **Peek is hold-to-peek** (springs back), not 90°-only — so diagonal levees stay authorable.
 - Each bowl is authored once; the water step drives its water surface. Falling never reads as Flooded, and the exposure read backstops it in words.
 - Every deterministic rule has a preview, including AP costs, deployable footprints and the winch. Show capability, not intent — and capability points both ways, so the player's own exposure is always drawn.
 - The line preview names three outcomes: pins, drops to Bleeding Out, kills. Health is pips on every body, both sides.
@@ -562,8 +564,8 @@ Cost notes beside the design. None of these change a rule.
 - [ ] Exposure, per unit and per tile, as the line-of-sight function run backwards.
 - [ ] Health pips and the three-outcome line preview, keyed off them.
 - [ ] Cone apex behaviour when the watcher is hidden. Cheap to build, easy to get wrong.
-- [ ] Peek yaw or 90° only. Decide before a second bowl is authored.
-- [ ] Projection test on that bowl: one Flooded roof, one long Dry line.
+- [x] Peek yaw or 90° only. Decide before a second bowl is authored. **Hold-to-peek** (plan 2.5).
+- [x] Projection test on that bowl: one Flooded roof, one long Dry line. **Perspective 25°** (plan 2.5).
 - [ ] Walk pace and boat handling in one bowl, on mouse and keyboard.
 - [ ] Contact in code as a pure function, not a feeling.
 - [ ] Bleed-out clock and Pinned × Watch in code, with their previews.
