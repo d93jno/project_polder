@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.1 BowlMap + taxonomies completed — next is 1.2 LOS
+**Status:** 1.2 LOS completed — next is 1.3 exposure + cones
 **Tracks:** GDD v1.8, UI/UX v0.4
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -105,6 +105,8 @@ One table, `CoverMaterial × WeaponClass -> bool stops`, and it is the single so
 
 ### 1.2 — Line of sight
 
+**Status:** completed
+
 The keystone. Everything after this consumes it.
 
 **Ships:** `los.gd`.
@@ -112,7 +114,7 @@ The keystone. Everything after this consumes it.
 ```
 line3d(a: Vector3i, b: Vector3i) -> Array[Vector3i]
 line_of_sight(map, from, to, weapon) -> LosResult
-    LosResult: { clean: bool, blocker: Material, blocker_cell: Vector3i }
+    LosResult: { clean: bool, blocker: CoverMaterial, blocker_cell: Vector3i }
 ```
 
 No physics raycasts, ever (UI §17: *"A raycast will one day hit a balcony rail the preview ignored, and principle 1 breaks."*).
@@ -129,7 +131,7 @@ No physics raycasts, ever (UI §17: *"A raycast will one day hit a balcony rail 
 
 **Invariant, tested as a property:** `los(a,b,w).clean == los(b,a,w).clean` for all a, b, w. Asymmetric sight is how "they could see me but I couldn't see them" bugs get born.
 
-**Decision needed before this ships** — see §7.1, the corner tie-break.
+**Decision taken (§7.1):** **strict** corner tie-break. `line3d` is a geometric supercover: the center-to-center segment against closed unit cubes. A corner graze visits every neighbour that touches the corner; any stopper among them blocks.
 
 ---
 
@@ -290,15 +292,15 @@ Not in this phase, and not to be "just quickly added":
 
 ## 7. Decisions still needed
 
-### 7.1 — The corner tie-break (blocks 1.2)
+### 7.1 — The corner tie-break (resolved for 1.2)
 
 A 3D line walk that passes exactly through the corner between two blocking cells is ambiguous: does the line pass, or is it stopped? Every grid tactics game answers this and the answer is felt constantly — it decides whether a diagonal peek works.
 
 This is not an implementation detail. Under Principle 1 the preview and the rule are the same function, so whatever is chosen is *the rule*, and it should be written down rather than discovered in the walk implementation.
 
-Options: permissive (passes unless both corners block), strict (blocked if either blocks), or a documented offset that makes the case unreachable. **Recommend strict** — it is the one a player can predict from looking, and an honest "blocked" is cheaper than a shot that looked legal.
+Options: permissive (passes unless both corners block), strict (blocked if either blocks), or a documented offset that makes the case unreachable. **Chosen: strict** — implemented as geometric supercover (closed unit cubes). It is the one a player can predict from looking, and an honest "blocked" is cheaper than a shot that looked legal.
 
-**Raise to:** GDD §5.4 or UI §4.3. It is a rule, so probably the GDD.
+**Raise to:** GDD §5.4 or UI §4.3 when those docs next open — record the rule there too.
 
 ### 7.2 — Break clause 2 and 3 rest on undefined terms (blocks 1.6)
 
