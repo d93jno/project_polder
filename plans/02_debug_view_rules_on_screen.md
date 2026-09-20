@@ -1,6 +1,6 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0 completed — kit draws via catalog; next is overlay honesty (2.3 remainder) then a shared camera (2.1 / 2.5)
+**Status:** 2.0–2.1 completed — shared camera rig on fight + p0; next is overlay honesty (2.3 remainder) then camera decision lock (2.5)
 **Tracks:** GDD v1.10, UI/UX v0.5, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
@@ -57,7 +57,7 @@ presentation/
   selection_ring.gd
   hud.gd                   # counts & words
   overlay_queries.gd       # NEW: last queried cone/exposure/path/los — testable without a scene
-  camera_rig.gd            # NEW: rest pose, 90° snap, 3 zooms, perspective/ortho, peek
+  camera_rig.gd            # rest pose, 90° snap, 3 zooms, perspective/ortho, peek
   fight_view.gd            # input -> validate/apply
   gallery.gd               # art-only flooded bowl (not a fight)
 scenes/p0/
@@ -94,19 +94,13 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 ### 2.1 — Camera rest pose on real massing
 
-**Status:** not started (fight_view has a one-off `Camera3D`, 25° look-at, no snap / zoom / ortho / peek)
+**Status:** completed
 
-**Ships:** one `camera_rig.gd` used by `fight_view` **and** `scenes/p0/` (or a thin wrapper so F6 on those scenes is the same rig).
+**Ships:** one `camera_rig.gd` used by `fight_view` **and** `scenes/p0/` (regenerated via `_build_p0_scenes.gd`).
 
-- Fixed elevated pitch (25° *working default* until 2.5)
-- Yaw snaps in 90° steps
-- Zoom between 3 set levels (UI §2)
-- Toggle: perspective (FOV 25°) ↔ orthographic
-- Peek yaw prototype for 2.5 (hold off-snap, release springs back)
+**What landed.** Fixed elevated pitch (`PITCH_DEG` 40.7°, FOV 25°). Yaw snaps 90° (`[` / `]` / `,` / `.`). Three zoom distances (wheel / `-` `=`). Perspective ↔ orthographic (`O`). Hold-to-peek (MMB or Alt+drag), release springs back. Rest eye matches the old P0 (−24, 30.5, 2) → look (8, 3, 2). `tests/presentation/test_camera_rig.gd` locks the pose math.
 
-**Done when:** `flooded_roof`, `dry_street`, and the fight street share that code path.
-
-**Out for 2.1:** wall fade in front of friendlies (UI §2) — listed in §8.
+**Out for 2.1:** wall fade in front of friendlies (UI §2) — listed in §8. Projection / peek **policy** lock waits for 2.5.
 
 ---
 

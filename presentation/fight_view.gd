@@ -8,6 +8,7 @@ const _ConeView := preload("res://presentation/watch_cone_view.gd")
 const _Select := preload("res://presentation/selection_ring.gd")
 const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
+const _CameraRig := preload("res://presentation/camera_rig.gd")
 
 const _NAMES := {
 	1: "Rifles",
@@ -35,7 +36,7 @@ func _ready() -> void:
 	_selected_id = _player_ids[0] if not _player_ids.is_empty() else 1
 	_build_world()
 	_redraw()
-	_hud.set_note("click a tile to walk · click a hostile to shoot · Q Watch · Space / phase plaque ends a phase")
+	_hud.set_note("click a tile to walk · click a hostile to shoot · Q Watch · Space ends phase · [ ] yaw · wheel zoom · O ortho · MMB peek")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -163,14 +164,11 @@ func _add_environment() -> void:
 	light.light_color = Color(0.92, 0.94, 0.96)
 	add_child(light)
 
-	_camera = Camera3D.new()
-	_camera.name = "CameraTactical"
-	_camera.fov = 25.0
-	var look := PresentationCoords.world(Vector3i(8, 3, 0))
-	var eye := look + Vector3(-22.0, 28.0, 8.0)
-	_camera.look_at_from_position(eye, look + Vector3(0.0, 1.0, 0.0))
-	_camera.current = true
-	add_child(_camera)
+	var rig = _CameraRig.new()
+	rig.name = "CameraRig"
+	rig.look_at_point = PresentationCoords.world(Vector3i(8, 3, 0)) + Vector3(0.0, 1.0, 0.0)
+	add_child(rig)
+	_camera = rig.ensure_camera()
 
 
 func _redraw() -> void:

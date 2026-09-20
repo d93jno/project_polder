@@ -2,6 +2,8 @@ extends SceneTree
 ## Headless writer for P0 lighting tests. Regenerates flooded_roof.tscn and dry_street.tscn.
 ## Run: $HOME/bin/godot --headless --path . --script res://scenes/p0/_build_p0_scenes.gd
 
+const _CameraRig := preload("res://presentation/camera_rig.gd")
+
 const CELL := 2.0
 const EAVE_Y := 6.15
 const WATER_FLOODED_Y := 2.40
@@ -15,11 +17,9 @@ const VEH := "res://assets/vehicles/"
 const WORLDTEXT := "res://assets/worldtext/"
 const TEX := TERRACE + "textures/"
 
-# Camera rest (UI §2): 25° perspective, 90° snap (looks +X), elevated pitch that
-# still reads dikes and roofs. Same transform in both scenes for A/B projection tests.
-const CAM_EYE := Vector3(-24.0, 30.5, 2.0)
+# Camera rest (UI §2): PresentationCameraRig — 25° FOV, fixed pitch, 90° snap,
+# three zooms, perspective/ortho, peek. Same look point in both scenes for A/B.
 const CAM_LOOK := Vector3(8.0, 3.0, 2.0)
-const CAM_FOV := 25.0
 
 
 func _init() -> void:
@@ -48,7 +48,7 @@ func _build(root_name: String, flooded: bool) -> Node3D:
 	var root := Node3D.new()
 	root.name = root_name
 	root.editor_description = (
-		"P0 lighting test. Dusk look A (high overcast). CameraTactical 25° perspective. "
+		"P0 lighting test. Dusk look A (high overcast). PresentationCameraRig (25° / snap / zoom / ortho / peek). "
 		+ ("Flooded water at Y=2.4 (streets swim, roofs walkable)." if flooded
 			else "Dry ground plane at street level. Long open sightline.")
 	)
@@ -154,16 +154,15 @@ func _add_light(root: Node3D) -> void:
 
 
 func _add_camera(root: Node3D) -> void:
-	var cam := Camera3D.new()
-	cam.name = "CameraTactical"
-	cam.transform = Transform3D(Basis.IDENTITY, CAM_EYE).looking_at(CAM_LOOK, Vector3.UP)
-	cam.fov = CAM_FOV
-	cam.near = 0.15
-	cam.far = 400.0
-	cam.current = true
-	cam.keep_aspect = Camera3D.KEEP_HEIGHT
-	cam.projection = Camera3D.PROJECTION_PERSPECTIVE
-	_owned(root, cam)
+	var rig = _CameraRig.new()
+	rig.name = "CameraRig"
+	rig.look_at_point = CAM_LOOK
+	rig.make_current = true
+	rig.ensure_camera()
+	rig.apply_pose()
+	_owned(root, rig)
+	## PackedScene only keeps owned descendants.
+	rig.camera.owner = root
 
 
 func _add_street(kit: Node3D, owner: Node) -> void:
