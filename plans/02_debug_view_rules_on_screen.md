@@ -1,6 +1,6 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0–2.2 completed — cutaway + water from data on a roof-deck fixture; next is overlay honesty (2.3 remainder) then camera decision lock (2.5)
+**Status:** 2.0–2.3 completed — overlay queries drive cones/exposure/path; next is path/line HUD chrome (2.4) then camera decision lock (2.5)
 **Tracks:** GDD v1.10, UI/UX v0.5, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
@@ -56,10 +56,10 @@ presentation/
   watch_cone_view.gd       # volumes from Cones.*; apex_known
   selection_ring.gd
   hud.gd                   # counts & words
-  overlay_queries.gd       # NEW: last queried cone/exposure/path/los — testable without a scene
+  overlay_queries.gd       # last queried cone/exposure/path/los — testable without a scene
   camera_rig.gd            # rest pose, 90° snap, 3 zooms, perspective/ortho, peek
-  fight_view.gd            # input -> validate/apply
-  fixtures/cutaway_bowl.gd # street + roof for cutaway / Falling (2.2); not the scripted fight
+  fight_view.gd            # input -> validate/apply; draws queries.* only for overlays
+  fixtures/cutaway_bowl.gd # street + roof + plank/smoke watches (2.2–2.3); not the scripted fight
   gallery.gd               # art-only flooded bowl (not a fight)
 scenes/p0/
   flooded_roof.tscn        # camera-test fixture
@@ -117,31 +117,11 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 ### 2.3 — Cones and exposure together
 
-**Status:** partial — **this remains the visual keystone**
+**Status:** completed
 
-**What landed.** Enemy live volumes from `Cones.watch_cone`; `apex_known` picks unresolved-apex mode; spent watches skip the volume; selected-unit exposure icon from `ExposureQuery`; HUD can say `seen by N`.
+**What landed.** `presentation/overlay_queries.gd` is the only overlay source. Fight view draws `queries.*` for cones, path, LOS hover, stack, and exposure. Stacking label (`N watches: rifle, long, pistol`). Long is a word on each cone tip. Exposure word + count + locatable sources on the selected body and in the HUD. Path tiles show per-cell exposure words (hidden / exposed / no hide). Friendly cones: outline at rest; full volume when selected or a move preview crosses. Fixture adds plank + rifle Watch and smoke Watch (unresolved apex); `F` still toggles Falling. Tests: `tests/presentation/test_overlay_queries.gd`.
 
-**Still open (honesty, not new art).**
-
-| Draw | Source | Gap now |
-| --- | --- | --- |
-| Stacking label | `Cones.cone_stack` | Missing. Need count + class words, no extra hues |
-| Long | `Taxonomy.is_long` | Missing. Label "rifle, long" — word, not colour (UI §4.4) |
-| Exposure on the unit | `ExposureQuery` | Icon only. Need the **word** (hidden / exposed / no hide), the count, and locatable sources — not a heat map |
-| Path exposure | `MovePath.exposure_per_cell` | Path is cream planes. Per-tile hidden / exposed / no hide not drawn |
-| Friendly cone | UI §4.4 | Outline at rest; full volume when selected **or** a move preview crosses it. Crossing not implemented |
-
-**Invariant, tested without a scene.** Extract queries into `presentation/overlay_queries.gd` (pure over `map` + `state` + selection + hover). A GUT file under `tests/presentation/` asserts:
-
-```
-queries.cone_cells == Cones.cone(...)
-queries.exposure.count == CombatState.attackers_of(...).size()
-queries.path.shot_reserve_at == Movement.path(...).shot_reserve_at
-```
-
-The view is only allowed to draw `queries.*`. If the mesh disagrees, the overlay is wrong — not the rule.
-
-**Done when:** Phase 1 fixtures (smoke apex, plank rifle-vs-pistol, Falling `NO_HIDE`) are visible on kit geometry **and** the overlay_queries tests match headless asserts. Path chrome on a lying exposure draw does not ship.
+**Still open (2.4).** Path reserve **shapes**, AP cost digits, watch-crossing marks, line chrome — not colour-tinted reserves.
 
 ---
 

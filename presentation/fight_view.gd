@@ -10,6 +10,7 @@ const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
 const _CutawayBowl := preload("res://presentation/fixtures/cutaway_bowl.gd")
+const _Queries := preload("res://presentation/overlay_queries.gd")
 
 const _NAMES := {
 	1: "Street",
@@ -34,6 +35,8 @@ var _select_ring
 var _player_ids: Array[int] = []
 var _cutaway_z: int = 99
 var _max_z: int = 0
+var _queries
+var _labels_root: Node3D
 
 
 func _ready() -> void:
@@ -80,7 +83,10 @@ func _process(_dt: float) -> void:
 	var cell := _pick_cell()
 	if cell != _hover and cell != _INVALID:
 		_hover = cell
+		_refresh_queries()
+		_draw_cones()
 		_draw_preview()
+		_draw_overlay_labels()
 		_sync_hud()
 
 
@@ -151,6 +157,9 @@ func _build_world() -> void:
 	_heights_root = Node3D.new()
 	_heights_root.name = "Heights"
 	add_child(_heights_root)
+	_labels_root = Node3D.new()
+	_labels_root.name = "OverlayLabels"
+	add_child(_labels_root)
 
 	_select_ring = _Select.new()
 	_select_ring.name = "Selection"
@@ -201,16 +210,22 @@ func _add_environment() -> void:
 
 
 func _redraw() -> void:
+	_refresh_queries()
 	_draw_units()
 	_draw_cones()
 	_draw_preview()
 	_draw_height_labels()
+	_draw_overlay_labels()
 	_sync_hud()
 	var sel: Unit = _state.get_unit(_selected_id)
 	if sel and _select_ring:
 		var show_ring := not sel.extracted and sel.cell.z <= _cutaway_z
 		_select_ring.visible = show_ring
 		_select_ring.position = PresentationCoords.world_ground(sel.cell) + Vector3(0, 0.02, 0)
+
+
+func _refresh_queries() -> void:
+	_queries = _Queries.compute(_state.map, _state, _selected_id, _hover)
 
 
 func _draw_units() -> void:
@@ -230,63 +245,67 @@ func _draw_units() -> void:
 func _draw_cones() -> void:
 	for c in _cones_root.get_children():
 		c.queue_free()
-	for watch in _state.watches:
-		var live: LiveWatch = watch
-		if live.spent:
+	if _queries == null:
+		return
+	for entry in _queries.watches:
+		var cells: Array = entry["cells"]
+		if cells.is_empty():
 			continue
-		var watcher: Unit = _state.get_unit(live.unit_id)
-		if watcher == null or not watcher.is_active():
-			continue
-		var cone_res := Cones.watch_cone(
-			_state.map, _state, watcher, live.facing, Taxonomy.Faction.PLAYER
-		)
-		var far := _farthest_in_facing(watcher.cell, live.facing, cone_res.cells)
+		var from_cell: Vector3i = entry["cell"]
+		var facing: Vector3i = entry["facing"]
+		var far := _farthest_in_facing(from_cell, facing, cells)
 		var view := _ConeView.new()
-		if watcher.faction == Taxonomy.Faction.PLAYER:
-			view.mode = 0 if watcher.id != _selected_id else 1
-		elif cone_res.apex_known:
+		if entry["friendly"]:
+			view.mode = 1 if entry["full_volume"] else 0
+		elif entry["apex_known"]:
 			view.mode = 1
 		else:
 			view.mode = 2
 		_cones_root.add_child(view)
-		view.aim(PresentationCoords.world_ground(watcher.cell) + Vector3(0, 1.4, 0), PresentationCoords.world_ground(far) + Vector3(0, 1.4, 0))
+		view.aim(
+			PresentationCoords.world_ground(from_cell) + Vector3(0, 1.4, 0),
+			PresentationCoords.world_ground(far) + Vector3(0, 1.4, 0)
+		)
 
 
-func _farthest_in_facing(from_cell: Vector3i, facing: Vector3i, cells: Array[Vector3i]) -> Vector3i:
+func _farthest_in_facing(from_cell: Vector3i, facing: Vector3i, cells: Array) -> Vector3i:
 	var best := from_cell + facing
 	var best_d := 0
 	for c in cells:
-		var d: int = (c.x - from_cell.x) * facing.x + (c.y - from_cell.y) * facing.y
+		var cell: Vector3i = c
+		var d: int = (cell.x - from_cell.x) * facing.x + (cell.y - from_cell.y) * facing.y
 		if d > best_d:
 			best_d = d
-			best = c
+			best = cell
 	return best
 
 
 func _draw_preview() -> void:
 	for c in _preview_root.get_children():
 		c.queue_free()
+	if _queries == null:
+		return
 	var unit: Unit = _state.get_unit(_selected_id)
 	if unit == null or not unit.is_active():
 		return
-	if not _state.map.has_cell(_hover):
+	if _queries.hover_hostile:
+		var occ := _unit_at(_hover)
+		if occ != null and _queries.los != null:
+			var col := (
+				Color(0.95, 0.85, 0.7, 0.45) if _queries.los.clean
+				else Color(0.4, 0.35, 0.3, 0.5)
+			)
+			_mark_cell(occ.cell, col)
 		return
-	if _hover == unit.cell:
-		return
-	var occupant := _unit_at(_hover)
-	if occupant != null and CombatState.is_hostile(unit.faction, occupant.faction):
-		var los := Los.line_of_sight(_state.map, unit.cell, occupant.cell, unit.weapon)
-		_mark_cell(occupant.cell, Color(0.95, 0.85, 0.7, 0.45) if los.clean else Color(0.4, 0.35, 0.3, 0.5))
-		return
-	var path := Movement.path(_state.map, _state, unit, _hover)
+	var path = _queries.path
 	if not path.reachable:
 		return
 	for i in path.cells.size():
-		var col := Color(0.9, 0.88, 0.8, 0.28)
+		var col := Color(0.9, 0.88, 0.8, 0.22)
 		if i == path.shot_reserve_at:
-			col = Color(0.85, 0.7, 0.45, 0.5)
+			col = Color(0.85, 0.7, 0.45, 0.4)
 		if i == path.watch_reserve_at:
-			col = Color(0.75, 0.55, 0.35, 0.55)
+			col = Color(0.75, 0.55, 0.35, 0.45)
 		_mark_cell(path.cells[i], col)
 
 
@@ -394,22 +413,21 @@ func _sync_hud() -> void:
 	var u: Unit = _state.get_unit(_selected_id)
 	if u == null:
 		return
+	if _queries == null:
+		_refresh_queries()
 	_hud.set_selected(_player_ids.find(_selected_id))
 	_hud.set_ap(u.ap, RulesConstants.AP_POOL)
 	_hud.set_hits(u.hp, RulesConstants.HP_PIPS)
 	_hud.set_bleed_rounds(u.bleed_rounds_left if u.bleeding else 0)
-	var exp := ExposureQuery.exposure(_state.map, _state, u)
-	var exp_word := "exposed"
+	var exp = _queries.exposure
+	var exp_word: String = _Queries.exposure_word(exp)
 	match exp.state:
 		Exposure.State.HIDDEN:
 			_hud.set_exposure("hidden")
-			exp_word = "hidden"
 		Exposure.State.NO_HIDE:
 			_hud.set_exposure("no_hide")
-			exp_word = "no hide"
 		_:
 			_hud.set_exposure("exposed")
-			exp_word = "exposed"
 	match u.pin:
 		Unit.PinState.DUCKED:
 			_hud.set_pin("ducked")
@@ -431,9 +449,8 @@ func _sync_hud() -> void:
 	if _state.map.has_cell(_hover):
 		hover_txt += "  %s" % _cover_name_at(_hover)
 	var occupant := _unit_at(_hover)
-	if occupant != null and CombatState.is_hostile(u.faction, occupant.faction):
-		var los := Los.line_of_sight(_state.map, u.cell, occupant.cell, u.weapon)
-		if los.clean:
+	if _queries.hover_hostile and _queries.los != null and occupant != null:
+		if _queries.los.clean:
 			var dmg := RulesConstants.shot_damage(u.weapon)
 			if occupant.bleeding:
 				hover_txt += "  kills a bleeder"
@@ -441,10 +458,8 @@ func _sync_hud() -> void:
 				hover_txt += "  drops to Bleeding Out"
 			else:
 				hover_txt += "  pins"
-			if exp.count > 0:
-				hover_txt += "  seen by %d" % exp.count
 		else:
-			hover_txt += "  blocked: %s" % Taxonomy.material_name(los.blocker)
+			hover_txt += "  blocked: %s" % Taxonomy.material_name(_queries.los.blocker)
 	var step_name := str(Taxonomy.WaterStep.keys()[_state.map.water_step])
 	var bits: Array[String] = [
 		hover_txt,
@@ -453,11 +468,83 @@ func _sync_hud() -> void:
 		step_name,
 		exp_word,
 	]
+	if exp.count > 0:
+		bits.append("seen by %d" % exp.count)
+	if not exp.sources.is_empty():
+		var src_bits: Array[String] = []
+		for s in exp.sources:
+			src_bits.append("(%d,%d)" % [s.x, s.y])
+		bits.append("from %s" % ", ".join(src_bits))
+	if _queries.stack_label != "":
+		bits.append(_queries.stack_label)
 	if break_txt != "":
 		bits.append(break_txt)
-	if exp.count > 0 and occupant == null:
-		bits.append("seen by %d" % exp.count)
 	_hud.set_height_read("  ".join(bits))
+
+
+func _draw_overlay_labels() -> void:
+	if _labels_root == null:
+		return
+	for c in _labels_root.get_children():
+		c.queue_free()
+	if _queries == null:
+		return
+	var sel: Unit = _state.get_unit(_selected_id)
+	if sel != null and sel.is_active() and sel.cell.z <= _cutaway_z:
+		var exp = _queries.exposure
+		var text := _Queries.exposure_word(exp)
+		if exp.count > 0:
+			text += " · seen by %d" % exp.count
+		if not exp.sources.is_empty():
+			text += " · from %d" % exp.sources.size()
+		_spawn_label(
+			PresentationCoords.world_ground(sel.cell) + Vector3(0.0, 2.2, 0.0),
+			text,
+			0.014
+		)
+	## Cone weapon / long words near the far tip of each drawn watch.
+	for entry in _queries.watches:
+		var cells: Array = entry["cells"]
+		if cells.is_empty():
+			continue
+		var far := _farthest_in_facing(entry["cell"], entry["facing"], cells)
+		if far.z > _cutaway_z:
+			continue
+		_spawn_label(
+			PresentationCoords.world_ground(far) + Vector3(0.0, 1.8, 0.0),
+			entry["label"],
+			0.012
+		)
+	if _queries.stack_label != "" and _state.map.has_cell(_hover) and _hover.z <= _cutaway_z:
+		_spawn_label(
+			PresentationCoords.world_ground(_hover) + Vector3(0.0, 1.1, 0.0),
+			_queries.stack_label,
+			0.011
+		)
+	## Path exposure words (not colour-only). Reserve chrome stays for 2.4.
+	if _queries.path.reachable:
+		for i in _queries.path.exposure_per_cell.size():
+			var cell: Vector3i = _queries.path.cells[i]
+			if cell.z > _cutaway_z:
+				continue
+			var exp: Exposure = _queries.path.exposure_per_cell[i]
+			_spawn_label(
+				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.55, 0.0),
+				_Queries.exposure_word(exp),
+				0.01
+			)
+
+
+func _spawn_label(origin: Vector3, text: String, pixel: float) -> void:
+	var label := Label3D.new()
+	label.text = text
+	label.font_size = 42
+	label.modulate = Color(0.94, 0.9, 0.8, 0.92)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = origin
+	label.pixel_size = pixel
+	label.outline_size = 4
+	_labels_root.add_child(label)
 
 
 func _unit_at(cell: Vector3i) -> Unit:

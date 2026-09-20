@@ -34,6 +34,8 @@ func test_falling_fixture_is_no_hide() -> void:
 	var state: CombatState = Cutaway.falling_opening()
 	assert_eq(state.map.water_step, Taxonomy.WaterStep.FALLING)
 	state.units.erase(10)
+	state.units.erase(11)
+	state.watches.clear()
 	var roof: Unit = state.get_unit(2)
 	var exp := ExposureQuery.exposure(state.map, state, roof)
 	assert_eq(exp.state, Exposure.State.NO_HIDE)
@@ -41,8 +43,10 @@ func test_falling_fixture_is_no_hide() -> void:
 
 func test_flooded_fixture_can_hide_without_attackers() -> void:
 	var state: CombatState = Cutaway.opening(Taxonomy.WaterStep.FLOODED)
-	## Remove the hostile so exposure is not EXPOSED.
+	## Remove hostiles so exposure is not EXPOSED.
 	state.units.erase(10)
+	state.units.erase(11)
+	state.watches.clear()
 	var street: Unit = state.get_unit(1)
 	var exp := ExposureQuery.exposure(state.map, state, street)
 	assert_eq(exp.state, Exposure.State.HIDDEN)
