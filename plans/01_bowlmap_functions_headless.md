@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** not started
+**Status:** 1.1 BowlMap + taxonomies completed — next is 1.2 LOS
 **Tracks:** GDD v1.8, UI/UX v0.4
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -63,6 +63,8 @@ Each phase ends green and is independently checkpointable. Estimates assume this
 
 ### 1.0 — Harness
 
+**Status:** completed
+
 **Ships:** GUT vendored and pinned. `make test` target. One deliberately failing test, then one passing, to prove the loop.
 
 **Done when:** `make test` reports pass/fail and exits non-zero on failure, headless, with no editor open.
@@ -71,13 +73,15 @@ Each phase ends green and is independently checkpointable. Estimates assume this
 
 ### 1.1 — BowlMap and the taxonomies
 
+**Status:** completed
+
 **Ships:** `taxonomy.gd`, `cell.gd`, `bowl_map.gd`.
 
 ```
 Cell:
-  material : Material     # what it stops
-  flags    : int          # SHELTER | DECK | SWIMMABLE | INTERIOR ...
-  occupant : int          # unit id, -1 for none
+  material : CoverMaterial  # what it stops (named to avoid Godot's Material class)
+  flags    : int            # SHELTER | DECK | SWIMMABLE | INTERIOR ...
+  occupant : int            # unit id, -1 for none
 
 BowlMap (Resource):
   cells      : Dictionary[Vector3i, Cell]
@@ -89,11 +93,13 @@ Material set for P0, from the assets doc §1 shared cover language: `AIR, PLANK,
 
 Weapon classes from assets §6.2: `PISTOL, MELEE, SPEAR, SHOTGUN, RIFLE, LMG, SNIPER`.
 
-One table, `Material × WeaponClass -> bool stops`, and it is the single source of truth. A plank stops a pistol and not a rifle (GDD §5.4); the hover read in UI §4.3 names whatever this table says.
+One table, `CoverMaterial × WeaponClass -> bool stops`, and it is the single source of truth. A plank stops a pistol and not a rifle (GDD §5.4); the hover read in UI §4.3 names whatever this table says.
 
 **Done when:** a bowl can be built in code, round-tripped through `ResourceSaver`/`ResourceLoader`, and the stopping table is exhaustively tested.
 
 **Watch for:** levee maps hold two water surfaces (UI §3). Either `water_step`/`water_z` become per-region now, or the type carries a `TODO` and a test that documents the limitation. Do not discover this in phase 4.
+
+**Decision taken:** single `water_step`/`water_z` plane for now, with `TODO(levee)` on `BowlMap` and `test_levee_two_surfaces_not_yet_supported` documenting the gap until Act II.
 
 ---
 
@@ -313,7 +319,7 @@ Three terms carry the rule and none is defined anywhere in the GDD:
 ### 7.3 — Two smaller ones
 
 - **Exposure wording (non-blocking).** UI §4.2 says exposure shows "the count and where from." Add a line saying a hidden hostile contributes to the count without being located, mirroring §4.4's apex rule. Documentation, not a code change.
-- **Levee maps (blocks 1.1 if deferred badly).** UI §3 allows two water surfaces on one map. Decide now whether `BowlMap` carries one water plane or a list, even if the second is unused until Act II.
+- **Levee maps (resolved for 1.1).** UI §3 allows two water surfaces on one map. `BowlMap` keeps one plane with `TODO(levee)` and a documenting test; promote to a region list before Act II levee maps.
 
 ---
 

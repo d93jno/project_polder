@@ -32,10 +32,15 @@ From the repo root:
 | `make editor` / `./scripts/editor.sh` | Open the editor |
 | `make run` / `./scripts/run.sh` | Run the project |
 | `make import` | Headless asset import |
+| `make test` / `./scripts/test.sh` | Run GUT headless (non-zero exit on failure) |
 | `make build` / `./scripts/build.sh` | Linux x86_64 release → `build/linux/` |
 | `make check-godot` | Verify binary path and version pin |
 
 Override the binary with `GODOT=/path/to/godot make build`.
+
+## Tests
+
+Unit tests use **[GUT](https://github.com/bitwes/Gut) 9.7.1**, vendored at `addons/gut/` and pinned in `addons/gut/VERSION` (Godot 4.7–compatible release). Config lives in `.gutconfig.json`; suites live under `tests/` (`unit/`, `invariants/`, `fights/`). Rules code goes in `rules/` — not `scripts/`, which holds shell helpers.
 
 ## Project settings (locked for this pass)
 
@@ -43,3 +48,7 @@ Override the binary with `GODOT=/path/to/godot make build`.
 - Renderer: Forward+
 - First export target: Linux x86_64 only
 - CI: none yet (local scripts / Makefile only)
+
+## Assets
+
+Graphical slots live under [`assets/`](../assets/) (`res://assets/…`), matching [`Project_polder_assets.md`](Project_polder_assets.md) §2. See [`assets/README.md`](../assets/README.md) for the folder map, formats, and naming.
