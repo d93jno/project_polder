@@ -1,0 +1,17 @@
+# Godot 4+
+.godot/
+*.translation
+
+# Export / local build output
+build/
+export/
+
+# OS / editor noise
+.DS_Store
+*~
+*.swp
+*.tmp
+
+# Mono / .NET (not used; ignore if created by mistake)
+.mono/
+data_*/
