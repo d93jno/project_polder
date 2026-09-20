@@ -27,7 +27,7 @@ func hostiles_of(unit: Unit) -> Array:
 	for other in units.values():
 		if other.id == unit.id:
 			continue
-		if _is_hostile(unit.faction, other.faction):
+		if is_hostile(unit.faction, other.faction):
 			out.append(other)
 	return out
 
@@ -41,7 +41,7 @@ func units_of_faction(faction: Taxonomy.Faction) -> Array:
 
 
 ## P0: player vs everyone else (except neutral); non-player only hostile to player.
-static func _is_hostile(a: Taxonomy.Faction, b: Taxonomy.Faction) -> bool:
+static func is_hostile(a: Taxonomy.Faction, b: Taxonomy.Faction) -> bool:
 	if a == b:
 		return false
 	if a == Taxonomy.Faction.NEUTRAL or b == Taxonomy.Faction.NEUTRAL:

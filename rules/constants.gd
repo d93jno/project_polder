@@ -3,6 +3,20 @@ extends Object
 ## Working defaults — tune here, nowhere else (plan §4 / §5).
 
 
+## --- AP pool and action prices (*working default*, GDD §5.3) ---
+const AP_POOL := 6
+const SHOT_COST := 2
+const SHOT_COST_LONG := 3 ## Rifle / LMG / sniper — heavier commit
+const WATCH_COST := 3
+
+## --- Move costs (*working default*) ---
+const MOVE_COST_DRY := 1
+const MOVE_COST_MUD := 2 ## Mud doubles (GDD §5.3)
+const MOVE_COST_SWIM := 2 ## Flooded swim
+const MOVE_COST_FALLING := 2 ## Chest-deep ugly footing
+const MOVE_COST_VERTICAL_SURCHARGE := 1 ## Added when z changes (climb / dive)
+
+
 ## Watch cone length in chebyshev cells, by weapon class. *Working default.*
 static func cone_length(weapon: Taxonomy.WeaponClass) -> int:
 	match weapon:
@@ -22,3 +36,25 @@ static func cone_length(weapon: Taxonomy.WeaponClass) -> int:
 			return 12
 		_:
 			return 4
+
+
+static func shot_cost(weapon: Taxonomy.WeaponClass) -> int:
+	match weapon:
+		Taxonomy.WeaponClass.RIFLE, Taxonomy.WeaponClass.LMG, Taxonomy.WeaponClass.SNIPER:
+			return SHOT_COST_LONG
+		_:
+			return SHOT_COST
+
+
+static func step_move_cost(water_step: Taxonomy.WaterStep) -> int:
+	match water_step:
+		Taxonomy.WaterStep.FLOODED:
+			return MOVE_COST_SWIM
+		Taxonomy.WaterStep.FALLING:
+			return MOVE_COST_FALLING
+		Taxonomy.WaterStep.MUD:
+			return MOVE_COST_MUD
+		Taxonomy.WaterStep.DRY:
+			return MOVE_COST_DRY
+		_:
+			return MOVE_COST_DRY

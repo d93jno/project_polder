@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.3 exposure + cones completed — next is 1.4 movement
+**Status:** 1.4 movement + reserves completed — next is 1.5 combat commands
 **Tracks:** GDD v1.8, UI/UX v0.4
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -176,7 +176,9 @@ UI §17: *"One implementation, two directions — if they can ever disagree, Pri
 
 ### 1.4 — Movement, AP, and the reserve read
 
-**Ships:** `movement.gd`.
+**Status:** completed
+
+**Ships:** `movement.gd`, `MovePath`, `WatchCrossing`; AP digits in `RulesConstants`.
 
 ```
 move_cost(map, cell, unit) -> int          # Mud doubles (GDD §5.3)
@@ -194,7 +196,7 @@ The two reserve indices are the whole point of UI §4.1 — *"walk to the mark a
 
 **Test cases:** mud doubling; swim cost in Flooded; climb and dive as `z` moves; the reserve index moving when the unit's AP or weapon changes; a path that crosses two Watches reporting both.
 
-**Working default needed:** AP digits. GDD §5.3 says exact digits are prototype work, so pick one set, mark it `working default` in the code, and keep it in one constants file so tuning is a single edit.
+**Working defaults (in `RulesConstants`):** AP_POOL=6, dry move=1, mud/swim/falling=2, vertical surcharge=+1, shot=2 (long guns=3), watch=3.
 
 ---
 
