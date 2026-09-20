@@ -1,6 +1,6 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0–2.4 sketched in `presentation/fight_view.gd` — next is overlay honesty (2.3 remainder) then a shared camera (2.1 / 2.5)
+**Status:** 2.0 completed — kit draws via catalog; next is overlay honesty (2.3 remainder) then a shared camera (2.1 / 2.5)
 **Tracks:** GDD v1.10, UI/UX v0.5, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
@@ -79,21 +79,16 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 ### 2.0 — BowlMap draws the P0 kit
 
-**Status:** partial
+**Status:** completed
 
 **Ships:** `bowl_draw` instances a mesh per cell from `BowlMap`.
 
-**What landed.** Dry fight street: AIR → terrace slabs, MASONRY/PLANK/CRATE/METAL → tagged props. Sparse empty stays empty. `coords.gd` maps `Vector3i(x,y,z)` with `z` = level.
+**What landed.** Dry fight street: AIR → terrace slabs, MASONRY/PLANK/CRATE/METAL → tagged props. Sparse empty stays empty. `coords.gd` maps `Vector3i(x,y,z)` with `z` = level. Every instance goes through `PresentationCatalog.piece_for_cell` / `scene_for_piece`. Masonry runs use `env_canal_wall_tall` (yaw 90° for data-y runs); isolated masonry keeps the corner prop. Gap materials get one magenta marker. Hover names `cover_of` on the drawn piece. `tests/presentation/test_catalog_bowl.gd` locks the tags.
 
-**Where it differs / still open.**
+**Still open (later slices).**
 
-- `bowl_draw` does **not** go through `catalog.gd`. Cover tags can drift. Route every instance through the catalog, or delete one of the two tables.
-- The default fight is **z = 0 only**. Roofs, interiors, and Flooded height are not drawn from data yet. `scenes/p0/` still owns that massing as a lighting fixture, not as a `BowlMap`.
-- Masonry cells use a corner prop, not a wall run. Honest enough to name "masonry" on hover; not honest enough to read as the scripted fight's wall from the camera. Swap to a 2 m wall piece (`env_canal_wall` or levee) for cells that form a run.
-
-**Done when:** changing a cell's material in data swaps the mesh via the catalog; hover names the `CoverMaterial` the catalog tagged; no one-off nodes per tile.
-
-**Fallback:** a single magenta "missing art" marker for a gap cell — never a whole-bowl colour language.
+- The default fight is **z = 0 only**. Roofs, interiors, and Flooded height are not drawn from data yet — see 2.2.
+- `scenes/p0/` still owns lighting massing as a fixture, not as a `BowlMap`.
 
 ---
 

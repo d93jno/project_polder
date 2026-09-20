@@ -21,6 +21,7 @@ var _selected_id: int = 1
 var _hover: Vector3i = Vector3i.ZERO
 var _camera: Camera3D
 var _hud
+var _bowl
 var _units_root: Node3D
 var _cones_root: Node3D
 var _preview_root: Node3D
@@ -94,10 +95,10 @@ func _opening() -> CombatState:
 
 func _build_world() -> void:
 	_add_environment()
-	var bowl := _BowlDraw.new()
-	bowl.name = "Bowl"
-	add_child(bowl)
-	bowl.draw_map(_state.map)
+	_bowl = _BowlDraw.new()
+	_bowl.name = "Bowl"
+	add_child(_bowl)
+	_bowl.draw_map(_state.map)
 
 	var water := _Water.new()
 	water.name = "Water"
@@ -392,8 +393,7 @@ func _sync_hud() -> void:
 			break_txt = "if hit here, breaks"
 	var hover_txt := "cell %s" % _hover
 	if _state.map.has_cell(_hover):
-		var mat: Taxonomy.CoverMaterial = _state.map.get_cell(_hover).material
-		hover_txt += "  %s" % Taxonomy.material_name(mat)
+		hover_txt += "  %s" % _cover_name_at(_hover)
 	var occupant := _unit_at(_hover)
 	if occupant != null and CombatState.is_hostile(u.faction, occupant.faction):
 		var los := Los.line_of_sight(_state.map, u.cell, occupant.cell, u.weapon)
@@ -423,6 +423,17 @@ func _unit_at(cell: Vector3i) -> Unit:
 		if u.cell == cell and not u.extracted and not u.dead:
 			return u
 	return null
+
+
+## Prefer the catalog tag on the drawn mesh; fall back to the cell material.
+func _cover_name_at(cell: Vector3i) -> String:
+	if _bowl != null:
+		var tag: int = _bowl.cover_tag_at(cell)
+		if tag >= 0:
+			return Taxonomy.material_name(tag as Taxonomy.CoverMaterial)
+	if _state.map.has_cell(cell):
+		return Taxonomy.material_name(_state.map.get_cell(cell).material)
+	return "?"
 
 
 func _pick_cell() -> Vector3i:
