@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.5 combat commands completed — next is 1.5.1, then 1.6 (§7.2 resolved in GDD 1.9)
+**Status:** 1.5.1 completed — next is 1.6 (§7.2 resolved in GDD 1.9)
 **Tracks:** GDD v1.9, UI/UX v0.5
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -233,6 +233,8 @@ Previews call `validate()`. The UI in phase 3 renders the `Result`. Nothing draw
 
 ### 1.5.1 — The data and helpers 1.6 needs
 
+**Status:** completed
+
 Break reads state that no phase has built yet. This is that state, split out so 1.6 is the rule and not a scavenger hunt. Nothing here is a rules question; the rules were settled in GDD 1.9.
 
 **Ships:** new fields on `unit.gd`, a scar enum in `taxonomy.gd`, `Taxonomy.is_long()`, `Movement.reachable()`, `CombatState.attackers_of()`, a faction filter on `Cones.cone_stack()`, `RulesConstants.CALL_RADIUS`.
@@ -284,6 +286,16 @@ What this touches:
 This is a behaviour change to shipped 1.3 code, so it lands in 1.5.1 with its own test rather than riding along inside the break rule.
 
 **Done when:** every field round-trips through `duplicate_unit` and `duplicate_at` under test; `is_long` has one definition and the four old copies are gone; `reachable` agrees with `path` on any tile both can reach, asserted as a property; `attackers_of` agrees with `Exposure.count`, both counting standing hostiles only; and the cone filter counts hostile Watches only while the existing stack tests still pass.
+
+**What landed, and where it differs from the spec above.**
+
+- Everything listed shipped: `adapted`, `scars` (`Taxonomy.Scar`: `AGORAPHOBIA`, `LUNG_DAMAGE`), `broken`, `is_founder`; `Taxonomy.is_long`; `CombatState.attackers_of`; `Movement.reachable`; the `hostile_to` filter on `Cones.cone_stack`; `RulesConstants.CALL_RADIUS` (2, working default). The four hand-written long-weapon lists are folded into `is_long`, with a test asserting cost, damage, deep-water firing and soft cover all agree with it.
+- **Bleeders are filtered everywhere**, as decided. `hostiles_of` returns standing units only; exposure is built on `attackers_of`, so the two cannot disagree.
+- **`reachable` takes an explicit `budget`, defaulting to `unit.ap`.** The spec said it would read `unit.ap` as it stands and ignore Pinned. The state machine gets in the way: `apply_pin` sets `ap = 0` on a ducked unit, so `reachable(unit.ap)` sees no reach for exactly the pinned units GDD §5.5 says must not have their AP zeroed for the "in the open" test. Left alone, "in the open" would be true for every pinned unit. Rather than change the pin model, `reachable` reads the budget it is given, and **1.6 must choose the budget for a pinned unit.** A test (`test_pinning_zeroes_ap_so_break_must_pass_a_budget`) pins the current behaviour so the gap stays visible. See §7.4.
+- **Occupancy is read from `state.units`, not `Cell.occupant`** (and §7.5 removed the code that wrote the latter). `Movement.is_free` treats any *standing* body of anyone as blocking, and a downed or dead one as clear (matching what `apply_damage` already does to the occupant grid). `path` now uses it too, so it no longer routes through standing bodies or ends on one. This was the existing 1.4 gap.
+- `duplicate_unit` copies all four new fields, and the round-trip is tested by enumerating every script variable on `Unit` rather than listing them, so a field added later that forgets to copy fails without anyone remembering to write its test.
+
+**Verified:** 101 tests pass (66 before; the last five are the §7.5 isolation tests). Nine mutations of the real code were each caught by a test: a field dropped from `duplicate_unit` (two), bleeders counted again, standing bodies ignored, downed bodies blocking, `reachable` unbounded, LMG classed short, the cone filter removed, `attackers_of` counting friends. `rules/` has no scene, `Node` or raycast use.
 
 ---
 
@@ -439,7 +451,30 @@ GDD §5.5 says a broken player unit loses the rest of the current phase and that
 
 **Raise to:** GDD §5.5 when it next opens. Low stakes, but undefined, and 1.6 cannot be written without picking something.
 
-### 7.4 — Two smaller ones
+### 7.4 — What AP does a pinned unit have for "in the open"? (blocks the 1.6 tests)
+
+GDD §5.5 says Pinned does not zero the AP for the test. The state machine zeroes it anyway (`apply_pin`), so the AP a pinned unit "holds" is not recoverable from `unit.ap`. 1.6 has to hand `Movement.reachable` a budget, and the choice is a real one:
+
+- **A full phase's AP (`RulesConstants.AP_POOL`).** "Could this unit reach cover if it were free to move." Simple, and it is the reading the GDD sentence exists to protect. **Recommended.**
+- **Keep the pre-pin AP** on the unit. Faithful to "the AP it holds", but adds a field that only this test reads, and the unspent AP of a ducked unit is not obviously meaningful.
+- **Zero, as the state has it.** Every pinned unit is then in the open whenever anything has a line on it, which makes "in the open" a synonym for "exposed" and is what the GDD sentence rules out.
+
+Whatever is chosen belongs in GDD §5.5's "Break, defined" as a working default.
+
+### 7.5 — `Cell.occupant` was shared between a state and its copies (fixed)
+
+`CombatState.duplicate_state()` shares the `BowlMap`, but `_set_occupant` and `move_occupant` wrote a live unit's id into `Cell.occupant` on that shared map. Two consequences:
+
+- Applying a command changed the state it was applied to, against the contract at the top of §1.5. `MoveCommand._apply` wrote to the shared map from a copy.
+- It destroyed authored data. `Cell.occupant` is the *authored* occupant of a roof or deck (UI §17: "occupants are data from the start… nothing spawns at the knock"). A unit walking onto a tile overwrote it, and walking off wrote `-1`, so any fight would have erased the people placed on roofs by data. The regression test reproduced exactly that: an authored `7` became `1`, then `-1`.
+
+**Fix.** A fight never writes to the map. `_set_occupant` and `move_occupant` are gone, along with their four call sites (`add_unit`, both branches of `apply_damage`, and `MoveCommand`). Where a live unit stands lives in `CombatState.units`, which every copy owns; `Cell.occupant` stays as authored data and is documented as such on `Cell` and in `duplicate_state`. Nothing in `rules/` read the old field, so nothing else changed.
+
+**Tests** (`tests/unit/test_state_isolation.gd`): adding a unit, applying a move and downing a unit each leave every cell of the map equal to a snapshot taken beforehand; an authored occupant survives a unit standing on and leaving its tile; sibling states diverge without affecting each other. The four that touch the map failed before the fix, and reintroducing either write makes them fail again.
+
+`test_validate_does_not_mutate` is how this went unnoticed: it only checked a unit's AP.
+
+### 7.6 — Two smaller ones
 
 - **Exposure wording (non-blocking).** UI §4.2 says exposure shows "the count and where from." Add a line saying a hidden hostile contributes to the count without being located, mirroring §4.4's apex rule. Documentation, not a code change.
 - **Levee maps (resolved for 1.1).** UI §3 allows two water surfaces on one map. `BowlMap` keeps one plane with `TODO(levee)` and a documenting test; promote to a region list before Act II levee maps.

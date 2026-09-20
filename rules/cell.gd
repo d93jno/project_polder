@@ -4,7 +4,10 @@ extends Resource
 
 @export var material: Taxonomy.CoverMaterial = Taxonomy.CoverMaterial.AIR
 @export var flags: int = 0
-## Unit id occupying this cell, or -1 for none.
+## The *authored* occupant of this cell (a roof deck's people, a nest), or -1 for none. Set when the
+## bowl is built and never written by a fight: where a live unit stands is `CombatState.units`.
+## The map is shared between a state and its copies, so a fight that wrote here would leak
+## backwards into states it promised not to touch (plan §7.5).
 @export var occupant: int = -1
 
 

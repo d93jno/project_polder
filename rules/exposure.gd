@@ -5,13 +5,10 @@ extends Object
 
 static func exposure(map: BowlMap, state: CombatState, unit: Unit) -> Exposure:
 	var result := Exposure.new()
-	var hostiles: Array = state.hostiles_of(unit)
+	var attackers := state.attackers_of(map, unit)
+	result.count = attackers.size()
 
-	for hostile in hostiles:
-		var los := Los.line_of_sight(map, hostile.cell, unit.cell, hostile.weapon)
-		if not los.clean:
-			continue
-		result.count += 1
+	for hostile in attackers:
 		## Locate the source only when this unit can see that hostile's body
 		## (mirrors cone apex: volume/count without giving away a hidden tile).
 		if Los.line_of_sight(map, unit.cell, hostile.cell, unit.weapon).clean:

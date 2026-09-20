@@ -117,3 +117,44 @@ func test_material_and_weapon_names_cover_enums() -> void:
 	for weapon in Taxonomy.WeaponClass.values():
 		var name: String = Taxonomy.weapon_class_name(weapon)
 		assert_ne(name, "", "weapon %s has a name" % weapon)
+
+
+func test_is_long_is_rifle_lmg_sniper() -> void:
+	## GDD §5.5: long = rifle, LMG, sniper. Short = pistol, shotgun, melee, speargun.
+	var expected := {
+		Taxonomy.WeaponClass.PISTOL: false,
+		Taxonomy.WeaponClass.MELEE: false,
+		Taxonomy.WeaponClass.SPEAR: false,
+		Taxonomy.WeaponClass.SHOTGUN: false,
+		Taxonomy.WeaponClass.RIFLE: true,
+		Taxonomy.WeaponClass.LMG: true,
+		Taxonomy.WeaponClass.SNIPER: true,
+	}
+	assert_eq(expected.size(), Taxonomy.weapon_class_count(), "every class is classified")
+	for weapon in expected:
+		assert_eq(
+			Taxonomy.is_long(weapon),
+			expected[weapon],
+			"%s long?" % Taxonomy.weapon_class_name(weapon)
+		)
+
+
+func test_long_has_one_definition_everywhere() -> void:
+	## The four hand-written copies of "rifle/LMG/sniper" were folded into is_long(). If any rule
+	## drifts back to its own list, one of these disagrees with it.
+	for weapon in Taxonomy.WeaponClass.values():
+		var long := Taxonomy.is_long(weapon)
+		var name := Taxonomy.weapon_class_name(weapon)
+		assert_eq(RulesConstants.shot_cost(weapon) == RulesConstants.SHOT_COST_LONG, long, "cost: %s" % name)
+		assert_eq(RulesConstants.shot_damage(weapon) == RulesConstants.HP_PIPS, long, "damage: %s" % name)
+		assert_eq(RulesConstants.can_fire_in_deep_water(weapon), not long, "deep water: %s" % name)
+		assert_eq(
+			Taxonomy.stops(Taxonomy.CoverMaterial.PLANK, weapon),
+			not long,
+			"plank: %s" % name
+		)
+		assert_eq(
+			Taxonomy.stops(Taxonomy.CoverMaterial.CRATE, weapon),
+			not long,
+			"crate: %s" % name
+		)

@@ -1,6 +1,12 @@
 class_name Unit
 extends RefCounted
-## One body on the bowl. Phase 1.5 adds pin / health / bleed-out.
+## One body on the bowl.
+
+enum PinState {
+	NONE,
+	DUCKED, ## Hit in own phase — rest of phase gone; clears at end of it
+	DUCKING_NEXT, ## Hit in opponent's phase — next phase spent ducked
+}
 
 var id: int = -1
 var cell: Vector3i = Vector3i.ZERO
@@ -10,6 +16,23 @@ var weapon: Taxonomy.WeaponClass = Taxonomy.WeaponClass.PISTOL
 var facing: Vector3i = Vector3i(1, 0, 0)
 ## Remaining AP this phase. *Working default* pool is RulesConstants.AP_POOL.
 var ap: int = RulesConstants.AP_POOL
+var hp: int = RulesConstants.HP_PIPS
+var pin: PinState = PinState.NONE
+var bleeding: bool = false
+var bleed_rounds_left: int = 0
+var bleed_stabilized: bool = false
+var dead: bool = false
+var has_trauma_kit: bool = false
+## Trained and kitted for the ground it stands on. Break clause 3 is about the *unadapted*:
+## Drifters, untrained AI, raw unclassed recruits (GDD §5.5). P0's cast is all unadapted.
+var adapted: bool = false
+## Bitfield over Taxonomy.Scar.
+var scars: int = 0
+## GDD §5.5. Set by break resolution; the broken *move* rule is applied on top of it.
+var broken: bool = false
+## The Call is a radius around the founder (GDD §8.4) and founder-down changes the mission
+## (GDD §8.5). Nothing else on the map says which body that is.
+var is_founder: bool = false
 
 
 func _init(
@@ -26,7 +49,42 @@ func _init(
 	weapon = p_weapon
 	facing = p_facing
 	ap = p_ap
+	hp = RulesConstants.HP_PIPS
+
+
+func duplicate_unit() -> Unit:
+	var u := Unit.new(id, cell, faction, weapon, facing, ap)
+	u.hp = hp
+	u.pin = pin
+	u.bleeding = bleeding
+	u.bleed_rounds_left = bleed_rounds_left
+	u.bleed_stabilized = bleed_stabilized
+	u.dead = dead
+	u.has_trauma_kit = has_trauma_kit
+	u.adapted = adapted
+	u.scars = scars
+	u.broken = broken
+	u.is_founder = is_founder
+	return u
 
 
 func duplicate_at(new_cell: Vector3i) -> Unit:
-	return Unit.new(id, new_cell, faction, weapon, facing, ap)
+	var u := duplicate_unit()
+	u.cell = new_cell
+	return u
+
+
+func has_scar(scar: int) -> bool:
+	return (scars & scar) != 0
+
+
+func give_scar(scar: int) -> void:
+	scars |= scar
+
+
+func is_active() -> bool:
+	return not dead and not bleeding
+
+
+func is_pinned() -> bool:
+	return pin != PinState.NONE

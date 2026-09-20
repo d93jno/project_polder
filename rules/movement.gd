@@ -28,11 +28,49 @@ static func is_walkable(map: BowlMap, cell: Vector3i) -> bool:
 			return true
 
 
-static func path(map: BowlMap, state: CombatState, unit: Unit, to: Vector3i) -> MovePath:
-	var result := MovePath.new()
-	if not is_walkable(map, unit.cell) or not is_walkable(map, to):
-		return result
+## Can `mover` stand here? Walkable material and no *standing* body of anyone else on it.
+## Occupancy comes from `state.units`, not `Cell.occupant`: the map is shared between a state and
+## its copies, so the per-cell field cannot be the truth for one state (plan §1.5.1). Downed
+## bodies leave the tile clear, as `apply_damage` already does (GDD §5.9 working default).
+static func is_free(map: BowlMap, state: CombatState, cell: Vector3i, mover: Unit) -> bool:
+	if not is_walkable(map, cell):
+		return false
+	for other in state.units.values():
+		if other.id != mover.id and other.is_active() and other.cell == cell:
+			return false
+	return true
 
+
+## Every tile `unit` can stand on with `budget` AP, its own tile included (staying put is a move
+## of cost 0). The same flood `path` runs, bounded instead of aimed. `budget` defaults to the AP
+## the unit holds; it is a parameter because a Pinned unit's AP is zeroed by `apply_pin`, while
+## GDD §5.5 says Pinned must not zero the AP for the "in the open" test — the caller decides
+## what a pinned unit's budget is (plan §1.6).
+static func reachable(
+	map: BowlMap,
+	state: CombatState,
+	unit: Unit,
+	budget: int = -1,
+) -> Array[Vector3i]:
+	var out: Array[Vector3i] = []
+	if not is_walkable(map, unit.cell):
+		return out
+	var limit: int = unit.ap if budget < 0 else budget
+	var flood := _flood(map, state, unit, limit)
+	for cell in (flood["cost"] as Dictionary).keys():
+		out.append(cell)
+	return out
+
+
+## One traversal for `path` and `reachable`, so they cannot disagree. `max_cost < 0` is unbounded;
+## `stop_at` (when given) ends the search as soon as that tile is settled.
+static func _flood(
+	map: BowlMap,
+	state: CombatState,
+	unit: Unit,
+	max_cost: int = -1,
+	stop_at: Variant = null,
+) -> Dictionary:
 	var came_from: Dictionary = {} ## Vector3i -> Vector3i
 	var cost_so_far: Dictionary = {} ## Vector3i -> int
 	var frontier: Array[Vector3i] = [unit.cell]
@@ -40,18 +78,31 @@ static func path(map: BowlMap, state: CombatState, unit: Unit, to: Vector3i) -> 
 
 	while not frontier.is_empty():
 		var current: Vector3i = _pop_min(frontier, cost_so_far)
-		if current == to:
+		if stop_at != null and current == stop_at:
 			break
 		for next_cell in _neighbors(current):
-			if not is_walkable(map, next_cell):
+			if not is_free(map, state, next_cell, unit):
 				continue
 			var step := move_cost(map, next_cell, unit, current)
 			var new_cost: int = (cost_so_far[current] as int) + step
+			if max_cost >= 0 and new_cost > max_cost:
+				continue
 			if not cost_so_far.has(next_cell) or new_cost < (cost_so_far[next_cell] as int):
 				cost_so_far[next_cell] = new_cost
 				came_from[next_cell] = current
 				if next_cell not in frontier:
 					frontier.append(next_cell)
+	return {"from": came_from, "cost": cost_so_far}
+
+
+static func path(map: BowlMap, state: CombatState, unit: Unit, to: Vector3i) -> MovePath:
+	var result := MovePath.new()
+	if not is_walkable(map, unit.cell) or not is_free(map, state, to, unit):
+		return result
+
+	var flood := _flood(map, state, unit, -1, to)
+	var came_from: Dictionary = flood["from"]
+	var cost_so_far: Dictionary = flood["cost"]
 
 	if not cost_so_far.has(to):
 		return result

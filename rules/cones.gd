@@ -54,7 +54,15 @@ static func apex_known(
 	return false
 
 
-static func cone_stack(map: BowlMap, state: CombatState, cell: Vector3i) -> ConeStack:
+## Live Watches covering `cell`. With `hostile_to` set (a Taxonomy.Faction), only Watches held by
+## factions hostile to it count — break clause 3 needs hostile long cones only (plan §1.5.1).
+## Left unset it counts every live Watch, which is the UI §4.4 overlay read.
+static func cone_stack(
+	map: BowlMap,
+	state: CombatState,
+	cell: Vector3i,
+	hostile_to: Variant = null,
+) -> ConeStack:
 	var stack := ConeStack.new()
 	for watch in state.watches:
 		var live: LiveWatch = watch
@@ -62,6 +70,8 @@ static func cone_stack(map: BowlMap, state: CombatState, cell: Vector3i) -> Cone
 			continue
 		var watcher: Unit = state.get_unit(live.unit_id)
 		if watcher == null:
+			continue
+		if hostile_to != null and not CombatState.is_hostile(hostile_to, watcher.faction):
 			continue
 		var volume := cone(map, watcher.cell, live.facing, watcher.weapon)
 		if cell in volume:

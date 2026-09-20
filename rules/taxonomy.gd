@@ -51,6 +51,12 @@ class CellFlags:
 	const INTERIOR := 1 << 3
 
 
+## Bit flags for Unit.scars. Permanent, known penalties (GDD §8.5) — never a chance roll.
+class Scar:
+	const AGORAPHOBIA := 1 << 0 ## Breaks when a long cone sees them in the open (GDD §5.5, §8.5)
+	const LUNG_DAMAGE := 1 << 1 ## Reduced AP in water. Data only until movement reads it
+
+
 static func material_count() -> int:
 	return CoverMaterial.values().size()
 
@@ -67,6 +73,20 @@ static func weapon_class_name(weapon: WeaponClass) -> String:
 	return WeaponClass.keys()[weapon]
 
 
+## Long weapon classes (GDD §5.5): rifle, LMG, sniper. Short: pistol, shotgun, melee, speargun.
+## The one definition — damage, cost, deep-water firing, soft cover and break all ask this,
+## so "long" cannot mean two things (plan §1.5.1).
+static func is_long(weapon: WeaponClass) -> bool:
+	match weapon:
+		WeaponClass.RIFLE, WeaponClass.LMG, WeaponClass.SNIPER:
+			return true
+		WeaponClass.PISTOL, WeaponClass.MELEE, WeaponClass.SPEAR, WeaponClass.SHOTGUN:
+			return false
+		_:
+			push_error("Taxonomy.is_long: unhandled weapon %s" % weapon)
+			return false
+
+
 ## Whether this material stops this weapon class (blocks the line).
 ## Soft cover (plank/crate) stops short/CQB and not rifles (GDD §5.4).
 ## Smoke and deep water block every class. Chest-deep water does not.
@@ -77,14 +97,7 @@ static func stops(material: CoverMaterial, weapon: WeaponClass) -> bool:
 		CoverMaterial.SMOKE, CoverMaterial.WATER_DEEP, CoverMaterial.GROUND:
 			return true
 		CoverMaterial.PLANK, CoverMaterial.CRATE:
-			match weapon:
-				WeaponClass.PISTOL, WeaponClass.MELEE, WeaponClass.SPEAR, WeaponClass.SHOTGUN:
-					return true
-				WeaponClass.RIFLE, WeaponClass.LMG, WeaponClass.SNIPER:
-					return false
-				_:
-					push_error("Taxonomy.stops: unhandled weapon %s" % weapon)
-					return true
+			return not is_long(weapon) ## Soft cover stops short weapons, not long ones
 		CoverMaterial.MASONRY, CoverMaterial.METAL, CoverMaterial.DEPLOYED_BARRIER:
 			return true
 		_:

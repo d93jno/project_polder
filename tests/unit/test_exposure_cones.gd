@@ -131,3 +131,133 @@ func test_spent_watch_excluded_from_stack() -> void:
 	state.add_watch(LiveWatch.new(1, Vector3i(1, 0, 0), true))
 	var stack := Cones.cone_stack(map, state, Vector3i(2, 0, 0))
 	assert_eq(stack.count, 0)
+
+
+## --- Bleeders are filtered everywhere (plan §1.5.1) ---
+
+
+func _duel() -> Array:
+	## Player pistol at the origin, Drifter rifle 4 tiles east, open air between.
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var enemy := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.RIFLE)
+	return [player, enemy, _state_with([player, enemy])]
+
+
+func test_downed_hostile_is_not_a_gun_on_you() -> void:
+	var map := BowlMap.new()
+	var duel := _duel()
+	var player: Unit = duel[0]
+	var enemy: Unit = duel[1]
+	var state: CombatState = duel[2]
+	assert_eq(ExposureQuery.exposure(map, state, player).count, 1, "standing rifleman is a gun")
+
+	state.apply_damage(enemy, RulesConstants.HP_PIPS) ## rifle-class drop: Bleeding Out
+	assert_true(enemy.bleeding)
+	var exp := ExposureQuery.exposure(map, state, player)
+	assert_eq(exp.count, 0, "a bleeder cannot fire, so exposure falls by one")
+	assert_eq(exp.sources.size(), 0)
+	assert_ne(exp.state, Exposure.State.EXPOSED)
+	assert_eq(state.attackers_of(map, player).size(), 0)
+	assert_false(enemy in state.hostiles_of(player), "hostiles_of returns standing units only")
+
+
+func test_stabilising_does_not_bring_the_gun_back() -> void:
+	## A stabilised unit is still down (GDD §5.5).
+	var map := BowlMap.new()
+	var duel := _duel()
+	var player: Unit = duel[0]
+	var enemy: Unit = duel[1]
+	var state: CombatState = duel[2]
+	state.apply_damage(enemy, RulesConstants.HP_PIPS)
+	enemy.bleed_stabilized = true
+	assert_eq(ExposureQuery.exposure(map, state, player).count, 0)
+
+
+func test_dead_hostile_is_not_a_gun_either() -> void:
+	var map := BowlMap.new()
+	var duel := _duel()
+	var player: Unit = duel[0]
+	var state: CombatState = duel[2]
+	(duel[1] as Unit).dead = true
+	assert_eq(ExposureQuery.exposure(map, state, player).count, 0)
+
+
+func test_a_bleeder_does_not_hide_the_standing_gun_beside_it() -> void:
+	var map := BowlMap.new()
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var downed := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.RIFLE)
+	var standing := Unit.new(3, Vector3i(0, 4, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.PISTOL)
+	var state := _state_with([player, downed, standing])
+	state.apply_damage(downed, RulesConstants.HP_PIPS)
+	var attackers := state.attackers_of(map, player)
+	assert_eq(attackers.size(), 1)
+	assert_eq(attackers[0].id, 3)
+	assert_eq(ExposureQuery.exposure(map, state, player).count, 1)
+
+
+## --- attackers_of returns the bodies ---
+
+
+func test_attackers_are_the_hostiles_with_a_clean_line_only() -> void:
+	var map := BowlMap.new()
+	map.set_cell(Vector3i(0, 6, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var open := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.PISTOL)
+	var walled := Unit.new(3, Vector3i(0, 8, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.PISTOL)
+	var friend := Unit.new(4, Vector3i(0, 2, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.RIFLE)
+	var state := _state_with([player, open, walled, friend])
+	var ids: Array = []
+	for a in state.attackers_of(map, player):
+		ids.append(a.id)
+	assert_eq(ids, [2], "masonry blocks one hostile; a friend is never an attacker")
+
+
+func test_attackers_count_equals_exposure_count() -> void:
+	var map := BowlMap.new()
+	map.set_cell(Vector3i(2, 0, 0), Cell.new(Taxonomy.CoverMaterial.PLANK))
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var rifle := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.VANGUARD, Taxonomy.WeaponClass.RIFLE)
+	var pistol := Unit.new(3, Vector3i(0, 3, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.PISTOL)
+	var state := _state_with([player, rifle, pistol])
+	assert_eq(state.attackers_of(map, player).size(), ExposureQuery.exposure(map, state, player).count)
+	assert_eq(state.attackers_of(map, player).size(), 2, "rifle punches the plank; pistol has open air")
+
+
+## --- cone_stack faction filter ---
+
+
+func _crossfire() -> Array:
+	## Drifter rifle Watch and player rifle Watch, both covering the same target tile.
+	var map := BowlMap.new()
+	var hostile := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.RIFLE, Vector3i(1, 0, 0))
+	var friendly := Unit.new(2, Vector3i(0, 2, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL, Vector3i(1, 0, 0))
+	var state := _state_with([hostile, friendly])
+	state.add_watch(LiveWatch.new(1, Vector3i(1, 0, 0)))
+	state.add_watch(LiveWatch.new(2, Vector3i(1, 0, 0)))
+	return [map, state, Vector3i(3, 1, 0)]
+
+
+func test_cone_stack_unfiltered_counts_every_live_watch() -> void:
+	var c := _crossfire()
+	var stack := Cones.cone_stack(c[0], c[1], c[2])
+	assert_eq(stack.count, 2, "the overlay read (UI §4.4) still shows every cone")
+
+
+func test_cone_stack_filtered_counts_only_watches_hostile_to_that_faction() -> void:
+	var c := _crossfire()
+	var against_player := Cones.cone_stack(c[0], c[1], c[2], Taxonomy.Faction.PLAYER)
+	assert_eq(against_player.count, 1, "only the Drifter's Watch is hostile to the player")
+	assert_eq(against_player.classes, [Taxonomy.WeaponClass.RIFLE])
+
+	var against_drifter := Cones.cone_stack(c[0], c[1], c[2], Taxonomy.Faction.DRIFTER)
+	assert_eq(against_drifter.count, 1, "and only the player's is hostile to a Drifter")
+	assert_eq(against_drifter.classes, [Taxonomy.WeaponClass.PISTOL])
+
+	var against_neutral := Cones.cone_stack(c[0], c[1], c[2], Taxonomy.Faction.NEUTRAL)
+	assert_eq(against_neutral.count, 0, "nobody is hostile to a neutral")
+
+
+func test_cone_stack_filter_still_skips_spent_watches() -> void:
+	var c := _crossfire()
+	(c[1] as CombatState).spend_watch(1)
+	assert_eq(Cones.cone_stack(c[0], c[1], c[2], Taxonomy.Faction.PLAYER).count, 0)
