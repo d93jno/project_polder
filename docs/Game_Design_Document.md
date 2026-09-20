@@ -1,6 +1,6 @@
 # Game Design Document: "Project Polder" (Working Title)
 
-**Version:** 1.10 — break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). (1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned; bleed-out is 3 rounds (working default). 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
+**Version:** 1.14 — fog is decided at fight scale: sight is its own line and low cover does not block it; knowledge is held per body and shared by earshot; a wiped squad's intel is sealed until another squad finds it; the MEDEVAC route is priced over known ground with a floor window; stacked Watches resolve oldest first. (1.13: Watch reacts to cone entry and committed in-cone actions, resolving every eligible Watch in a fixed previewed order; a founderless squad wipe has no campaign-wide effect beyond losing that squad. 1.12: the hidden causeway threshold advances through readable highland-pressure bands: watching, surveying, then building. 1.11: stabilization starts a deterministic, knowable MEDEVAC window; missing it kills the casualty and ends the campaign for the founder. 1.10: break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). 1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned. 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
 
 ## 0. Document Scope
 This document is the base foundation for the game's mechanics: its systems, rules, campaign structure, and the design tone those rules express. When a later document disagrees with a mechanic described here, this one wins until it is revised.
@@ -122,6 +122,12 @@ The Citadel is not required to survive the night. It is required to *think like 
 
 Leaving live vision freezes the tile. It does not wipe it.
 
+**Who knows.** Knowledge is held per body and shared by earshot: units within earshot of each other (*working default*: 3 tiles, walls do not stop sound) share what they have seen. Radios later widen that to the whole squad. The player sees the squad's whole picture; what one unit knows decides that unit's own reads, such as which enemy positions its exposure names. Fog is the player's alone.
+
+**Memory.** Known-quiet carries across visits to a bowl and ages by visits since it was last seen, never by a number the player is shown. It is part of the one save and is written when a fight ends, never during one: a fight abandoned partway keeps nothing, so a bowl cannot be scouted by restarting.
+
+**A lost squad's intel.** A wipe does not erase what the squad saw, and does not hand it over. It is sealed at the tile where the last of them fell. A later squad whose sight reaches that tile recovers it, already aged by the visits since.
+
 Water steps may remain visible on known bowls from the dome once instruments work — geography, not faces. Purifiers stay hidden until someone looks.
 
 ### Time
@@ -194,10 +200,17 @@ Earlier versions used *phase*, *act*, and *chapter* loosely. From here on, **pha
 **Triggers.**
 *   **Opening → Act I:** the dome is found by walking. It is not scripted. If the player wanders away from the ridge, the Citadel stays a rumor.
 *   **Act I → Act II:** the first terrace ring reaches Dry and the player holds the dome, even if its gauges are still waking.
-*   **Act II → Act III:** either a player-made land bridge points toward the ridge, or the highland notices smoke: a hidden threshold of population plus at least one field. Act III does not require the player to build a bridge (see Turtling).
+*   **Act II → Act III:** either a player-made land bridge points toward the ridge, or the highland's visible pressure reaches causeway construction. The hidden threshold is population plus at least one field, but it advances through readable bands before building begins. Act III does not require the player to build a bridge (see Turtling).
 *   **Phase 3 (the Compound)** unlocks when the inner ring, meaning the terrace plus the first floor ring around the ridge, is Dry. The whole basin does not need to be dry. A wet moat chosen at the edge does not lock out garages.
 
-**Turtling is allowed.** The Vanguard are masters of dry. Without a player bridge, no heavy column crosses the sump; they do not swim an army. A player who stays small on the terrace gets a late Act III or none: a small town, no highway, a legitimate way to play. A player whose town grows loud (the hidden smoke threshold) without building a bridge sees the Vanguard start a **causeway** from the rim. It is visible while under construction; that is the route, told in play. The causeway is a target: raids can slow it, and a redirection can drown a stretch of it, with the usual hangover and the Bitter rule in Section 6.6. First contact on a causeway follows Section 6.5.
+**Turtling is allowed.** The Vanguard are masters of dry. Without a player bridge, no heavy column crosses the sump; they do not swim an army. A player who stays small on the terrace gets a late Act III or none: a small town, no highway, a legitimate way to play.
+
+**Highland pressure is not a meter.** The exact population-and-field threshold stays hidden, but it is never silent. As a town grows loud without building a bridge, the player sees the highland move through three map facts:
+*   **Watching:** distant observation, reports, or highland lights say the ridge has been noticed.
+*   **Surveying:** survey marks and staged material identify where a causeway could run.
+*   **Building:** the Vanguard start the **causeway** from the rim. Its route and progress are visible.
+
+The causeway is a target: raids can slow it, and a redirection can drown a stretch of it, with the usual hangover and the Bitter rule in Section 6.6. A loud town cannot make itself unseen again by waiting. First contact on a causeway follows Section 6.5.
 
 **Map scale.** One basin: ridge, terrace, floor, sump, and the far rim. "Previously disconnected zones" are bowls behind levees inside that basin, not a second country. Campaign length and sector count are prototype work.
 
@@ -304,14 +317,14 @@ Open: whether late population also costs (MEDEVAC load, mouths if a field dies) 
 Keep it simple. Same rules in flood, mud, and dry. The floor changes. The game does not.
 
 ### 5.1 The fireteam
-*   **Up to four bodies.** The founder may be one of them. The town grows the bench, not the fireteam. A thin fireteam (fewer than four) can still deploy; two bad wipes can shrink you. Roof meetings are the recruit path, not a guarantee. The only softlock is a founder who is alone and cannot walk, which is rare and earned.
+*   **Up to four bodies.** The founder may be one of them. The town grows the bench, not the fireteam. A thin fireteam (fewer than four) can still deploy; two bad wipes can shrink you. Roof meetings are the recruit path, not a guarantee. A squad wipe without the founder ends that deployment and loses those people, but has no campaign-wide effect beyond the lost squad. A squad is wiped when none of its members can act and none has extracted (*working default*). What it had seen is not lost with it: it is sealed where the last of them fell, and a later squad can recover it (§3.1, Fog). The only softlock is a founder who is alone and cannot walk, which is rare and earned.
 *   Phase 0 is the same fireteam on the boat: unclassed basin folk. Everyone in the basin can swim; swimming is a habit, not a class. Classes arrive with survival, training and kit (Section 8).
 *   **One fireteam in the field.** One tactical map per day. The boat-camp grammar never retires. Other jobs are postings, ally eyes, or tomorrow. The empty-chair tax makes the one team slower or thinner to send; it never means two streets run before dusk. Table days breathe. Squad days are the street.
 
 ### 5.2 Phases (XCOM-style)
 All of yours, then all of theirs. No interleaved initiative. Easy to teach. Same structure in every water step.
 
-**Watch (reaction fire).** Phases have teeth. In your phase, a unit can spend AP to watch a cone. In their phase, the first enemy that moves into that cone or acts inside it takes one shot, resolved by the normal rules (deterministic, Section 5.4). One watch, one shot. A Watch cancels if its unit is Pinned before it fires (Section 5.4); the cone is spent, and the preview says so. The enemy uses the same rule during your phase; Vanguard long cones are why open streets are deadly. Without watch, dry streets would be decided by whoever peeked first.
+**Watch (reaction fire).** Phases have teeth. In your phase, a unit can spend AP to watch a cone. A Live Watch reacts once when a hostile crosses from outside to inside its cone, or commits a qualifying action while already inside it. Qualifying actions are shooting, interacting (including a winch), throwing, deploying utility, First Gauge, and Echo Call. Moving wholly inside a cone, turning, setting Watch, and ending a phase do not trigger it. Every eligible unspent Watch resolves one shot in a fixed, previewed order, oldest Watch first (the order they were set); later reactions stop when the target is down or can no longer take the declared action. One watch, one shot. A Watch cancels if its unit is Pinned before it fires (Section 5.4); the cone is spent, and the preview says so. The enemy uses the same rule during your phase; Vanguard long cones are why open streets are deadly. Without watch, dry streets would be decided by whoever peeked first.
 
 ### 5.3 One AP coin
 Each person gets a pool each player-phase. Move, shoot, interact, swim, deploy cover, smoke, winch, First Gauge, Echo Call — all spend that pool. Exact digits are prototype work.
@@ -328,6 +341,7 @@ No RNG half-cover. No 35% dodge.
 *   **If the line is clean and the shot is legal, it always deals damage.** Peeking an open dry street is a decision, not a dice roll.
 *   **Material is the only 'cover.'** A wood plank or crate may stop a pistol. A rifle or sniper punch through. Deployed Pioneer barriers and smoke *break or block the line*. They do not add a miss chance.
 *   **Smoke and deep water** hide a body (no line). Chest-deep Falling water does not.
+*   **Sight is its own line.** Hard cover (masonry, metal, ground), smoke and deep water block *sight*. A plank, a crate or a deployed Pioneer barrier stops shots but you can see over it, so it does not block sight. Anything you can shoot you can see, so fog never hides a legal target from the player.
 *   **Pinned** is a state: a unit hit by a shot that does not drop it loses what it is doing. It is not a dodge roll. Suppression means Pinned. Any non-drop hit pins; there is no suppression weapon class. Pinned is required, because the break rule (5.5) uses it. *Working default:*
     *   Hit in its own phase (reaction fire): it stops. The rest of that phase is gone. Pinned clears at the end of that phase.
     *   Hit in the opponent's phase: a live Watch cancels at once and shows spent. The unit starts its next phase Pinned, spends it ducked, and Pinned clears at the end of it.
@@ -362,7 +376,7 @@ A trained Muckraker does not dump the street because it is dry. The player versi
 *   **Pinned and broken: broken wins.** A unit that is both takes its broken move instead of ducking. Otherwise a pinned break could never reach the off-ramp (5.11).
 *   **The Call:** allies inside its radius cannot break.
 
-**Everyone bleeds out.** Bleeding Out lasts 3 rounds (*working default*); a round is one player phase plus one enemy phase. Enemies at 0 HP bleed on the same clock as the roster. A trauma kit stops the clock; from then on, extraction timing follows 8.5. Executing the downed means attacking a bleeding unit. A prisoner is a broken Vanguard unit the player chooses to take instead of shoot, once research into the Vanguard has begun. The founder bleeds out like anyone else; a failed founder extract ends the save.
+**Everyone bleeds out.** Bleeding Out lasts 3 rounds (*working default*); a round is one player phase plus one enemy phase. Enemies at 0 HP bleed on the same clock as the roster. A Trauma Kit stops the bleed clock and changes a roster unit to **Awaiting MEDEVAC**. It starts a deterministic evacuation window whose length is known from the available route to the boat or marked-roof chain; established supply lines and waystations improve that window. The unit must reach a valid extraction point before it expires. Executing the downed means attacking a bleeding unit. A prisoner is a broken Vanguard unit the player chooses to take instead of shoot, once research into the Vanguard has begun. The founder bleeds out like anyone else; a failed founder extract ends the save.
 
 ### 5.6 Objectives, not wipes
 Killing is what happens when the thing is contested. Success verbs:
@@ -654,7 +668,7 @@ The player is a named, customizable survivor who is a permanent member of the wa
 
 **Customization.** Name, face, and starting kit type. No secret highland loadout.
 
-**Saving.** Ironman is the default: one save that the game writes. "The founder is the save" only bites if the save cannot be reloaded around a death. Difficulty options can come later.
+**Saving.** Ironman is the default: one save that the game writes. "The founder is the save" only bites if the save cannot be reloaded around a death. What the squad has learned about a bowl (§3.1, Fog) is part of that save and is written when a fight ends, never during one, so a fight cannot be restarted to keep what it scouted. Difficulty options can come later.
 
 **Death ends the campaign.**
 The founder uses the same combat rules as everyone else: true LOS, low HP, no plot armor. At 0 HP they enter Bleeding Out, same as the roster. A teammate can stabilize them. MEDEVAC must get them off the map. If they are not extracted in time, the save ends. The Citadel still has engineers. It does not have the person who can ask a dead turbine for one more cycle.
@@ -700,13 +714,13 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 
 ### 8.5 Survival, Trauma, & Extraction
 *   **Lethality:** Health pools are low. A clean rifle or sniper shot without physical cover drops a unit to Bleeding Out. No rolls.
-*   **Trauma System:** If a character is reduced to 0 HP, they don't instantly die, but enter a "Bleeding Out" state (clock in 5.5). If a teammate can apply a Trauma Kit and extract them, they survive, but gain a permanent physical or psychological scar (e.g., "Lung Damage: reduced AP in water," or "Agoraphobia: breaks when a long cone sees them in the open"). Scars are known penalties, never a chance roll.
+*   **Trauma System:** If a character is reduced to 0 HP, they don't instantly die, but enter a "Bleeding Out" state (clock in 5.5). A Trauma Kit changes them to Awaiting MEDEVAC and starts the known, deterministic evacuation window. If the squad gets them to a valid extraction point before it expires, they survive but gain a permanent physical or psychological scar (e.g., "Lung Damage: reduced AP in water," or "Agoraphobia: breaks when a long cone sees them in the open"). Scars are known penalties, never a chance roll.
 *   **Founder exception:** Same bleed-out rules. Failed extract is not a scar; it is the end of the campaign. A founder who is extracted can take a body scar, but never Agoraphobia or anything else that forbids standing in a cone for The Call. Literacy never scars off.
 *   **Founder recovery:** In the med-bay the founder cannot deploy for some days but can still use every table verb (the empty chair inverted). Before the dome, the founder recovers on the boat or a marked roof, slower than a med-bay. The camp can go out without them; First Gauge stays home. The campaign does not freeze.
 *   **Medical Evacuation (MEDEVAC):** Simply stabilizing a bleeding out character isn't enough; they need definitive care. This is where logistics comes in. Players can request a MEDEVAC to pull injured operators from the field.
-    *   The speed and success of the MEDEVAC depend on the player's established logistics network (Section 4.2). If a team is operating deep in poorly supplied territory, extraction takes longer. A sector that has crept wetter makes the boat late.
+    *   Before committing the Trauma Kit, the player can see the valid extraction route and the evacuation window it will create. A poor or wetter route gives less time; a boat route, marked-roof chain, and staffed waystations give more. It is never a hidden roll. The route is priced over ground the squad knows (§3.1, Fog): a route through unseen terrain is neither shown nor counted. If no known route reaches an extraction point, the Trauma Kit still stops the bleed clock and starts a short fixed window (*working default*: 1 round), and the preview says so.
     *   While awaiting extraction, the stabilized character is vulnerable and may require a dedicated squad member to defend them, reducing combat effectiveness.
-    *   If extraction is delayed too long, a roster character's condition worsens (worse scar or permadeath). If the founder’s extraction is delayed too long, the campaign ends.
+    *   If the evacuation window expires, a roster character dies. If it expires for the founder, the campaign ends. There is no second deterioration roll or a worse-scar fallback.
     *   Founder-down turns the mission into “get them to the boat.” That is the continue prompt. It is not an escort-the-VIP script from turn one.
 *   **The Meat Grinder:** Players must maintain a deep roster. Sending a team of top-tier Frogmen into a newly dried zone against the Vanguard is a recipe for a total squad wipe. Sending the founder into that same street without a reason is how saves die. Sending only Overwatch onto a street you just redirected is how the hangover gets personal.
 
@@ -771,8 +785,8 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   A win is working only if all three hold: your population is at least two-thirds of its peak and harm to other basin folk stayed under the line (harm counts only where an off-ramp was open); at least one warm band and one Act III dislodge exist; and fields plus camps are at least posts plus forward camps on the inner tiles that were Dry when Act III began. Miss any and it is hollow.
 *   Bitter means a redirection other than the first-contact sluice left a hanging wet tile. Hollow outranks bitter when both apply.
 *   Phases describe the base; acts describe the campaign; "chapter" is retired. Opening/Phase 0 boat → Act I penthouse → Act II descent → Act III compound and Vanguard.
-*   The dome is found by walking. Act I → II when the first terrace ring is Dry and the dome is held. Act III on a player land bridge toward the ridge, or on a hidden smoke threshold (population plus a field).
-*   Turtling is allowed. Without a player bridge, a loud enough town makes the Vanguard build a visible causeway, which can be raided or drowned.
+*   The dome is found by walking. Act I → II when the first terrace ring is Dry and the dome is held. Act III on a player land bridge toward the ridge, or when hidden population-plus-field pressure reaches visible causeway construction.
+*   Turtling is allowed. Without a player bridge, a loud town advances through visible highland pressure — watching, surveying, then building a causeway — which can be raided or drowned.
 *   One basin. "Disconnected zones" are levee-bound bowls inside it.
 *   A mission, a deployment and a fight are the same: one day's tactical map. The player always plays it, founder present or not. A table day is a handful of assignments plus one dispatch or none.
 *   Fuel comes from salvaged caches and a still (scrap plus time). Consumables are crafted from scrap. Still four currencies.
@@ -823,6 +837,26 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Phases begin with the player's side. Live means a standing squad body can see it. A knock is contact only if a hostile is in the shelter.
 *   Friends are the same faction or any two non-player factions. The founder stands inside their own Call.
 
+**Locked in 1.11:**
+*   A Trauma Kit stops the bleed clock and begins a deterministic, known MEDEVAC window. Its duration follows the available route to the boat or marked-roof chain; logistics and staffed waystations improve it.
+*   Reaching valid extraction before that window expires saves the casualty with a scar. Expiry kills a roster unit and ends the campaign for the founder. There is no random deterioration or severity ladder.
+
+**Locked in 1.12:**
+*   The hidden population-and-field threshold for a causeway is never silent: highland pressure advances through readable watching, surveying, and building bands. The player sees no threat meter or exact threshold.
+*   Once the causeway is building, its route and progress are map facts. Raids can slow it and redirection can drown a stretch; a loud town cannot make itself unseen again by waiting.
+
+**Locked in 1.13:**
+*   A Live Watch reacts once to a cone entry or a committed in-cone qualifying action: shoot, interact, throw, deploy utility, First Gauge, or Echo Call. Movement wholly inside the cone and non-committed actions do not trigger it.
+*   Every eligible unspent Watch resolves in a fixed previewed order, stopping when the target is down or cannot take the declared action. A founderless squad wipe has no campaign-wide effect beyond losing the deployed squad.
+
+**Locked in 1.14:**
+*   Sight is its own line. Hard cover, smoke and deep water block it; a plank, a crate or a deployed barrier stops shots but not sight. Anything you can shoot you can see.
+*   Knowledge is held per body and shared by earshot (*working default* 3 tiles). The player sees the squad's picture. Fog is the player's alone.
+*   Known-quiet carries across visits and ages by visits since seen, never by a shown number. It is written with the save when a fight ends, never during one.
+*   A wiped squad's intel is sealed at the tile where its last member fell until a later squad's sight reaches it. A squad is wiped when none can act and none has extracted (*working default*).
+*   The MEDEVAC route is priced over ground the squad knows. With no known route, a Trauma Kit still starts a fixed floor window (*working default* 1 round).
+*   Stacked Watches resolve oldest set first.
+
 ## 10. Still open
 *   Final name of the unique trait.
 *   Exact neighbor count / "majority of the ring" for a step down.
@@ -831,7 +865,7 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Which table verbs are available in each act (tuning). The empty-chair tax hits research, radio, and the readiness of the one fireteam when the founder is out.
 *   Late population: upside only plus a target, or also a cost if fields die.
 *   Incoming camps: automatically yours, or sometimes still half Drifter.
-*   Ending thresholds (tuning): how many quiet days mean the push has broken, where the harm line sits, and the hidden smoke threshold that starts a causeway.
+*   Ending thresholds (tuning): how many quiet days mean the push has broken, where the harm line sits, and the hidden thresholds that advance highland pressure from watching to surveying to building.
 *   Starting boat-camp size (working default 8–12), founder recovery days, and how fast the rim trickle runs dry.
 *   ~~How visible First Gauge is on the tactical map.~~ Settled in UI/UX 0.4: a map change the player can see, plus the squad reacting. The mechanic stays locked here.
 *   Contact and the knock (§3.1): working default. Validate in one bowl, then lock.
@@ -842,9 +876,12 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Break thresholds (§5.5): the 3-tile friend radius, which classes are long, and whether Agoraphobia should keep the Dry condition. Working defaults; validate in one bowl, then lock.
 *   Whether a broken enemy is still a gun. It is meant to flee or drop the gun (§5.5), but it is standing and has a line, so it currently counts for exposure and for a unit's "outnumbered".
 *   The last unit out. Clause 1 applies to the last standing member of a squad that left a wounded comrade behind, so once the others have extracted, the last one breaks on the boat. Harmless in a fight, odd on the page.
-*   Getting the wounded off the map is MEDEVAC (§8.5), a table-scale matter. A fight ends with the stabilised unit alive and waiting; nothing in it moves them.
 *   What a taken boat costs (§3.1): a walk home, a fuel loss, a leg on foot. Tuning.
 *   How tightly a redirection previews in a half-fixed ring (§6.4) — where the range stops being useful and starts being noise.
+*   Tactical comms (§3.1): the earshot radius (*working default* 3 tiles), whether walls should dampen it, and radios as equipment. Only earshot is designed.
+*   Map facts against fog (§3.2, 1.12): whether survey marks, staged material, a building causeway and FOBs show through Unknown, only on Known-quiet ground, or wherever the dome reaches, and whether a fact's progress ages. Leaning: current where the dome reaches a known bowl, last-seen elsewhere.
+*   Recovering a lost squad's intel (§3.1): working default is that a later squad's *sight* reaching the tile where the last member fell is enough. The stricter option is that a body must be reached on foot.
+*   The floor MEDEVAC window (§8.5): working default 1 round when no known route exists. Tuning.
 
 **Closed in earlier versions:** the late leak cap is soft; dome instruments start dead and wake piecemeal; the Vanguard are unnamed at first contact; the founder may take any class kit; the last fight is in the basin; food surplus is spendable every act; hangover social is story and labor.
 

@@ -1,6 +1,6 @@
 # Project Polder — UI/UX Document
 
-**Version:** 0.7 — wall fade (plan 3.1): tall pieces between the camera and a friendly ease to ~25 % opacity so the silhouette stays; only friendlies trigger it. (0.6: camera lock (plan 2.5): perspective 25° FOV and hold-to-peek are decided; orthographic is diagnostic only. 0.5: matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. 0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
+**Version:** 0.9 — matched to GDD 1.14: fog is drawn from what each unit and the squad know; exposure marks are located by what a unit can locate; intel from a lost squad arrives aged; the MEDEVAC preview says when no route is known; stacked Watches resolve oldest first. (0.8: matched to GDD 1.13: Watch previews show entry and qualifying-action reactions, including the fixed order for stacked cones. 0.7: wall fade (plan 3.1): tall pieces between the camera and a friendly ease to ~25 % opacity so the silhouette stays; only friendlies trigger it. 0.6: camera lock (plan 2.5): perspective 25° FOV and hold-to-peek are decided; orthographic is diagnostic only. 0.5: matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. 0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
 
 **Versioning.** The version lives in this header, not in the filename. This file stays `UI_UX_Document.md` for the life of the project so links, citations and git history follow one path. `Game_Design_Document.md` follows the same rule.
 
@@ -100,6 +100,8 @@ Because combat is deterministic, whether a body can be shot is a fact. Facts are
 | Exposed | At least one enemy has a clean line | On the unit, with the count and where from |
 | No hide | Standing where hiding is not available — Falling, open Dry | On the unit, in words |
 
+**Where from is what this unit can locate.** The count is every enemy with a clean line, seen or not. The *from* marks are the ones this unit can locate: those it sees itself, and those a teammate within earshot sees (GDD §3.1). A shooter only a distant teammate can see is counted and not located: *seen by 2, from 1*. The gap is the hidden watchers, and the interface says so in words.
+
 **Per tile.** The move path carries the same three states tile by tile, so a player can see the step where cover ends before taking it. This is the read that makes diving (GDD §5.9) a decision rather than a hope, and it is how a player learns that Falling took the dive away without losing a unit to find out (section 15).
 
 **No percentages, no threat heat map.** Exposure is binary per enemy and counted, never scored. "Seen by 2" is a count. "68% exposed" is a meter and does not ship.
@@ -124,7 +126,7 @@ A clean line names the outcome, and there are three, because GDD §5.4 locks tha
 
 **Health.** A body shows how many hits it has left, as pips, for both sides. Health is low by design — one clean rifle shot drops, two clean pistol hits drop (GDD §5.4) — which makes "how many hits from Bleeding Out" the number the whole fight is played on. The line preview keys off it: the same rifle reads *pins* on a fresh body and *drops to Bleeding Out* on a hurt one, and the player can see why.
 
-**Move preview.** The path shows AP cost per tile, exposure per tile (4.2), where the unit ends, and each enemy Watch it will cross, with the one shot that crossing draws.
+**Move preview.** The path shows AP cost per tile, exposure per tile (4.2), where the unit ends, and every enemy Watch that will react to a cone entry, in its fixed resolution order (oldest Watch first).
 
 ### 4.4 Watch cones and stacking (GDD §5.2)
 
@@ -137,6 +139,8 @@ Cones are the most important overlay and the easiest to turn into soup.
 | Spent Watch (either side) | A tick on the unit, no volume | Never |
 
 Where volumes overlap, the preview names the count and weapon class ("2 watches: rifle, pistol"). No colour-per-cone rainbow. The player should be reading the street, not solving an overlay.
+
+**Reaction preview.** Before a unit commits a qualifying action inside one or more hostile cones—shoot, interact, throw, deploy utility, First Gauge, or Echo Call—the action preview names every Watch that will fire and its fixed order, oldest Watch first, which says nothing about where a hidden watcher stands. It also says when the first reaction will stop the action. Moving inside a cone, turning, setting Watch, and ending a phase do not draw a reaction. The preview uses the same words for a path crossing and an in-cone action; it never makes the player infer a different Watch rule from the icon.
 
 **Long is a word, not a colour.** Rifle, LMG and sniper cones are long; pistol, shotgun, melee and speargun cones are short (GDD §5.5). A long cone says so in its label ("rifle, long"), because break reads it (4.6) and the player has to be able to tell which cones are the frightening ones without colour. Only a loaded Watch is a cone. A rifle with a clean line and no Watch draws nothing here, and it breaks no one.
 
@@ -191,6 +195,8 @@ Cover in reach is weapon-aware because material is the only cover (GDD §5.4). T
 ### 4.7 Bleeding out
 
 A downed unit shows its remaining rounds (GDD §5.5: 3, *working default*; a round is one player phase plus one enemy phase), for either side. A stabilised unit shows that its clock has stopped. Shooting a downed unit needs a confirm. It is never a misclick.
+
+**Awaiting MEDEVAC.** Before a Trauma Kit is committed, the preview shows the extraction route and the window it starts (GDD §8.5). The route is drawn only over ground the squad knows. If none is known, the preview says so in words, *no known route — 1 round*, and still offers the kit. It is never a hidden roll.
 
 ### 4.8 Off-ramp and knocks
 
@@ -251,7 +257,7 @@ The reversible tier is not generosity. In a deterministic game, a move that reve
 
 **Making the founder.** Name, face, and starting kit type (GDD §8.2). That is the whole of it — there is no secret highland loadout, no stat spread, no background that buys a bonus, because the founder's power is literacy and The Call and neither is a number (GDD §8.3). The kit choice is a kit choice, the same one the roster makes every mission, and the screen should not imply it is a class pick. The one thing worth saying plainly here, before a player has anything to lose: this is the save, and it is written once.
 
-**The save.** One save, written by the game. The interface never implies otherwise: no save button that suggests a branch, no quickload. When a campaign ends it says so and it means it (section 13).
+**The save.** One save, written by the game. The interface never implies otherwise: no save button that suggests a branch, no quickload. What the squad has learned about a bowl is part of that save and is written when a fight ends, never during one, so abandoning a fight never keeps its scouting. When a campaign ends it says so and it means it (section 13).
 
 ## 6. Fog
 
@@ -271,6 +277,12 @@ The three fog states (GDD §3.1) look different at every scale, tactical and tab
 
 - An enemy walks into the player's Live vision: show the walk.
 - The player's vision reaches a tile where someone already was: they are simply there. No entrance, no pop. A reveal that plays like a spawn turns the finite basin into a spawn table (GDD §1).
+
+**The squad's picture.** The map shows everything any squad member sees or has seen. What one unit knows, its own sight plus what is shared within earshot (GDD §3.1), decides that unit's reads, chiefly where its exposure marks point (4.2). Switching units never changes the map.
+
+**Memory across visits.** A bowl the squad has walked opens Known-quiet, aged by how many visits have passed since it was last seen. Same rule as above: dust and colour, never a count. Hover may say "not seen since your last visit".
+
+**A lost squad's intel.** When a later squad's sight reaches the tile where an earlier squad fell, what that squad had seen is simply there, already aged. It is a reveal, not an arrival: no pop.
 
 ## 7. Squad mode: walking the bowl
 
@@ -600,6 +612,7 @@ Cost notes beside the design. None of these change a rule.
 - [ ] Bands on the table; warmth as a map fact without a meter.
 - [ ] Reach: supply, MEDEVAC and threat as one picture.
 - [ ] FOBs and the causeway.
+- [ ] Map facts against fog: how survey marks, staged material, a building causeway and FOBs read over Unknown / Known-quiet / Live, and whether a fact's progress ages. Needs a GDD rule first (GDD §10); leaning is current where the dome reaches a known bowl, last-seen elsewhere.
 - [ ] The base, Phases 2 and 3.
 - [ ] The ending. Needs playtests more than it needs a spec.
 
