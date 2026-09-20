@@ -4,7 +4,7 @@ GODOT ?= $(HOME)/bin/godot
 EXPORT_PRESET := Linux
 EXPORT_PATH := build/linux/project_polder.x86_64
 
-.PHONY: help check-godot editor run import test build clean
+.PHONY: help check-godot editor run import test shots build clean
 
 help:
 	@echo "Project Polder — local Godot targets"
@@ -13,6 +13,7 @@ help:
 	@echo "  make run          Run the project"
 	@echo "  make import       Headless reimport assets"
 	@echo "  make test         Run GUT headless; fails on load errors and empty runs too (ARGS=\"-gselect=name\" to filter)"
+	@echo "  make shots        Render smoke in a real window; PNGs under build/shots/ (needs GPU+display)"
 	@echo "  make build        Export Linux x86_64 release to $(EXPORT_PATH)"
 	@echo "  make clean        Remove build/ output"
 
@@ -35,6 +36,9 @@ import: check-godot
 
 test: check-godot
 	./scripts/test.sh $(ARGS)
+
+shots: check-godot
+	./scripts/shots.sh
 
 build: check-godot
 	mkdir -p build/linux
