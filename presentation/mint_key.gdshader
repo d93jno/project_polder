@@ -9,6 +9,7 @@ void fragment() {
 	vec4 c = texture(TEXTURE, UV);
 	float chroma = c.g - max(c.r, c.b);
 	float keyed = smoothstep(chroma_min, chroma_max, chroma);
-	c.a *= 1.0 - keyed;
-	COLOR = c;
+	// COLOR already carries texture x the node's modulate (the HUD dims spent pips with it).
+	// Only knock the key out of its alpha; assigning COLOR = c would drop the modulate.
+	COLOR.a *= 1.0 - keyed;
 }

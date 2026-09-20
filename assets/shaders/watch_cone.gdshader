@@ -43,7 +43,7 @@ void fragment() {
 	if (mode == 3) {
 		discard;
 	}
-	## A long cone that clips the camera near plane becomes a cream wall. Fade it out.
+	// A long cone that clips the camera near plane becomes a cream wall. Fade it out.
 	if (v_cam_dist < near_fade_m * 0.45) {
 		discard;
 	}

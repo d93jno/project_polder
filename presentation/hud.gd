@@ -164,6 +164,7 @@ func _build() -> void:
 	_note.offset_top = -36
 	_note.add_theme_font_size_override("font_size", 16)
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_outline(_note)
 	root.add_child(_note)
 
 	_height = Label.new()
@@ -173,6 +174,7 @@ func _build() -> void:
 	_height.offset_top = -128
 	_height.offset_right = 480
 	_height.add_theme_font_size_override("font_size", 18)
+	_outline(_height)
 	root.add_child(_height)
 
 	var fuel_wrap := HBoxContainer.new()
@@ -188,6 +190,12 @@ func _build() -> void:
 	fuel_wrap.add_child(fuel_frame)
 	fuel_wrap.add_child(_fuel)
 	root.add_child(fuel_wrap)
+
+
+## World-facing text has no panel behind it; a dark edge keeps it legible over pale tiles.
+func _outline(label: Label) -> void:
+	label.add_theme_constant_override("outline_size", 6)
+	label.add_theme_color_override("font_outline_color", Color(0.06, 0.07, 0.07, 0.95))
 
 
 func _slot() -> Control:

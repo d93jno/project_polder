@@ -20,6 +20,11 @@ const _NAMES := {
 	_ScriptedFight.P4: "Kees",
 }
 const _INVALID := Vector3i(999, 999, 999)
+## env_ridge_farfield.glb is 80 x 34.3 m. Yawed 90° its depth (34.3) runs along +X.
+const _RIDGE_HALF_DEPTH_M := 17.2
+const _RIDGE_GAP_M := 4.0
+## Hit pips sit at 1.95 m with their count above; the exposure word must clear them.
+const _EXPOSURE_LABEL_Y := 2.85
 
 var _state: CombatState
 var _selected_id: int = 1
@@ -121,7 +126,9 @@ func _build_world() -> void:
 
 	var ridge := (load("res://assets/env/hero/env_ridge_farfield.glb") as PackedScene).instantiate()
 	ridge.name = "Ridge"
-	(ridge as Node3D).position = Vector3(48.0, 0.0, 18.0)
+	(ridge as Node3D).position = _ridge_position(_state.map)
+	## Its 80 m axis runs across the street so it reads as a horizon, not a slab.
+	(ridge as Node3D).rotation_degrees.y = 90.0
 	add_child(ridge)
 
 	_units_root = Node3D.new()
@@ -154,6 +161,19 @@ func _build_world() -> void:
 	for id in _player_ids:
 		names.append(_NAMES.get(id, "Unit %d" % id))
 	_hud.set_fireteam(names)
+
+
+## Far-field ridge sits past the street's far end (+X, where the camera looks), never over
+## the tiles. Sideways offset keeps it off dead-centre (assets brief: not framed centre).
+func _ridge_position(map: BowlMap) -> Vector3:
+	var max_x := 0
+	var sum_y := 0.0
+	for coord in map.cells.keys():
+		max_x = maxi(max_x, coord.x)
+		sum_y += coord.y
+	var mid_z := (sum_y / float(maxi(map.cells.size(), 1))) * PresentationCoords.CELL_M
+	var edge_x := (float(max_x) + 0.5) * PresentationCoords.CELL_M
+	return Vector3(edge_x + _RIDGE_GAP_M + _RIDGE_HALF_DEPTH_M, 0.0, mid_z - 8.0)
 
 
 func _add_environment() -> void:
@@ -257,16 +277,14 @@ func _draw_cones() -> void:
 		)
 
 
+## Tip of the drawn shell: down the facing axis, as far as the wedge reaches. The wedge's
+## far edge is a row of cells; picking one of them would skew the shell sideways.
 func _farthest_in_facing(from_cell: Vector3i, facing: Vector3i, cells: Array) -> Vector3i:
-	var best := from_cell + facing
-	var best_d := 0
+	var reach := 1
 	for c in cells:
 		var cell: Vector3i = c
-		var d: int = (cell.x - from_cell.x) * facing.x + (cell.y - from_cell.y) * facing.y
-		if d > best_d:
-			best_d = d
-			best = cell
-	return best
+		reach = maxi(reach, (cell.x - from_cell.x) * facing.x + (cell.y - from_cell.y) * facing.y)
+	return from_cell + Vector3i(facing.x, facing.y, 0) * reach
 
 
 func _draw_preview() -> void:
@@ -598,9 +616,9 @@ func _draw_overlay_labels() -> void:
 		if not exp.sources.is_empty():
 			text += " · from %d" % exp.sources.size()
 		_spawn_label(
-			PresentationCoords.world_ground(sel.cell) + Vector3(0.0, 2.2, 0.0),
+			PresentationCoords.world_ground(sel.cell) + Vector3(0.0, _EXPOSURE_LABEL_Y, 0.0),
 			text,
-			0.014
+			0.011
 		)
 	## Cone weapon / long words near the far tip of each drawn watch.
 	for entry in _queries.watches:
