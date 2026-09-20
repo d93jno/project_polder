@@ -49,13 +49,18 @@ static func line_of_sight(
 	from: Vector3i,
 	to: Vector3i,
 	weapon: Taxonomy.WeaponClass,
+	ignore_origin_hide: bool = false,
 ) -> LosResult:
+	## ignore_origin_hide: Watch cones are capability from a tile even when
+	## smoke/deep water hides the body on that tile (UI §4.4). Exposure shots
+	## keep the default (hide blocks both ways, GDD §5.4).
 	if from == to:
 		return LosResult.ok()
 
-	var hide_from := _body_hide_material(map, from)
-	if hide_from != -1:
-		return LosResult.blocked(hide_from as Taxonomy.CoverMaterial, from)
+	if not ignore_origin_hide:
+		var hide_from := _body_hide_material(map, from)
+		if hide_from != -1:
+			return LosResult.blocked(hide_from as Taxonomy.CoverMaterial, from)
 
 	var hide_to := _body_hide_material(map, to)
 	if hide_to != -1:

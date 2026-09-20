@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.2 LOS completed — next is 1.3 exposure + cones
+**Status:** 1.3 exposure + cones completed — next is 1.4 movement
 **Tracks:** GDD v1.8, UI/UX v0.4
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -137,9 +137,11 @@ No physics raycasts, ever (UI §17: *"A raycast will one day hit a balcony rail 
 
 ### 1.3 — Exposure and cones
 
+**Status:** completed
+
 Both are LOS derivatives, so they ship together and share tests.
 
-**Ships:** `exposure.gd`, `cones.gd`.
+**Ships:** `exposure.gd` (`ExposureQuery`), `cones.gd`, minimal `Unit` / `CombatState` / `LiveWatch`, `RulesConstants` cone lengths.
 
 ```
 exposure(map, state, unit) -> Exposure
@@ -149,14 +151,15 @@ exposure(map, state, unit) -> Exposure
       sources : Array[Vector3i]      # only those the viewer can see
 
 cone(map, watcher, facing, weapon) -> Array[Vector3i]
-cone_stack(map, state, cell) -> { count: int, classes: Array[WeaponClass] }
+watch_cone(...) -> ConeResult { cells, apex_known }
+cone_stack(map, state, cell) -> ConeStack { count, classes }
 ```
 
 `count` and `sources.size()` differ exactly when a hostile is hidden. That gap **is** the decision from §1 — it is the data the UI needs to say "seen by 2" while placing only one.
 
 `NO_HIDE` is a property of where the unit stands (Falling, open Dry), not of who is looking. It is returned in words so it survives greyscale (UI §14).
 
-Cones carry `apex_known: bool`. When false the renderer dissolves the near end (UI §4.4); this layer just reports it.
+Cones carry `apex_known: bool`. When false the renderer dissolves the near end (UI §4.4); this layer just reports it. Cone generation ignores origin body-hide so a smoke/deep-water apex still throws a volume.
 
 **The invariant that matters most:**
 

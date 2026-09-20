@@ -1,0 +1,43 @@
+class_name ExposureQuery
+extends Object
+## Exposure is LOS run backwards (UI §17 / plan §1.3).
+
+
+static func exposure(map: BowlMap, state: CombatState, unit: Unit) -> Exposure:
+	var result := Exposure.new()
+	var hostiles: Array = state.hostiles_of(unit)
+
+	for hostile in hostiles:
+		var los := Los.line_of_sight(map, hostile.cell, unit.cell, hostile.weapon)
+		if not los.clean:
+			continue
+		result.count += 1
+		## Locate the source only when this unit can see that hostile's body
+		## (mirrors cone apex: volume/count without giving away a hidden tile).
+		if Los.line_of_sight(map, unit.cell, hostile.cell, unit.weapon).clean:
+			result.sources.append(hostile.cell)
+
+	if result.count > 0:
+		result.state = Exposure.State.EXPOSED
+	elif _no_hide_at(map, unit.cell):
+		result.state = Exposure.State.NO_HIDE
+	else:
+		result.state = Exposure.State.HIDDEN
+
+	return result
+
+
+## Falling, or open Dry (no shelter / interior). UI §4.2 / GDD §5.8.
+static func _no_hide_at(map: BowlMap, cell: Vector3i) -> bool:
+	match map.water_step:
+		Taxonomy.WaterStep.FALLING:
+			return true
+		Taxonomy.WaterStep.DRY:
+			var c: Cell = map.get_cell(cell)
+			if c == null:
+				return true
+			if c.has_flag(Taxonomy.CellFlags.SHELTER) or c.has_flag(Taxonomy.CellFlags.INTERIOR):
+				return false
+			return true
+		_:
+			return false
