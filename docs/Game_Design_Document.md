@@ -1,6 +1,6 @@
 # Game Design Document: "Project Polder" (Working Title)
 
-**Version:** 1.8 — knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. (1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned; bleed-out is 3 rounds (working default). 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
+**Version:** 1.9 — break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. (1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned; bleed-out is 3 rounds (working default). 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
 
 ## 0. Document Scope
 This document is the base foundation for the game's mechanics: its systems, rules, campaign structure, and the design tone those rules express. When a later document disagrees with a mechanic described here, this one wins until it is revised.
@@ -337,6 +337,17 @@ No percentages. A unit is **broken** when any of these is true:
 *   it is unadapted (Drifters, other untrained AI, or the player's raw unclassed recruits) and stands on Dry with CQB kit while a long cone sees it.
 
 A trained Muckraker does not dump the street because it is dry. The player version of the third clause is the Agoraphobia scar (Section 8.5).
+
+**Break, defined.** *Working default. Prototype in one bowl, then lock.* The clauses above lean on four terms. Each is a count or a lookup the player can make from what the screen already shows; none needs the enemy's intent.
+*   **Long and short.** Every weapon class is one or the other. **Long:** rifle, LMG, sniper. **Short:** pistol, shotgun, melee, speargun. The same table sorts the cone (below) and the kit.
+*   **CQB kit** means every weapon the unit carries is short. One long weapon and it is not CQB kit. This is the "shotguns, machetes, and sidearms" of 6.3.
+*   **Long cone.** A loaded Watch cone (5.2) of a long weapon class, with the unit's tile inside it and a clean line to it (5.4). A spent cone does not count. Nor does a long weapon with a clean line but no Watch: the panic is the visible geometry the enemy paid AP for, which the player can see and answer.
+*   **Outnumbered.** More standing hostiles have a clean line on the unit than there are standing friends within 3 tiles of it, counting itself. Downed units count for neither side. Friends near you are the protection, so isolation matters and a tight group looks after itself.
+*   **In the open.** At least one hostile has a clean line on the unit, and no tile the unit can reach with the AP it holds now is free of a clean line from every hostile that has one. This is the mud line in 6.3, "without AP to reach hard cover," made exact. It is weapon-aware because material is the only cover (5.4): a plank hides a body from a pistol and not from a rifle. Pinned does not zero the AP for this test; otherwise a pinned unit could never reach cover and the phrase would stop meaning anything.
+
+**When it lands.** Break is a state, checked after every action resolves and again at the start of each phase. It takes effect the moment its condition becomes true. A player unit that breaks mid-phase loses the rest of that phase; an enemy that breaks acts on it in its own phase (5.11). Clauses 1 and 3 are facts about the map and are known before the click. Clause 2 also needs the unit to be Pinned, which needs an enemy to choose to shoot, so before the click the most that is knowable is that a unit is outnumbered and in the open where it stands: *if hit here, breaks.*
+
+**Agoraphobia** (8.5) is the third clause with the kit, training and terrain conditions taken off: a long cone sees the unit in the open, as defined here, and it breaks, on any ground.
 
 *   **Broken enemies** flee or drop the gun, per the faction table in 5.11.
 *   **Broken player units** lose the rest of the current phase. In the next phase the player still chooses their move, but it must end closer to cover or to the extraction point. They do not auto-flee the map.
@@ -789,6 +800,14 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   **Take the prisoner** is a named fourth option on a broken enemy, Vanguard-only, after research has begun (§5.11).
 *   The boat is a place on the tactical map (§3.1).
 
+**Working defaults added in 1.9, not locks (§5.5):**
+*   Long weapon classes are rifle, LMG and sniper; short are pistol, shotgun, melee and speargun. CQB kit means every carried weapon is short.
+*   A long cone is a loaded, long-class Watch cone with a clean line on the unit. A long weapon without a Watch does not break anyone.
+*   Outnumbered: more standing hostiles with a clean line than standing friends within 3 tiles, counting itself.
+*   In the open: a hostile has a clean line on the unit and no tile reachable with the AP it holds is free of a clean line from every such hostile. Pinned does not zero the AP for this test.
+*   Break is checked after every action and at each phase start, and lands the moment its condition is true.
+*   Agoraphobia is the third clause with kit, training and terrain waived.
+
 ## 10. Still open
 *   Final name of the unique trait.
 *   Exact neighbor count / "majority of the ring" for a step down.
@@ -805,6 +824,7 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   After dark: what actually changes at dusk. "A worse fight" is locked; the mechanism is not. Do Wake-Riders appear, gain cones, or own swim tiles?
 *   Bleed-out length (working default 3 rounds) and Pinned duration (tuning).
 *   Downed bodies: does a downed unit block a line? Working default: it does not, and deep water still hides it (5.9).
+*   Break thresholds (§5.5): the 3-tile friend radius, which classes are long, and whether Agoraphobia should keep the Dry condition. Working defaults; validate in one bowl, then lock.
 *   What a taken boat costs (§3.1): a walk home, a fuel loss, a leg on foot. Tuning.
 *   How tightly a redirection previews in a half-fixed ring (§6.4) — where the range stops being useful and starts being noise.
 

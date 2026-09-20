@@ -1,7 +1,7 @@
 # Project Polder — Graphical Asset Inventory
 
-**Version:** 0.2 — retargeted to GDD v1.8 and UI/UX v0.4. The v0.3 review was accepted in full, so every surface previously marked *review-pending* is now locked UI and cited as such. UI section numbers were remapped; v0.4 expanded 12 sections to 19. (0.1: first inventory, tracking GDD v1.7 / UI/UX v0.3.)
-**Tracks:** GDD v1.8, UI/UX v0.4.
+**Version:** 0.3 — verification pass against the renamed `Game_Design_Document.md` (v1.8) and `UI_UX_Document.md` (v0.4). No rule changes from 0.2; filled slots those documents already locked that 0.2 missed: the dome walk-in, load-bearing Opening plates and painted waterlines, church lofts, rooftop bridges, Eureka objects, boat upgrade variants, veteran-eyes overlay (held), thermal optics, construction dressing. (0.2: retargeted to GDD v1.8 / UI/UX v0.4 after the v0.3 review landed in full. 0.1: first inventory, tracking GDD v1.7 / UI/UX v0.3.)
+**Tracks:** GDD v1.9, UI/UX v0.5.
 
 **Versioning.** The version lives in this header, not in the filename. `Game_Design_Document.md` and `UI_UX_Document.md` follow the same rule.
 
@@ -127,19 +127,20 @@ UI §18. One Flooded roof map and one Dry street for the camera test. Free move 
 | Falling water look (never Flooded) | Teaches the dive is gone |
 | Mud look (can be a cheap cousin of Dry + pools) | Optional in P1 if the first bowl never leaves Flooded; needed before a ring drops |
 | Dusk looks B and C (long shadows, then dark) | Three named looks (UI §7). Look C waits on GDD §10 after-dark rule — do not paint a rule that is not written. Until then, look C is lighting only. |
-| Neighbouring-bowl seam / levee wall | Travel is a place, not a load screen |
+| Neighbouring-bowl seam / levee wall | Travel is a place, not a load screen. The seam shows the fuel and daylight the leg costs (UI §18). |
 | Marked-roof states: unseen / slept once / marked | Shelters persist |
 | Knock / meeting / hostile-roof occupants | Same people, fog hides them |
 | Boat camp dressing (tents, crates, people who are not the fireteam) | Home until the dome |
-| World plates on pumps and levees | Phase 0 knowability. GDD §6.1 (1.8) says the right to read water does not begin with the dome, so plates carry step, grade, pump state and upkeep until instruments wake (UI §12). Bounded by what a plate could know: its own machine and bowl, never the ring. |
+| World plates on pumps and levees, plus a painted waterline on a wall | Phase 0 knowability. GDD §6.1 (1.8) says the right to read water does not begin with the dome, so plates and wall-marks carry step, grade, pump state and upkeep until instruments wake (UI §12). Bounded by what a plate could know: its own machine and bowl, never the ring. Load-bearing, not flavour. |
+| Finding the dome: approach, climb, the view from the glass | Opening → Act I is walking into a room, not a screen that opens (UI §7, §18). Instruments are dark. What the glass shows is what eyes show. That view *is* the first table. |
 | Tile-memory overlays: wreck, dropped crate, scarred wall | Return visits |
 
 ### P2 — Act I (penthouse, first table)
 
 | Slot | Why |
 | --- | --- |
-| Citadel exterior: dome, upper labs, slope, car park still wet | Found by walking |
-| Citadel interior: dome glass, dark gauges, one hall | Instruments start dead |
+| Citadel exterior: dome, upper labs, slope, car park still wet | The walk-in itself is P1. This is the campus once you live there. |
+| Citadel interior: dome glass, dark gauges, one hall | Instruments start dead. The first table is this room (UI §7). |
 | Table overlay kit (graph, labor, mail marks, dispatch) | UI §8 |
 | First Gauge firing picture (map change + squad react) | GDD §8.3, UI §4 |
 | Wake-Riders + their boats | Flooded specialists |
@@ -199,6 +200,8 @@ The first geography (GDD §2). High shoulder, few pumps, water has somewhere dow
 | Window: intact, dark, boarded | 1 set | Same |
 | Overpass pier + deck | 1 kit | High-point shelter |
 | Parking deck slab | 1 | |
+| Church loft | 1 | Named with roofs, overpasses and parking decks as a high-point shelter (GDD §3.1). One hero interior, not a kit of naves. |
+| Makeshift rooftop bridge | 1, plus a placed/unplaced pair | Foundational research (GDD §7.1). Connects nearby roofs. Same grammar as a hatch: a place you walk. |
 | Pump house (hero) | 1, plus damaged / dead dressing | States: on / damaged / dead (GDD §6.1). Upkeep is a separate, locked read — **kept / thin / failing** (UI §8, GDD §6.1) — so three wear looks, not reserved slots. *Thin* is the one that matters: it is where a Purifier wrench goes. |
 | Sluice / gauge (hero, animated) | 1 | First Gauge and redirection play here. Gate must move. |
 | Pier / boat dock | 1 | Extract point |
@@ -256,6 +259,7 @@ Seen, not marched on. Pristine caches. Wall of dry land (GDD §2). Vanguard coun
 | Asset | When | Notes |
 | --- | --- | --- |
 | The ridge / Citadel exterior | P0 far field, P2 walk-on | Low moraine / sandy ridge / research hill. Survivors call it a mountain. It is not. Silhouette should look like a lie people would tell (UI §7). Glint on glass or a mast, often just a darker pile. Visibility by grade: clear from terrace, smudge from floor, nothing from sump. **Art-pass rule:** bowls must not all frame it dead centre. |
+| Dome approach, climb, and the view from the glass | P1 | The Opening's one unbeatable cutscene-ban (UI §7, §18). Walking in, climbing, looking down at the still-full polders — that is the campaign poster (GDD §2) and the first table. No cinematic camera. No nameplate. |
 | Dome and upper labs (penthouse) | P2 | Civilian research station, not a fortress (GDD §2, §4.1). Glass, a view, dark gauges. |
 | Descent floors | P3 | Moldy, dredged, sanitized over time. Cutaway of the building is the same mechanism as tactical floors (UI §9): the base view and the water graph are the same picture from different ends — the floors that opened are the bowls that dried. |
 | Compound on the dry slope | P4 | Tents and steel facing the polders. No siege dressing on the glass. |
@@ -275,6 +279,10 @@ Placeable, remain across visits (UI §3).
 | Surface fire | Same |
 | Stun-dart shock zone | Ankle-deep; grounds out in deep (GDD §5.9) |
 | Stranded boat on Mud/Dry | Wake-Rider leftover |
+| Painted waterline on a wall | Opening knowability (GDD §6.1, UI §12). A line someone painted, not a HUD. Reads the current step on *this* bowl. |
+| Diesel cache | Fuel salvage in Flooded and Mud (GDD §4.2). World mesh + icon. |
+| Eureka objects: cache, blueprint, hard drive, server rack | A find is a thing you carry home, not a popup (UI §11, GDD §7.2). One mesh each is enough; the Advanced Ballistics example is a pristine military server rack in a drained corporate building. |
+| Deployable platform (Mud) | Named in GDD §6.3 alongside winches and high ground. May collapse into the Pioneer barricade if art treats them as the same object. Slot held until then; do not author a fifth class tool. |
 
 ---
 
@@ -368,6 +376,7 @@ Founder may wear any of these. Identity is not a unique gun (GDD §8.2).
 | Anti-armor charge | Vanguard heavy |
 | Deployable barricade / kinetic cover | Pioneer; later excavation upgrade |
 | Trauma kit | Stops bleed-out clock |
+| Advanced trauma kit | Excavation (GDD §7.2). Reduces scar severity and buys time. Same silhouette as the basic kit, better condition — not a different object language. Never cancels permadeath. |
 | Winch / grappling hook | Muckraker |
 
 Consumables are items, not a fifth bar (GDD §4.2). Each needs a world mesh and an icon.
@@ -444,7 +453,7 @@ Cycles must loop. Swim and walk in place for the engine to root-motion or not as
 
 | Asset | Owner | When | Notes |
 | --- | --- | --- | --- |
-| **Player boat (camp)** | Player | P0 | Home until the Citadel. Extract point. MEDEVAC. Small and wet. A bad place to spend dusk with a casualty (GDD §3.1). Dressing: tents, crates, a still later. **It is a place on the tactical map** (GDD §3.1, 1.8) and Wake-Riders can take it from a roof (GDD §5.11) — so it needs a pilot socket, a taken/crewed-by-someone-else state, and a readable fuel load on it. What a taken boat costs is still tuning (GDD §10). |
+| **Player boat (camp)** | Player | P0 | Home until the Citadel. Extract point. MEDEVAC. Small and wet. A bad place to spend dusk with a casualty (GDD §3.1). Dressing: tents, crates, a still later. **It is a place on the tactical map** (GDD §3.1, 1.8) and Wake-Riders can take it from a roof (GDD §5.11) — so it needs a pilot socket, a taken/crewed-by-someone-else state, and a readable fuel load on it. What a taken boat costs is still tuning (GDD §10). Later variants, not new hulls: engine upgrade (burns less) and heavy plating (GDD §7.1). |
 | Wake-Rider boat / skiff | Wake-Riders | P2 | Boarding. Nested at roofs. |
 | Wrecked boat | Help-gamble | P2 | |
 | Player late vehicle | Player | P4 | Garage unlock. Dry travel. |
@@ -489,6 +498,8 @@ First contact: same language, longer geometry, no faction tag (UI §4).
 | Redirection ghost | Which bowls step wetter and by how much, overshoot reach, how long it hangs, what of yours is in the water. A *this is a range* variant for a half-fixed ring | UI §8. P4 |
 | First Gauge | Map change: sluice slams, path opens, pump turns over, arrow on the ring reverses (GDD §8.3) plus squad react. This is the settled answer to GDD §10's question about how visible the trait is (UI §4.10) | A superhero glow that marks the founder for enemies |
 | The Call | Radius. Witness pulse remaining turns. Echo Call available/used | A weather effect on the whole map |
+| Veteran eyes | A founder-only water read: ghost of flow, a warning before a Purifier breach, a faster read on a lying levee, the tick before a step changes (GDD §8.3). Passive, does not spend First Gauge. | UI 0.4 does not specify the picture. **Hold the slot.** Do not invent a glow, a heat map, or anything that marks the founder. Shape it as a plate-read cousin — extra information on water the player already has a right to — once UI names the draw. |
+| Thermal optics | See through fog/smoke (GDD §7.2). An excavation overlay on the existing fog, not a new fog. | P4. Must not become a threat heat map (UI §16). |
 | Exposure “who can see me” | Per unit (hidden / exposed / no hide, with the count and where from) and per tile along the move path | UI §4.2. **P0** |
 | Sluice fill | Tile by tile, never fade-to-black | A cutscene |
 | Undo affordance | A move is reversible until it produces information — crosses a Watch, enters a line, peels fog, or acts (UI §5). The path needs to show where that boundary falls | A general rewind, or an undo that implies a reloadable save |
@@ -555,7 +566,7 @@ Drawn on the same basin. Never: bars, targets, goal pips, litres, hidden math, a
 
 Penthouse space is agonizingly limited (GDD §4.1). Each facility is a **place you can see**, not an icon on a build queue (UI §9: no timer pips).
 
-Work is **hands and scrap**, both counts drawn from the same pools as everything else (UI §9). A hall that is dark because nobody could spare the day must read as exactly that. No build queue bar, no timer pip, no progress percentage. Space is the constraint and it is shown as space: a building that is visibly full, not a counter reading 4/4.
+Work is **hands and scrap**, both counts drawn from the same pools as everything else (UI §9). A hall that is dark because nobody could spare the day must read as exactly that. A facility under construction shows the hands and scrap assigned to it — people in the room, not a pip track. No build queue bar, no timer pip, no progress percentage. Space is the constraint and it is shown as space: a building that is visibly full, not a counter reading 4/4.
 
 | Facility | Phase | Notes |
 | --- | --- | --- |
@@ -566,6 +577,7 @@ Work is **hands and scrap**, both counts drawn from the same pools as everything
 | Workshop | 2 | Teaches Pioneer; cannot copy First Gauge |
 | Research / instrument halls | 2 | Hands in the old halls |
 | Dredge / sanitise dressing | 2 | Newly exposed floors |
+| Facility-under-construction dressing | 1–3 | Assigned hands visible in the room. Unstaffed stays dark. Same people as the labor board, not a second citizen sim. |
 | Still (boat-side, then dry-side) | 1–2 | Scrap + time → fuel |
 | Vehicle garage | 3 | Dry ground |
 | Heavy munitions | 3 | |
@@ -641,8 +653,8 @@ No faction crests until the name is earned. No ending medals.
 | --- | --- | --- |
 | Front end: name, face, starting kit | Ship | Ironman default: one save the game writes (GDD §8.2, UI §5). Must not read as a class pick or a stat spread. Commit is unmistakable. |
 | Dispatch + loadout | Act I (UI §8) | Bowl first — water step, grade, known hostiles, reach, fuel and daylight cost — then the four and their kit. Kit against water is the choice (GDD §5.8). Consumables are counted items, never a bar. |
-| Roster | Act I (UI §10) | Names, class, kit, scars. The bench, not the town. A scar must visibly change at least one preview. |
-| Research / archives | Act II (UI §11) | Two branches: foundational vs excavation (find a cache → node). A Eureka is an object carried home that opens its node at the table. No lore pop-up, no completion percentage. |
+| Roster | Act I (UI §10) | Names, class, kit, scars. The bench, not the town. A scar must visibly change at least one preview. Founder recovery is a count of days they cannot deploy, and that table verbs still work (GDD §8.5) — a number, not a sickbed bar. |
+| Research / archives | Act II (UI §11) | Two branches: foundational vs excavation (find a cache → node). A Eureka is an object carried home that opens its node at the table — the world mesh from §4.6 arriving, not a lore pop-up. No completion percentage. |
 | Base / facilities | Act I onward (UI §9) | A cutaway that grows downward as the water falls. Hands + scrap as counts. No build queue bar. |
 | Day-end commit | Act I | One explicit commit (UI §8). |
 | Ending | P4 (UI §13) | No score screen, no tally of the hidden counts. The player looks at the basin one more time (GDD §6.6). Five outcomes are five looks at the same map: fields that hold and the observatory still a farm and a gauge; ridge as fort / town as barracks / fields thinner than the dry ground allows; a ditch still on the map; a column on the terrace; the founder gone. The art job is that a hollow win and a working win must be **distinguishable while looking at the difference**. |
@@ -663,7 +675,7 @@ Rusted Dutch–English hybrid on **surfaces in the scene** (GDD §2, UI §12). H
 
 Also: street names, levee marks, graffiti, old receipts, pump plates. These are **decals or mesh labels**, not HUD.
 
-A *working default* plate set for P0: 8 pump/levee plates on the first bowl, terrace mouth. Enough for the founder bonus-read beat.
+A *working default* plate set for P0: 8 pump/levee plates on the first bowl, terrace mouth, **plus one painted waterline**. These are load-bearing (GDD §6.1, UI §12, UI §18): they carry that bowl's step, grade, pump state and upkeep. Bounded by what a plate could know — its own machine and bowl, never the ring. The founder bonus-read is extra English on the same plate, never the only route.
 
 ---
 
@@ -705,6 +717,7 @@ Closed, so this list cannot grow sideways.
 - Founder heirloom rifle / starting armor
 - Allied Vanguard army set
 - Per-cone rainbow materials
+- A compass rose (UI §2, §18: the ridge and the water orient)
 - UI lettering baked into panels
 - Audio (separate document)
 
@@ -729,6 +742,8 @@ Nine of the v0.1 entries closed when the review landed. What remains:
 | Incoming camps half-Drifter or yours | GDD §10 | Ambient dressing |
 | Downed bodies block line? | GDD §10 *working default* no | Cover tag on corpses |
 | Orientation in floor and sump bowls, where the ridge is not visible | UI §18 | Possibly nothing — water runs downhill and levees are the grid. Do not add a compass rose to find out |
+| How veteran eyes are drawn | UI (GDD §8.3 names the picture; UI 0.4 does not specify it) | Overlay vs plate-read cousin. Do not author a glow while this is open. |
+| Deployable platforms vs Pioneer barricades | GDD §6.3 vs §8.1 | One mesh or two. Hold one slot. |
 
 **Closed since v0.1** (do not reopen without a document change): boat as a tactical object and fuel knowability (GDD §3.1, §4.2, locked 1.8); cone from an unseen watcher — apex unresolved (UI §4.4); the founder's player-read — by name, no clothing tell (UI §4.10); pump upkeep states (UI §8); exposure, AP and hit-state reads (UI §4.1–4.3); loadout, roster, base, research and band surfaces (UI §8–§11).
 
@@ -745,7 +760,8 @@ The concrete pack a first art pass can finish. Everything else in this document 
 - [ ] Flooded water shader look
 - [ ] Dry water/ground look on the same plane
 - [ ] Ridge far-field mesh / sky silhouette
-- [ ] 8 terrace world plates
+- [ ] 8 terrace world plates that carry this bowl's step, grade, pump state and upkeep (own machine only)
+- [ ] One painted waterline on a wall
 - [ ] Cover-tagged crates and planks (3)
 
 **Characters / vehicles**
@@ -788,3 +804,29 @@ Unstyled placeholders are fine for all of these. Missing ones are not: a fight w
 When this pack exists, the other documents can argue about peek yaw, contact, and Falling on real pictures instead of on paper.
 
 The accessibility contract (UI §14) applies from the first texture, not as a later pass: colour reinforces and never carries, every load-bearing state is separable in greyscale and with reduced motion, and nothing that only animates is a state's sole carrier. Retrofitting that into a finished kit costs more than authoring it.
+
+---
+
+## 16. P0 production log (2026-09-20)
+
+First art pass, six parallel agents, style lock in `assets/_style/`. Manifests live next to the files.
+
+| Slice | Where | Landed |
+| --- | --- | --- |
+| Style lock | `assets/_style/` | env / char / icon locks + `STYLE.md` |
+| Terrace meshes | `assets/env/kits/terrace/`, `assets/env/hero/` | 33 kit `.glb` + ridge. Cell **2 m**. Rebuild: `_build_kit.py` |
+| Terrace albedos | `assets/env/kits/terrace/textures/`, `assets/env/decals/` | Streets, brick wet/dry, canal, levee, flooded water, dry ground, waterline dirt. 2×2 verifies on disk |
+| Characters | `assets/chars/humanoid/` | 17 concept PNGs: 4 faces (01 = founder), unclassed turnaround, 2 Drifter cloths, pistol/machete, idle/Watch/flinch/downed |
+| Cover + boat | `assets/props/`, `assets/vehicles/` | Wood crate, plank, masonry corner, dropped crate, camp boat with `socket_pilot` and 4 fuel cans |
+| UI | `assets/ui/icons/`, `assets/ui/theme/` | Food/fuel/scrap/people (128/64/32), 9-slice panel, hit circle pip, AP diamond pip, confirm frame |
+| World plates | `assets/worldtext/` | 8 load-bearing plates + painted waterline. Glyphs from PIL, not an image model |
+
+**Not this pass (still open on the P0 list):**
+
+- Godot water / fog / cone **shaders** (flooded and dry are albedos, not a step-driven shader)
+- Combat overlay chrome: selection, line preview, move path, exposure, Watch volumes, Pinned states, bleed-out count, height numbers, undo, fireteam strip, phase control
+- Character **animation frames** and a rigged humanoid `.glb` (`image_to_video` blocked; concepts only)
+- Lighting test scenes (Flooded roof / Dry street)
+- Falling water look (P1)
+
+Known defects are in the per-folder manifests, not restated here.

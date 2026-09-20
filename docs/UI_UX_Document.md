@@ -1,12 +1,12 @@
 # Project Polder — UI/UX Document
 
-**Version:** 0.4 — review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. (0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
+**Version:** 0.5 — matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. (0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
 
 **Versioning.** The version lives in this header, not in the filename. This file stays `UI_UX_Document.md` for the life of the project so links, citations and git history follow one path. `Game_Design_Document.md` follows the same rule.
 
 ## 0. Scope
 
-This document owns how the game is shown and how the player touches it. The Game Design Document (GDD v1.8) owns what the rules are. When the two disagree about a rule, the GDD wins. When they disagree about how a rule is drawn, this document wins.
+This document owns how the game is shown and how the player touches it. The Game Design Document (GDD v1.9) owns what the rules are. When the two disagree about a rule, the GDD wins. When they disagree about how a rule is drawn, this document wins.
 
 **Owns:** camera, views, input, previews, overlays, how water, fog, cones and time are drawn, how in-world text is rendered, what the table shows, what commits and what does not.
 
@@ -14,7 +14,7 @@ This document owns how the game is shown and how the player touches it. The Game
 
 Art direction gets its own document. Audio gets its own document, with one standing brief from here: several reads in this document are **events, not pictures** — contact starting, dusk turning over, a cone going live, a bleed-out round ticking, mail arriving. Audio owns those, and this document will not pretend a picture covers them.
 
-Citations like *GDD §5.4* point at the mechanics document. Items marked *working default* are prototype starting points. Vocabulary follows GDD v1.8: **Pinned** is the combat state, a **band** is a nomad group, a **marked roof** is a shelter, a **squad** is the units on one tactical map, and the up-to-four bodies you deploy are the **fireteam** (GDD §5.1).
+Citations like *GDD §5.4* point at the mechanics document. Items marked *working default* are prototype starting points. Vocabulary follows GDD v1.9: **Pinned** is the combat state, a **band** is a nomad group, a **marked roof** is a shelter, a **squad** is the units on one tactical map, and the up-to-four bodies you deploy are the **fireteam** (GDD §5.1).
 
 ## 1. Principles
 
@@ -138,6 +138,8 @@ Cones are the most important overlay and the easiest to turn into soup.
 
 Where volumes overlap, the preview names the count and weapon class ("2 watches: rifle, pistol"). No colour-per-cone rainbow. The player should be reading the street, not solving an overlay.
 
+**Long is a word, not a colour.** Rifle, LMG and sniper cones are long; pistol, shotgun, melee and speargun cones are short (GDD §5.5). A long cone says so in its label ("rifle, long"), because break reads it (4.6) and the player has to be able to tell which cones are the frightening ones without colour. Only a loaded Watch is a cone. A rifle with a clean line and no Watch draws nothing here, and it breaks no one.
+
 **A cone whose watcher you cannot see.** Live cones are always drawn, including when smoke or deep water is hiding the body throwing them — but then the cone is drawn **without its apex resolved**. The volume is there; the hand is not. A loaded gun is capability and the player has a right to it (Principle 2); the watcher's tile is something line of sight is hiding and the cone must not give it away (section 6). This matters most at first contact, where GDD §6.5 puts long Vanguard cones across a street before the player can read what is throwing them.
 
 **First contact wears no chrome.** Vanguard cones use the same cone language as a Drifter Watch, only longer than anything the player has seen. No faction tag, no unique colour, no name, until research names them (GDD §6.5). The geometry must be unmissable. The identity must not be given away.
@@ -157,19 +159,34 @@ A cancelled cone drops to the spent tick at once. One hit costs one phase at mos
 
 ### 4.6 Break (GDD §5.5)
 
-Break is deterministic, so it is telegraphed. But two of its three clauses are state and one is not, and the interface must not pretend otherwise.
+Break is deterministic, so it is telegraphed. But its clauses are not all the same kind of thing, and the interface must not pretend otherwise. GDD 1.9 defines every term the rule leans on, and each is something the player can count off the screen.
 
 | Clause | Telegraph |
 | --- | --- |
 | The last friend in its squad on this map has dropped | **Unconditional.** Knowable now |
 | It is pinned and outnumbered in the open | **Conditional.** *If hit here, breaks* |
 | Unadapted, CQB kit, on Dry, under a long cone | **Unconditional.** Knowable now |
+| Agoraphobia: under a long cone in the open | **Unconditional**, on any ground and whatever the kit or training |
 
-Clause 2 requires the unit to *be* Pinned, which requires an enemy to choose to shoot it. That choice is intent, and this document does not draw intent (Principle 2). So the move preview shows the ingredients — outnumbered, in the open — and states the condition. It never promises the outcome. A "this unit will break" badge would be a lie dressed as legibility.
+**What is counted.** These are the ingredients, each one a number or a word already on screen:
 
-**Scars change the telegraph.** Agoraphobia ("breaks when a long cone sees them in the open," GDD §8.5) gives that unit clause 3 unconditionally, for the rest of the campaign, whatever their training. The unit carrying it shows it (section 10), and their move preview under a long cone on Dry says so before the click. A scar that silently changes when a unit breaks would be the exact failure Principle 1 exists to prevent.
+| Ingredient | Read | Drawn from |
+| --- | --- | --- |
+| **Guns on you** | A count of standing hostiles with a clean line on the unit | The exposure count (4.2), leaving out anyone bleeding out, who cannot fire |
+| **Friends near you** | A count of standing friends within 3 tiles, the unit itself included | A ring of that radius on the selected unit or a previewed tile. Downed units count for neither side |
+| **Outnumbered** | Guns on you is greater than friends near you. Shown as the two numbers, "2 on you, 1 near you" | Both counts |
+| **Cover in reach** | Whether any tile the unit can reach with the AP it holds is free of a clean line from every gun on it | The per-tile exposure the move preview already draws (4.2). Reachable tiles that are free of every gun are marked. In the open means none is marked, and it says so in words: *no cover in reach* |
+| **Under a long cone** | Whether the tile sits inside a loaded, unspent long Watch cone of a hostile | The cone label (4.4): "rifle, long" |
 
-**Broken.** A broken unit shows its broken move: the tiles that end closer to cover or to extraction, which is all GDD §5.5 allows it. A unit that is both Pinned and broken shows the broken move, not a duck. Units inside The Call's radius show that they cannot break.
+Cover in reach is weapon-aware because material is the only cover (GDD §5.4). The material hover already says a plank stops a pistol and not a rifle, so the same plank marks a tile as cover against one gun and not against another. The answer also moves with the AP the unit holds, which is exactly why the reserve marks (4.1) sit on the same path: spend the AP and cover falls out of reach.
+
+**Clause 2 is a condition, never a verdict.** It requires the unit to *be* Pinned, which requires an enemy to choose to shoot it. That choice is intent, and this document does not draw intent (Principle 2). So for a unit that is outnumbered and has no cover in reach but is not Pinned, the preview says exactly that and states the condition: *outnumbered, no cover in reach: if hit here, breaks.* For a move, the same counts are taken at the destination tile with the AP left after the move. It never promises the outcome. A "this unit will break" badge would be a lie dressed as legibility.
+
+**It lands the moment it is true.** Break is checked after every action and at each phase start (GDD §5.5). The telegraph is therefore not a warning about next turn; it is what happens on this click. A move that ends under a loaded long cone breaks an unadapted CQB unit on Dry as it arrives. A shot that pins a unit that is already outnumbered and in the open breaks it in the same action, and a player unit that breaks mid-phase loses the rest of that phase.
+
+**Scars change the telegraph.** Agoraphobia ("breaks when a long cone sees them in the open," GDD §8.5) is the third clause with the kit, training and terrain conditions taken off. The unit carrying it breaks under a loaded long cone with no cover in reach, on Mud or Falling as much as on Dry, for the rest of the campaign. The unit shows the scar (section 10), and its move preview says so before the click. A scar that silently changes when a unit breaks would be the exact failure Principle 1 exists to prevent.
+
+**Broken.** A broken unit shows its broken move: the tiles that end closer to cover or to extraction, which is all GDD §5.5 allows it. A unit that is both Pinned and broken shows the broken move, not a duck. Units inside The Call's radius show that they cannot break, and that overrides every clause above, Agoraphobia included.
 
 ### 4.7 Bleeding out
 
@@ -366,7 +383,7 @@ GDD §8 makes class training plus kit, caps trainees at the barracks, and makes 
 
 | Scar | Where the player meets it again |
 | --- | --- |
-| Agoraphobia | That unit's break telegraph, unconditionally, under a long cone on Dry (4.6) |
+| Agoraphobia | That unit's break telegraph, unconditionally, under a long cone with no cover in reach, on any ground (4.6) |
 | Lung damage | That unit's AP costs in water (4.1) |
 | Any scar | On the unit, in the roster, and in the preview it changes |
 
@@ -506,7 +523,9 @@ Cost notes beside the design. None of these change a rule.
 - The line preview names three outcomes: pins, drops to Bleeding Out, kills. Health is pips on every body, both sides.
 - Live enemy Watch cones are always drawn; a cone whose watcher is hidden is drawn without its apex. Friendly and spent cones follow the stacking table. A pinned watcher's cone shows spent at once.
 - Pinned is two reads: ducked, and ducking next.
-- Break clauses 1 and 3 are telegraphed unconditionally; clause 2 is telegraphed as a condition, never a verdict, because its trigger is intent. Scars change the telegraph.
+- Break clauses 1 and 3 are telegraphed unconditionally; clause 2 is telegraphed as a condition, never a verdict, because its trigger is intent. Scars change the telegraph, and Agoraphobia waives kit, training and terrain.
+- Break's ingredients are drawn as counts and words the player can read: guns on the unit against friends within 3 tiles, whether cover is in reach with the AP the unit holds, and whether a loaded long cone covers the tile. A break lands the moment it is true.
+- Long is a word on the cone, not a colour.
 - The off-ramp has four options; take the prisoner is Vanguard-only and appears only after research.
 - Commit policy: free, reversible until a move produces information, committed, confirmed. Ironman is never implied to be otherwise.
 - Founder creation is name, face and starting kit type. Nothing on that screen reads as a class pick or a stat spread.
@@ -524,7 +543,7 @@ Cost notes beside the design. None of these change a rule.
 - In-world hybrid text on the world only; no translation toggle. Plates carry the water right before instruments wake.
 - Rules live in data and pure functions; line of sight never uses physics; exposure is that function run backwards.
 
-**Paper (done in GDD 1.7 and 1.8):**
+**Paper (done in GDD 1.7, 1.8 and 1.9):**
 
 - [x] Squad-mode walking is not phased
 - [x] Contact and the knock, as working default
@@ -535,6 +554,7 @@ Cost notes beside the design. None of these change a rule.
 - [x] Fuel legs are knowable
 - [x] Take the prisoner is a named option
 - [x] The boat is a place on the map
+- [x] Break is defined: outnumbered, in the open, long cone and CQB kit, as working defaults
 
 **Blocking the first playable bowl (walk plus one fight):**
 
@@ -547,6 +567,7 @@ Cost notes beside the design. None of these change a rule.
 - [ ] Walk pace and boat handling in one bowl, on mouse and keyboard.
 - [ ] Contact in code as a pure function, not a feeling.
 - [ ] Bleed-out clock and Pinned × Watch in code, with their previews.
+- [ ] Break's ingredients as readable counts: guns on the unit, friends within 3 tiles, cover in reach, a loaded long cone. Cover in reach moves with AP, so it shares the path with the reserve marks.
 - [ ] Commit policy: the information boundary for undo, in code, before it is a habit.
 - [ ] First Gauge placeholder: a visible map change plus the squad reacting. Plate reads are a separate, cheaper item.
 
@@ -592,5 +613,6 @@ Cost notes beside the design. None of these change a rule.
 - [ ] What changes after dark.
 - [ ] Day burn numbers.
 - [ ] Contact and the knock locked, once they survive one bowl.
+- [ ] Break's thresholds locked, once they survive one bowl: the 3-tile friend radius, which classes are long, and whether Agoraphobia keeps a Dry condition (GDD §10).
 - [ ] What a taken boat costs (GDD §3.1).
 - [ ] How tightly a redirection previews in a half-fixed ring (GDD §6.4) — where a range stops being useful and starts being noise.

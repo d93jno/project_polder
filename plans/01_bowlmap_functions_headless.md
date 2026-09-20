@@ -1,7 +1,7 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.4 movement + reserves completed — next is 1.5 combat commands
-**Tracks:** GDD v1.8, UI/UX v0.4
+**Status:** 1.5 combat commands completed — next is 1.6, unblocked (§7.2 resolved in GDD 1.9)
+**Tracks:** GDD v1.9, UI/UX v0.5
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
 ---
@@ -202,7 +202,9 @@ The two reserve indices are the whole point of UI §4.1 — *"walk to the mark a
 
 ### 1.5 — Combat state and commands
 
-**Ships:** `combat_state.gd`, `commands/`.
+**Status:** completed
+
+**Ships:** expanded `combat_state.gd` / `unit.gd`, `commands/` (`move`, `shoot`, `watch`, `interact`, `throw`).
 
 ```
 Command:
@@ -212,14 +214,14 @@ Command:
 
 Previews call `validate()`. The UI in phase 3 renders the `Result`. Nothing draws a decision the rules layer has not already priced.
 
-**Rules to implement, all locked in GDD 1.7/1.8:**
+**Rules implemented, all locked in GDD 1.7/1.8:**
 
 | Rule | Source | Note |
 | --- | --- | --- |
 | Any non-drop hit pins | GDD §5.4 | There is no suppression weapon class |
 | Hit in own phase | GDD §5.4 | `DUCKED` — rest of phase gone, clears at end of it |
 | Hit in opponent's phase | GDD §5.4 | `DUCKING_NEXT` — live Watch cancels at once, next phase spent ducked |
-| One hit costs one phase at most | GDD §5.4 | Explicitly no stunlock. Test it |
+| One hit costs one phase at most | GDD §5.4 | Explicitly no stunlock. Tested |
 | Watch: one watch, one shot | GDD §5.2 | Cancels if the watcher is Pinned first; cone shows spent |
 | Health | GDD §5.4 | Rifle drops; two pistol hits drop. Pips, both sides |
 | Bleeding Out | GDD §5.5 | 3 rounds *working default*; a round is one player phase + one enemy phase |
@@ -242,9 +244,53 @@ break_check(map, state, unit) -> BreakResult
 
 Three return values, not two, and that is the point. GDD §5.5's second clause needs the unit to *be* Pinned, which needs an enemy to choose to shoot it — intent, which UI §4.6 refuses to draw. So clause 2 returns `WOULD_BREAK_IF_PINNED` and the preview renders it as *"if hit here, breaks."* Clauses 1 and 3 return `BREAKS` unconditionally.
 
-Also: the Agoraphobia scar makes clause 3 unconditional for that unit regardless of training (GDD §8.5, UI §4.6); units inside The Call's radius cannot break (GDD §8.4); a unit that is both Pinned and broken takes the broken move (GDD §5.5, 1.7).
+Also: the Agoraphobia scar is clause 3 with kit, training and terrain waived (GDD §5.5, §8.5); units inside The Call's radius cannot break (GDD §8.4); a unit that is both Pinned and broken takes the broken move (GDD §5.5, 1.7).
 
-**Two clauses cannot be implemented as written — see §7.2.** Clause 2 and clause 3 both rest on undefined terms. This phase is blocked on that raise.
+**Definitions** (GDD §5.5 as of 1.9, all *working default*; see §7.2 for how they were chosen). Each is a pure predicate over `map` and `state`:
+
+| Predicate | Rule |
+| --- | --- |
+| `Taxonomy.is_long(weapon)` | Rifle, LMG, sniper are long. Pistol, shotgun, melee, speargun are short |
+| `has_cqb_kit(unit)` | Every carried weapon is short. `Unit` carries one `weapon` today, so this is `not is_long(unit.weapon)` |
+| `under_long_cone(map, state, unit)` | A hostile, **unspent** Watch of a long class whose cone contains `unit.cell`. `Cones.cone` already requires a clean line, so containment is the whole test. A long weapon with no Watch does not count |
+| `outnumbered(map, state, unit)` | Standing hostiles with a clean line on `unit` **>** standing friends within 3 tiles (Chebyshev, all levels), counting `unit` itself. Downed units count for neither side |
+| `in_the_open(map, state, unit)` | At least one standing hostile has a clean line on `unit`, and **no** tile in `Movement.reachable(unit)` is free of a clean line from every such hostile. Pinned does **not** zero the AP for this test |
+
+```
+break_check(map, state, unit) -> BreakResult
+  1. in The Call's radius                                   -> SAFE
+  2. last standing friend on this map has dropped           -> BREAKS
+  3. Agoraphobia AND under_long_cone AND in_the_open        -> BREAKS   (kit, training, terrain waived)
+  4. unadapted AND on Dry AND has_cqb_kit AND under_long_cone -> BREAKS
+  5. outnumbered AND in_the_open:
+       pinned -> BREAKS,  not pinned -> WOULD_BREAK_IF_PINNED
+  6. otherwise                                              -> SAFE
+```
+
+Break is a state. Evaluate it after every command resolves and at each phase start, and let it land the moment it is true: a player unit that breaks mid-phase forfeits the rest of that phase (GDD §5.5). Pinned + broken takes the broken move.
+
+**Prerequisites that do not exist yet.** None of these are rules questions; they are missing data or helpers:
+
+- `Unit` fields: `adapted: bool` (Drifters, untrained AI, raw recruits are false), `agoraphobia: bool`, `broken: bool`. There is no scar field at all yet.
+- The Call: a radius around the founder that makes allies inside it immune. GDD §8.4 gives no number ("small early, full weight late"), so add `RulesConstants.CALL_RADIUS` as a working default and leave scaling for later.
+- `Movement.reachable(map, state, unit) -> Array[Vector3i]`: the same flood `Movement.path` already runs (`move_cost`, `_neighbors`, `_pop_min`), bounded by `unit.ap`, unoccupied tiles only.
+- Per-tile freedom from attackers: reuse the probe-unit trick `Movement.path` uses for `exposure_per_cell`, then test the attackers rather than the count.
+- A faction-filtered `cone_stack`. The current one counts friendly Watches too, and clause 4 needs hostile ones only.
+- A helper for "standing hostiles with a clean line on `unit`" that returns the units, not only `Exposure.count`.
+- One `Taxonomy.is_long()`. `constants.gd` repeats the rifle/LMG/sniper `match` three times and `taxonomy.gd` once; new code should call the helper, and those four can be folded into it while you are there.
+
+**Decide before writing the tests.** `CombatState.hostiles_of` includes bleeding units (`if not other.is_active() and not other.bleeding: continue`), so `ExposureQuery` currently counts a downed rifleman as a gun on you. A bleeder cannot fire, and the break rule needs standing units only. Either filter them out of exposure too, which is what the definitions imply, or keep exposure as "who could see you" and filter only in break. The first is simpler; the second keeps the UI §4.2 read unchanged.
+
+**Break tests, one per definition, taken from the examples the definitions were chosen with:**
+
+- Outnumbered: 2 guns on B with one friend adjacent is not outnumbered; the same fight with the friend 5 tiles away is. A downed friend adds nothing to the friend count
+- In the open: a plank between B and a rifleman does not help, so B is in the open; the same plank against a pistol gives B a reachable unexposed tile, so B is not. Spend AP until the plank is out of reach and the answer flips
+- Pinned does not zero the AP: a pinned unit one step from cover is not in the open
+- Long cone: a rifle with a loaded Watch and B inside it breaks an unadapted CQB unit on Dry; the same rifle with no Watch does not; a **spent** Watch does not; a pistol Watch does not
+- Clause 2 returns `WOULD_BREAK_IF_PINNED` when outnumbered and in the open but not Pinned, and `BREAKS` once it is Pinned
+- Agoraphobia breaks a trained, rifle-carrying unit in the open on Mud; a unit without the scar in the same spot is `SAFE`
+- The Call overrides every clause, including Agoraphobia
+- Mid-phase landing: a shot that pins the last unit needed for clause 2 breaks it in the same command, and the player unit loses the rest of that phase
 
 ```
 contact_check(map, state) -> ContactResult
@@ -291,7 +337,7 @@ Not in this phase, and not to be "just quickly added":
 
 1.2 (LOS) is the keystone — 1.3, 1.4, 1.5 and 1.6 all consume it. Do not start 1.3 until the LOS invariant suite is green, because an asymmetric LOS bug found later reads as an exposure bug and costs a day to trace.
 
-1.6 is blocked on the §7.2 raise. Everything before it is not, so the raise can be resolved while 1.0–1.5 are built.
+1.6 was blocked on the §7.2 raise; it was answered in GDD 1.9, so nothing blocks it now. The prerequisites listed under 1.6 are the first work in the phase.
 
 ---
 
@@ -307,7 +353,7 @@ Options: permissive (passes unless both corners block), strict (blocked if eithe
 
 **Raise to:** GDD §5.4 or UI §4.3 when those docs next open — record the rule there too.
 
-### 7.2 — Break clause 2 and 3 rest on undefined terms (blocks 1.6)
+### 7.2 — Break clause 2 and 3 rest on undefined terms (resolved in GDD 1.9)
 
 GDD §5.5, verbatim: *"it is pinned and outnumbered in the open"* and *"stands on Dry with CQB kit while a long cone sees it."*
 
@@ -321,7 +367,23 @@ Three terms carry the rule and none is defined anywhere in the GDD:
 
 `break_check` cannot be written without all three, and UI §4.6 promises the ingredients are telegraphed before the click — which means the player has to be able to *count* them. Whatever is chosen has to be countable on screen.
 
-**Raise to:** GDD §5.5, as working defaults. Suggest: outnumbered = more hostiles than friendlies with a clean line on this unit; in the open = exposure is `NO_HIDE` or no adjacent cover cell; long cone = a per-weapon-class property, since Vanguard cone length is already the thing that makes their streets deadly (GDD §5.2).
+**Raise to:** GDD §5.5, as working defaults.
+
+**Resolved.** Each term was put to a choice with alternatives, and the recommended option was taken in every case. The rules are now in GDD §5.5 under *Break, defined*, and the predicates are in §1.6 above.
+
+| Term | Chosen | Not taken |
+| --- | --- | --- |
+| **outnumbered** | Local: standing hostiles with a clean line **>** standing friends within 3 tiles, counting the unit itself | Squad-wide headcount (a fireteam is at most four, so nearly every fight is permanently outnumbered); flanked by two or more guns regardless of friends |
+| **in the open** | No tile reachable with the AP the unit holds is free of a clean line from every hostile that has one on it | No cover one step away (cheaper, less faithful to the mud line in GDD §6.3); the `NO_HIDE` terrain state (ignores real cover, contradicts §5.4) |
+| **long cone** | A loaded, unspent Watch of a long weapon class with a clean line on the unit | Any long weapon with a line, Watch or not (a rifle standing in view would rout everyone, with nothing drawn to warn the player); a fixed 8-tile length threshold |
+
+Three more calls were made without asking and are worth a look:
+
+- **CQB kit** was a fourth undefined term. Taken as: every carried weapon is short, from "shotguns, machetes, and sidearms" in GDD §6.3.
+- **When break is evaluated** was not stated. Taken as: after every action and at each phase start, landing immediately. GDD §5.5 already has broken player units losing "the rest of the current phase," which only makes sense mid-phase.
+- **Agoraphobia** uses "in the open" in GDD §8.5 where clause 3 says "on Dry". Taken as clause 3 with kit, training and terrain waived. The alternative is to keep the Dry condition. It is listed in GDD §10.
+
+**UI follow-up, done in UI/UX 0.5.** UI §4.6 was rewritten to draw what the rule counts: guns on the unit against friends within 3 tiles, cover in reach with the AP held, and a loaded long cone. Agoraphobia now reads as the third clause with kit, training and terrain waived, and §4.4 labels long cones with a word.
 
 ### 7.3 — Two smaller ones
 
