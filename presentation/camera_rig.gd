@@ -3,7 +3,7 @@ extends Node3D
 ## Fixed-pitch tactical camera shared by the fight view and P0 lighting scenes.
 ## Plan 2.5 lock (UI §2 / §18): perspective 25° FOV; hold-to-peek (not 90°-only).
 ## Orthographic remains an `O` diagnostic — never the authoring or fight default.
-## Wall fade (UI §2) is still out of scope.
+## Wall fade (UI §2) lives in presentation/wall_fade.gd, driven by fight_view.
 
 const FOV_DEG := 25.0
 ## Depression from horizontal. Matches scenes/p0 rest (eye −24,30.5,2 → look 8,3,2).

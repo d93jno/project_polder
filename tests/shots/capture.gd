@@ -101,6 +101,8 @@ func _apply_setup() -> bool:
 	match _setup:
 		"street_watch", "street_ap_spent":
 			return _setup_street_watch()
+		"street_yaw180":
+			return _setup_street_yaw180()
 		"adhoc":
 			return _setup_adhoc()
 		_:
@@ -156,6 +158,33 @@ func _setup_street_watch() -> bool:
 	return true
 
 
+func _setup_street_yaw180() -> bool:
+	## Yaw 180: tall quay between camera and Piet (plan 3.1). Hover a masonry cell
+	## so the cover word stays masonry while the quay is faded.
+	var rig = _fight.get_node_or_null("CameraRig")
+	if rig == null:
+		push_error("shots: CameraRig missing")
+		_exit_code = 1
+		return false
+	rig.yaw_index = 2
+	rig.peek_deg = 0.0
+	rig.apply_pose()
+	_fight._hover = Vector3i(6, 3, 0)
+	_fight._refresh_queries()
+	_fight._draw_preview()
+	_fight._draw_overlay_labels()
+	_fight._sync_hud()
+	## Snap fade so settle frames are not racing the ease.
+	if _fight._wall_fade != null and _fight._camera != null:
+		_fight._wall_fade.snap(
+			_fight._camera.global_position,
+			_fight._friendly_heads(),
+			_fight._bowl,
+			_fight._cutaway_z
+		)
+	return true
+
+
 func _capture_and_probe() -> void:
 	var vp := root.get_viewport()
 	var img: Image = vp.get_texture().get_image()
@@ -189,6 +218,8 @@ func _capture_and_probe() -> void:
 			_probe_cone_not_opaque(img)
 		"street_ap_spent":
 			_probe_spent_ap_darker(img)
+		"street_yaw180":
+			_probe_quay_faded()
 		_:
 			pass
 
@@ -241,6 +272,33 @@ func _probe_spent_ap_darker(img: Image) -> void:
 		_exit_code = 1
 		return
 	print("shots: AP probe ok lit=%s spent=%s" % [lit_l, spent_l])
+
+
+## Plan 3.1 — yaw 180 must fade the tall quay; hover cover word stays masonry.
+func _probe_quay_faded() -> void:
+	var best := 0.0
+	var bowl = _fight._bowl
+	if bowl == null:
+		push_error("shots: bowl missing")
+		_exit_code = 1
+		return
+	for n in bowl.get_children():
+		if not n.has_meta("polder_piece"):
+			continue
+		if str(n.get_meta("polder_piece")) != "env_canal_wall_tall":
+			continue
+		for gi in n.find_children("*", "GeometryInstance3D", true, false):
+			best = maxf(best, (gi as GeometryInstance3D).transparency)
+	if best < 0.5:
+		push_error("shots: tall quay not faded at yaw 180 (transparency=%s)" % best)
+		_exit_code = 1
+		return
+	var tag: int = bowl.cover_tag_at(Vector3i(6, 3, 0))
+	if tag != Taxonomy.CoverMaterial.MASONRY:
+		push_error("shots: hover cover tag changed under fade (got %s)" % tag)
+		_exit_code = 1
+		return
+	print("shots: yaw180 quay fade ok transparency=%s cover=masonry" % best)
 
 
 func _save_crop(img: Image, abs_out: String) -> void:

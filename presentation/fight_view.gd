@@ -10,6 +10,7 @@ const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
 const _Queries := preload("res://presentation/overlay_queries.gd")
+const _WallFade := preload("res://presentation/wall_fade.gd")
 const _MINT_3D := preload("res://presentation/mint_key_3d.gdshader")
 const _ScriptedFight := preload("res://rules/fixtures/scripted_fight.gd")
 
@@ -43,6 +44,7 @@ var _cutaway_z: int = 99
 var _max_z: int = 0
 var _queries
 var _labels_root: Node3D
+var _wall_fade
 var _confirm_target_id: int = -1
 
 
@@ -92,7 +94,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 
 
-func _process(_dt: float) -> void:
+func _process(dt: float) -> void:
 	var cell := _pick_cell()
 	if cell != _hover and cell != _INVALID:
 		_hover = cell
@@ -101,6 +103,7 @@ func _process(_dt: float) -> void:
 		_draw_preview()
 		_draw_overlay_labels()
 		_sync_hud()
+	_tick_wall_fade(dt)
 
 
 func _opening() -> CombatState:
@@ -156,6 +159,10 @@ func _build_world() -> void:
 	add_child(_hud)
 	_hud.slot_pressed.connect(_on_slot)
 	_hud.end_phase_pressed.connect(_end_phase)
+
+	_wall_fade = _WallFade.new()
+	_wall_fade.name = "WallFade"
+	add_child(_wall_fade)
 
 	var names := PackedStringArray()
 	for id in _player_ids:
@@ -787,3 +794,24 @@ func _ids_of(faction: Taxonomy.Faction) -> Array[int]:
 		ids.append(u.id)
 	ids.sort()
 	return ids
+
+
+func _tick_wall_fade(dt: float) -> void:
+	if _wall_fade == null or _camera == null or _bowl == null:
+		return
+	_wall_fade.tick(dt, _camera.global_position, _friendly_heads(), _bowl, _cutaway_z)
+
+
+## Head/chest/feet points for wall-fade segments. Friendlies only (UI §2).
+func _friendly_heads() -> Array:
+	var heads: Array = []
+	for id in _player_ids:
+		var u: Unit = _state.get_unit(id)
+		if u == null or not u.is_active() or u.extracted:
+			continue
+		if u.cell.z > _cutaway_z:
+			continue
+		var ground := PresentationCoords.world_ground(u.cell)
+		for y in _WallFade.BODY_SAMPLE_Y_M:
+			heads.append(ground + Vector3(0.0, float(y), 0.0))
+	return heads
