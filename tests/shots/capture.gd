@@ -103,6 +103,8 @@ func _apply_setup() -> bool:
 			return _setup_street_watch()
 		"street_yaw180":
 			return _setup_street_yaw180()
+		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway":
+			return _setup_terrace()
 		"adhoc":
 			return _setup_adhoc()
 		_:
@@ -182,6 +184,28 @@ func _setup_street_yaw180() -> bool:
 			_fight._bowl,
 			_fight._cutaway_z
 		)
+	return true
+
+
+func _setup_terrace() -> bool:
+	## Terrace shots boot via --bowl=terrace on the capture command line (shots.sh).
+	## Reinstate the water step / cutaway the named setup asks for.
+	if str(_fight.get("_bowl_id")) != "terrace":
+		push_error("shots: terrace setup needs --bowl=terrace (got bowl_id=%s)" % _fight.get("_bowl_id"))
+		_exit_code = 1
+		return false
+	match _setup:
+		"terrace_flooded":
+			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
+		"terrace_falling":
+			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
+		"terrace_roof_cutaway":
+			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
+			_fight._set_cutaway(1)
+	_fight._sync_water_from_map()
+	_fight._hover = Vector3i(4, 5, 2)
+	_fight._selected_id = 4 ## roof body
+	_fight._redraw()
 	return true
 
 

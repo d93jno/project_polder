@@ -210,3 +210,25 @@ func test_shot_outcome_drops_to_bleeding() -> void:
 	state.add_unit(enemy)
 	var q = Queries.compute(map, state, 1, enemy.cell)
 	assert_eq(q.shot_outcome, "drops to Bleeding Out")
+
+
+func test_terrace_climb_path_matches_movement() -> void:
+	## Plan 3 verification: overlay path cost for a climb equals Movement.path.
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	var state := FloodedTerrace.opening(Taxonomy.WaterStep.FLOODED)
+	state.units.erase(FloodedTerrace.P4)
+	var u: Unit = state.get_unit(FloodedTerrace.P1)
+	u.cell = Vector3i(4, 4, 0)
+	state.in_contact = true
+	var dest := FloodedTerrace.ROOF_A
+	var q = Queries.compute(state.map, state, FloodedTerrace.P1, dest)
+	var path := Movement.path(state.map, state, u, dest)
+	assert_true(path.reachable)
+	assert_true(q.path.reachable)
+	assert_eq(q.path.total_cost, path.total_cost)
+	assert_eq(q.path.cells, path.cells)
+	assert_eq(
+		path.total_cost,
+		RulesConstants.MOVE_COST_SWIM
+		+ 2 * (RulesConstants.MOVE_COST_SWIM + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE)
+	)

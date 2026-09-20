@@ -244,6 +244,6 @@ Last unit out breaks on the boat (Phase 1 §7.7): same rule — draw it, don't h
 
 ## 8. What comes after
 
-Polish on the same join: fog peel, commit/confirm chrome, throw/interact gizmos, wall fade, animation from command outcomes. Table mode stays a separate spine (UI §8).
+Polish on the same join: fog peel, commit/confirm chrome, throw/interact gizmos, animation from command outcomes. Wall fade and the second bowl are `plans/03_second_bowl_height_on_screen.md`. Table mode stays a separate spine (UI §8).
 
 Do not start a second production bowl until §7.1 and §7.2 are locked — **they are** (2.5).

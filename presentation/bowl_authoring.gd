@@ -84,12 +84,35 @@ static func _no_overlaps(stamps: Array) -> PackedStringArray:
 		var stamp: Stamp = s
 		for cell in PresentationCatalog.stamp_cells(stamp):
 			if seen.has(cell):
+				var other_id: String = seen[cell]
+				if _overlap_allowed(other_id, stamp.piece_id):
+					continue
 				out.append(
-					"overlap: %s claimed by %s and %s" % [cell, seen[cell], stamp.piece_id]
+					"overlap: %s claimed by %s and %s" % [cell, other_id, stamp.piece_id]
 				)
 			else:
 				seen[cell] = stamp.piece_id
 	return out
+
+
+## House shell + interior floors share a footprint; connectors dress a climb column;
+## shanty dressing sits on a roof deck.
+static func _overlap_allowed(a: String, b: String) -> bool:
+	if is_connector(a) or is_connector(b):
+		return true
+	var floor_a := a.begins_with("env_floor_interior")
+	var floor_b := b.begins_with("env_floor_interior")
+	var house_a := a.begins_with("env_house_2storey")
+	var house_b := b.begins_with("env_house_2storey")
+	if (floor_a and house_b) or (floor_b and house_a):
+		return true
+	var deck_a := a.begins_with("env_roof_deck")
+	var deck_b := b.begins_with("env_roof_deck")
+	var shanty_a := a.begins_with("env_shanty")
+	var shanty_b := b.begins_with("env_shanty")
+	if (deck_a and shanty_b) or (deck_b and shanty_a):
+		return true
+	return false
 
 
 static func _no_invisible_climb(

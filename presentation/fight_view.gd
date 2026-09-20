@@ -10,15 +10,18 @@ const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
 const _Queries := preload("res://presentation/overlay_queries.gd")
+const _Picking := preload("res://presentation/picking.gd")
 const _WallFade := preload("res://presentation/wall_fade.gd")
 const _MINT_3D := preload("res://presentation/mint_key_3d.gdshader")
 const _ScriptedFight := preload("res://rules/fixtures/scripted_fight.gd")
+const _FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+const _TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
 
 const _NAMES := {
-	_ScriptedFight.P1: "Piet",
-	_ScriptedFight.P2: "Jan",
-	_ScriptedFight.P3: "Els",
-	_ScriptedFight.P4: "Kees",
+	1: "Piet",
+	2: "Jan",
+	3: "Els",
+	4: "Kees",
 }
 const _INVALID := Vector3i(999, 999, 999)
 ## env_ridge_farfield.glb is 80 x 34.3 m. Yawed 90° its depth (34.3) runs along +X.
@@ -26,8 +29,17 @@ const _RIDGE_HALF_DEPTH_M := 17.2
 const _RIDGE_GAP_M := 4.0
 ## Hit pips sit at 1.95 m with their count above; the exposure word must clear them.
 const _EXPOSURE_LABEL_Y := 2.85
+## F cycles Flooded → Falling → Mud → Dry (plan 3.4).
+const _WATER_CYCLE := [
+	Taxonomy.WaterStep.FLOODED,
+	Taxonomy.WaterStep.FALLING,
+	Taxonomy.WaterStep.MUD,
+	Taxonomy.WaterStep.DRY,
+]
 
 var _state: CombatState
+var _bowl_id: String = "street"
+var _stamps: Array = []
 var _selected_id: int = 1
 var _hover: Vector3i = Vector3i.ZERO
 var _camera: Camera3D
@@ -49,14 +61,23 @@ var _confirm_target_id: int = -1
 
 
 func _ready() -> void:
+	_bowl_id = _parse_bowl_arg()
 	_state = _opening()
+	_stamps = _stamps_for_bowl()
 	_player_ids = _ids_of(Taxonomy.Faction.PLAYER)
 	_selected_id = _player_ids[0] if not _player_ids.is_empty() else 1
 	_build_world()
 	_redraw()
 	_hud.set_note(
-		"click walk until contact · shoot · Q Watch · Space phase · Tab select · F Falling · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
+		"click walk until contact · shoot · Q Watch · Space phase · Tab select · F water step · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
 	)
+
+
+func _parse_bowl_arg() -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--bowl="):
+			return arg.substr("--bowl=".length())
+	return "street"
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -83,8 +104,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_set_cutaway(_cutaway_z - 1)
 				get_viewport().set_input_as_handled()
 			KEY_F:
-				## A/B Falling vs Flooded on the same kit (exposure word + water step).
-				_toggle_falling_flooded()
+				## Four-step water cycle on the shared BowlMap (plan 3.4 / UI §3).
+				_cycle_water_step()
 				get_viewport().set_input_as_handled()
 			KEY_ESCAPE:
 				if _confirm_target_id != -1:
@@ -107,8 +128,23 @@ func _process(dt: float) -> void:
 
 
 func _opening() -> CombatState:
-	## Same opening the headless scripted fight uses (plan 2.6).
+	## Shared fixtures: street (2.6) or terrace (3.3). View never rebuilds the map.
+	if _bowl_id == "terrace":
+		return _FloodedTerrace.opening(Taxonomy.WaterStep.FLOODED)
 	return _ScriptedFight.opening()
+
+
+func _stamps_for_bowl() -> Array:
+	if _bowl_id == "terrace":
+		return _TerraceStamps.stamps()
+	return _ScriptedFight.stamps()
+
+
+func _look_at_for_bowl() -> Vector3:
+	if _bowl_id == "terrace":
+		## Canal axis mid-street, facing the terrace run.
+		return PresentationCoords.world(Vector3i(8, 4, 0)) + Vector3(0.0, 2.0, 0.0)
+	return PresentationCoords.world(Vector3i(8, 3, 0)) + Vector3(0.0, 1.5, 0.0)
 
 
 func _build_world() -> void:
@@ -116,7 +152,7 @@ func _build_world() -> void:
 	_bowl = _BowlDraw.new()
 	_bowl.name = "Bowl"
 	add_child(_bowl)
-	_bowl.draw_map(_state.map)
+	_bowl.draw_map(_state.map, _stamps)
 	_max_z = _map_max_z(_state.map)
 	_cutaway_z = _max_z
 	_bowl.set_cutaway_z(_cutaway_z)
@@ -217,8 +253,7 @@ func _add_environment() -> void:
 
 	var rig = _CameraRig.new()
 	rig.name = "CameraRig"
-	## Look at the wall / contact lane — same street the scripted fight walks.
-	rig.look_at_point = PresentationCoords.world(Vector3i(8, 3, 0)) + Vector3(0.0, 1.5, 0.0)
+	rig.look_at_point = _look_at_for_bowl()
 	add_child(rig)
 	_camera = rig.ensure_camera()
 
@@ -251,6 +286,9 @@ func _draw_units() -> void:
 		view.name = "U%d" % u.id
 		_units_root.add_child(view)
 		view.bind_unit(u, _state.live_watch_for(u.id) != null)
+		var loco := _locomotion_clip(u)
+		if loco != "":
+			view.play(loco)
 		## Cutaway hides floors above N; units on those floors hide with them.
 		## Tab / fireteam still select a roof unit while the street cutaway is up.
 		view.visible = view.visible and u.cell.z <= _cutaway_z
@@ -548,7 +586,6 @@ func _sync_hud() -> void:
 	_hud.set_hits(u.hp, RulesConstants.HP_PIPS)
 	_hud.set_bleed_rounds(u.bleed_rounds_left if u.bleeding else 0)
 	var exp = _queries.exposure
-	var exp_word: String = _Queries.exposure_word(exp)
 	match exp.state:
 		Exposure.State.HIDDEN:
 			_hud.set_exposure("hidden")
@@ -586,20 +623,32 @@ func _sync_hud() -> void:
 	if _confirm_target_id != -1:
 		hover_txt += "  CONFIRM kills a bleeder"
 	var step_name := str(Taxonomy.WaterStep.keys()[_state.map.water_step])
+	## Exposure word lives on the body (plan 3.5); HUD carries count and sources.
 	var bits: Array[String] = [
 		hover_txt,
 		"z %d" % u.cell.z,
 		"cutaway %d" % _cutaway_z,
 		step_name,
-		exp_word,
 	]
 	if exp.count > 0:
 		bits.append("seen by %d" % exp.count)
 	if not exp.sources.is_empty():
 		var src_bits: Array[String] = []
 		for s in exp.sources:
-			src_bits.append("(%d,%d)" % [s.x, s.y])
+			var tag := "(%d,%d)" % [s.x, s.y]
+			var gun := _hostile_at(s)
+			if gun != null and gun.broken:
+				tag += " brk"
+			src_bits.append(tag)
 		bits.append("from %s" % ", ".join(src_bits))
+	elif exp.count > 0:
+		## Count without sources: still name broken guns among attackers (plan 3.5).
+		var brk := 0
+		for a in _state.attackers_of(_state.map, u):
+			if a.broken:
+				brk += 1
+		if brk > 0:
+			bits.append("%d broken still a gun" % brk)
 	if _queries.stack_label != "":
 		bits.append(_queries.stack_label)
 	if break_txt != "":
@@ -616,17 +665,22 @@ func _draw_overlay_labels() -> void:
 		return
 	var sel: Unit = _state.get_unit(_selected_id)
 	if sel != null and sel.is_active() and sel.cell.z <= _cutaway_z:
-		var exp = _queries.exposure
-		var text := _Queries.exposure_word(exp)
-		if exp.count > 0:
-			text += " · seen by %d" % exp.count
-		if not exp.sources.is_empty():
-			text += " · from %d" % exp.sources.size()
+		## Word only on the body; count/sources live in the HUD (plan 3.5).
 		_spawn_label(
 			PresentationCoords.world_ground(sel.cell) + Vector3(0.0, _EXPOSURE_LABEL_Y, 0.0),
-			text,
+			_Queries.exposure_word(_queries.exposure),
 			0.011
 		)
+	## Broken hostiles that still count as guns — draw the fact, don't hide it (plan 3.5).
+	if sel != null and sel.is_active():
+		for hostile in _state.attackers_of(_state.map, sel):
+			if not hostile.broken or hostile.cell.z > _cutaway_z:
+				continue
+			_spawn_label(
+				PresentationCoords.world_ground(hostile.cell) + Vector3(0.0, 2.4, 0.0),
+				"broken · still a gun",
+				0.01
+			)
 	## Cone weapon / long words near the far tip of each drawn watch.
 	for entry in _queries.watches:
 		var cells: Array = entry["cells"]
@@ -664,6 +718,16 @@ func _draw_overlay_labels() -> void:
 				word,
 				0.01
 			)
+
+
+func _hostile_at(cell: Vector3i) -> Unit:
+	for u in _state.all_units():
+		if u.cell == cell and u.is_active() and CombatState.is_hostile(
+			_state.get_unit(_selected_id).faction if _state.get_unit(_selected_id) else Taxonomy.Faction.PLAYER,
+			u.faction
+		):
+			return u
+	return null
 
 
 func _spawn_label(origin: Vector3, text: String, pixel: float) -> void:
@@ -716,21 +780,31 @@ func _pick_cell() -> Vector3i:
 	var dir := _camera.project_ray_normal(mouse)
 	if absf(dir.y) < 0.0001:
 		return _INVALID
+	## A body is a standing volume, not a point on the floor: pick it first, or a click on an
+	## enemy's torso lands on the tile behind their feet (a move instead of a shot).
+	var body := _Picking.body_under_ray(_state, _cutaway_z, origin, dir)
 	## Ray vs the cutaway floor plane so roof tiles pick when that level is open.
 	var plane_y := float(_cutaway_z) * PresentationCoords.LEVEL_M
 	var t := (plane_y - origin.y) / dir.y
-	if t < 0.0:
+	if t >= 0.0:
+		var hit := origin + dir * t
+		var xy := PresentationCoords.cell_on_ground(hit)
+		var cell := Vector3i(xy.x, xy.y, _cutaway_z)
+		if _state.map.has_cell(cell):
+			## A floor between the camera and the body (roof over a street unit) wins.
+			if not body.is_empty() and float(body["t"]) < t:
+				return (body["unit"] as Unit).cell
+			return cell
+		if not body.is_empty():
+			return (body["unit"] as Unit).cell
+		## Fall back to lower authored floors under the same footprint.
+		for z in range(_cutaway_z, -1, -1):
+			var c := Vector3i(xy.x, xy.y, z)
+			if _state.map.has_cell(c):
+				return c
 		return _INVALID
-	var hit := origin + dir * t
-	var xy := PresentationCoords.cell_on_ground(hit)
-	var cell := Vector3i(xy.x, xy.y, _cutaway_z)
-	if _state.map.has_cell(cell):
-		return cell
-	## Fall back to lower authored floors under the same footprint.
-	for z in range(_cutaway_z, -1, -1):
-		var c := Vector3i(xy.x, xy.y, z)
-		if _state.map.has_cell(c):
-			return c
+	if not body.is_empty():
+		return (body["unit"] as Unit).cell
 	return _INVALID
 
 
@@ -750,13 +824,39 @@ func _sync_water_from_map() -> void:
 	_water.visible = _state.map.water_step != Taxonomy.WaterStep.DRY
 
 
-func _toggle_falling_flooded() -> void:
-	if _state.map.water_step == Taxonomy.WaterStep.FALLING:
-		_state.map.water_step = Taxonomy.WaterStep.FLOODED
-	else:
-		_state.map.water_step = Taxonomy.WaterStep.FALLING
+func _cycle_water_step() -> void:
+	var i := _WATER_CYCLE.find(_state.map.water_step)
+	if i < 0:
+		i = 0
+	_state.map.water_step = _WATER_CYCLE[(i + 1) % _WATER_CYCLE.size()]
 	_sync_water_from_map()
 	_redraw()
+
+
+## Swim on Flooded streets; climb when standing on a connector column (plan 3.4).
+func _locomotion_clip(u: Unit) -> String:
+	if u.dead or u.bleeding or u.pin != Unit.PinState.NONE:
+		return ""
+	if _state.live_watch_for(u.id) != null:
+		return ""
+	if _on_connector_column(u.cell):
+		return "climb"
+	var cell: Cell = _state.map.get_cell(u.cell)
+	if cell != null and cell.has_flag(Taxonomy.CellFlags.DECK):
+		return ""
+	if _state.map.water_step == Taxonomy.WaterStep.FLOODED:
+		return "swim"
+	return ""
+
+
+func _on_connector_column(cell: Vector3i) -> bool:
+	for s in _stamps:
+		var stamp: Stamp = s
+		if not BowlAuthoring.is_connector(stamp.piece_id):
+			continue
+		if stamp.origin.x == cell.x and stamp.origin.y == cell.y:
+			return true
+	return false
 
 
 func _draw_height_labels() -> void:

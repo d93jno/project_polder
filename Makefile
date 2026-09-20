@@ -10,7 +10,7 @@ help:
 	@echo "Project Polder — local Godot targets"
 	@echo "  make check-godot  Verify editor at \$$GODOT matches .godot-version ($(GODOT_VERSION))"
 	@echo "  make editor       Open the Godot editor"
-	@echo "  make run          Run the project"
+	@echo "  make run          Run the project (BOWL=terrace for the flooded terrace)"
 	@echo "  make import       Headless reimport assets"
 	@echo "  make test         Run GUT headless; fails on load errors and empty runs too (ARGS=\"-gselect=name\" to filter)"
 	@echo "  make shots        Render smoke in a real window; PNGs under build/shots/ (needs GPU+display)"
@@ -28,7 +28,7 @@ editor: check-godot
 	$(GODOT) --path . --editor
 
 run: check-godot
-	$(GODOT) --path .
+	$(GODOT) --path . $(if $(BOWL),-- --bowl=$(BOWL),)
 
 import: check-godot
 	$(GODOT) --headless --path . --import

@@ -57,10 +57,10 @@ const METAL_ID := "env_shanty_water_tank"
 ## Cell footprint of multi-cell kit pieces: Vector3i(cells_x, cells_y, levels).
 ## Missing ids default to 1×1×1 (single-cell props / slabs). Yaw 90/270 swaps x/y.
 const FOOTPRINTS := {
-	"env_house_2storey_a": Vector3i(2, 2, 2),
-	"env_house_2storey_b": Vector3i(2, 2, 2),
-	"env_house_2storey_c": Vector3i(2, 2, 2),
-	"env_house_2storey_d": Vector3i(2, 2, 2),
+	"env_house_2storey_a": Vector3i(2, 2, 1),
+	"env_house_2storey_b": Vector3i(2, 2, 1),
+	"env_house_2storey_c": Vector3i(2, 2, 1),
+	"env_house_2storey_d": Vector3i(2, 2, 1),
 	"env_roof_deck_a": Vector3i(2, 2, 1),
 	"env_roof_deck_b": Vector3i(2, 2, 1),
 	"env_floor_interior_1": Vector3i(2, 2, 1),

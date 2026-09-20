@@ -189,6 +189,16 @@ func test_masonry_not_walkable() -> void:
 	assert_false(Movement.is_walkable(map, Vector3i(1, 0, 0)))
 
 
+func test_interior_masonry_is_walkable() -> void:
+	## Terrace rooms: building volume is masonry for LOS, INTERIOR makes it standable (plan 3.3).
+	var map := BowlMap.new()
+	map.set_cell(
+		Vector3i(1, 0, 0),
+		Cell.new(Taxonomy.CoverMaterial.MASONRY, Taxonomy.CellFlags.INTERIOR)
+	)
+	assert_true(Movement.is_walkable(map, Vector3i(1, 0, 0)))
+
+
 ## --- Occupancy, reachable() and the shared flood (plan §1.5.1) ---
 
 

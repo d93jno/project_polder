@@ -53,13 +53,17 @@ if [[ $# -gt 0 ]]; then
   exit $?
 fi
 
-SETUPS=(street_watch street_ap_spent street_yaw180)
+SETUPS=(street_watch street_ap_spent street_yaw180 terrace_flooded terrace_falling terrace_roof_cutaway)
 rc=0
 
 for setup in "${SETUPS[@]}"; do
   PNG="$OUT_DIR/${setup}.png"
   echo "shots: $setup → $PNG"
-  capture "$setup" "$PNG" --setup="$setup" --out="$PNG" || rc=1
+  extra=()
+  case "$setup" in
+    terrace_*) extra=(--bowl=terrace) ;;
+  esac
+  capture "$setup" "$PNG" --setup="$setup" --out="$PNG" "${extra[@]}" || rc=1
 done
 
 if [[ $rc -eq 0 ]]; then

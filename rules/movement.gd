@@ -18,12 +18,13 @@ static func move_cost(
 
 static func is_walkable(map: BowlMap, cell: Vector3i) -> bool:
 	## Sparse authorship: only placed cells are walkable. Solid walls are not.
+	## INTERIOR on masonry/metal is a room volume: standable, still stops shots through it.
 	if not map.has_cell(cell):
 		return false
-	var material := map.get_cell(cell).material
-	match material:
+	var c: Cell = map.get_cell(cell)
+	match c.material:
 		Taxonomy.CoverMaterial.MASONRY, Taxonomy.CoverMaterial.METAL:
-			return false
+			return c.has_flag(Taxonomy.CellFlags.INTERIOR)
 		_:
 			return true
 

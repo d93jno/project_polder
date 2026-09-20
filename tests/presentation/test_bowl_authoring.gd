@@ -11,6 +11,15 @@ func test_scripted_street_passes_lint() -> void:
 	assert_eq(failures, PackedStringArray(), "\n".join(failures))
 
 
+func test_terrace_passes_lint() -> void:
+	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	var failures := BowlAuthoring.lint(
+		FloodedTerrace.map(), TerraceStamps.stamps(), TerraceStamps.swim_columns()
+	)
+	assert_eq(failures, PackedStringArray(), "\n".join(failures))
+
+
 func test_cutaway_passes_lint() -> void:
 	var failures := BowlAuthoring.lint(CutawayBowl.map(), CutawayBowl.stamps())
 	assert_eq(failures, PackedStringArray(), "\n".join(failures))
