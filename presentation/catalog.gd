@@ -18,9 +18,18 @@ const UI_THEME := "res://assets/ui/theme/"
 const UI_HUD := "res://assets/ui/hud/"
 
 const HUMANOID := CHARS + "char_humanoid.glb"
+const HUMANOID_DRIFTER_A := CHARS + "char_humanoid_drifter_a.glb"
+const HUMANOID_DRIFTER_B := CHARS + "char_humanoid_drifter_b.glb"
 const MACHETE := CHARS + "char_kit_machete.glb"
 const PISTOL := CHARS + "char_kit_pistol.glb"
 const BOAT := VEHICLES + "veh_boat_camp.glb"
+
+
+## Salvage kit for Drifters (A/B by id). Everyone else uses the unclassed basin body.
+static func humanoid_for(faction: Taxonomy.Faction, unit_id: int) -> String:
+	if faction == Taxonomy.Faction.DRIFTER:
+		return HUMANOID_DRIFTER_A if (unit_id % 2) == 0 else HUMANOID_DRIFTER_B
+	return HUMANOID
 
 const WATER_MAT := SHADERS + "water.tres"
 const CONE_MAT := SHADERS + "watch_cone.tres"

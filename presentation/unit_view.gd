@@ -1,22 +1,21 @@
 extends Node3D
 ## Instances the shared humanoid and a held weapon. Plays named clips.
-## Does not own Unit / CombatState.
+## Does not own Unit / CombatState. Mesh path comes from PresentationCatalog.humanoid_for.
 
 @export_enum("machete", "pistol", "none") var weapon: String = "machete"
 @export var clip: String = "idle"
+var body_path: String = PresentationCatalog.HUMANOID
 var unit_id: int = -1
 
 
 func _ready() -> void:
-	var body := (load(PresentationCatalog.HUMANOID) as PackedScene).instantiate()
-	body.name = "Body"
-	add_child(body)
-	_attach_weapon(body)
-	_play(body, clip)
+	_ensure_body()
 
 
 func bind_unit(u: Unit, watching: bool) -> void:
 	unit_id = u.id
+	weapon = "machete" if u.weapon == Taxonomy.WeaponClass.MELEE else "pistol"
+	_ensure_body(PresentationCatalog.humanoid_for(u.faction, u.id))
 	position = PresentationCoords.world_ground(u.cell)
 	rotation_degrees = Vector3(0.0, PresentationCoords.yaw_degrees(u.facing), 0.0)
 	visible = not u.extracted
@@ -37,6 +36,25 @@ func play(clip_name: String) -> void:
 	var body := get_node_or_null("Body")
 	if body:
 		_play(body, clip_name)
+
+
+func _ensure_body(path: String = "") -> void:
+	if not path.is_empty():
+		body_path = path
+	var existing := get_node_or_null("Body")
+	if existing and existing.get_meta("polder_body_path", "") == body_path:
+		return
+	if existing:
+		existing.free()
+	var packed := load(body_path) as PackedScene
+	if packed == null:
+		packed = load(PresentationCatalog.HUMANOID) as PackedScene
+	var body := packed.instantiate()
+	body.name = "Body"
+	body.set_meta("polder_body_path", body_path)
+	add_child(body)
+	_attach_weapon(body)
+	_play(body, clip)
 
 
 func _play(root: Node, clip_name: String) -> void:

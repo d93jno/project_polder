@@ -1,6 +1,6 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0–2.5 completed — camera projection + peek locked; next is shared scripted-fight opening (2.6)
+**Status:** 2.0–2.6 completed — shared scripted-fight opening on screen; Phase 2 kit join closed
 **Tracks:** GDD v1.10, UI/UX v0.6, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
@@ -60,6 +60,8 @@ presentation/
   camera_rig.gd            # rest pose, 90° snap, 3 zooms, perspective/ortho, peek
   fight_view.gd            # input -> validate/apply; draws queries.* only for overlays
   fixtures/cutaway_bowl.gd # street + roof + plank/smoke watches (2.2–2.3); not the scripted fight
+rules/
+  fixtures/scripted_fight.gd  # shared opening for test + fight_view (2.6)
   gallery.gd               # art-only flooded bowl (not a fight)
 scenes/p0/
   flooded_roof.tscn        # camera-test fixture
@@ -111,7 +113,7 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 **What landed.** `unit_view` on the shared humanoid. Water plane Y = `LEVEL_M * water_z` via `PresentationCoords.water_height_m`; step updates the shader without rebuilding the kit (`F` toggles Falling ↔ Flooded). Floor cutaway (`PgUp` / `PgDn`) hides kit + units above N. Height-on-tile `Label3D` digits when a unit is selected. Deck cells draw `env_roof_deck_a`. Picking rays the cutaway floor so roof tiles select. Tab / fireteam still select a roof unit when cutaway is on the street. Fixture: `presentation/fixtures/cutaway_bowl.gd` (street + roof, FLOODED default). Exposure **word** in the height read (`hidden` / `exposed` / `no hide`). Tests: `tests/presentation/test_cutaway_water.gd`.
 
-**Note.** `make run` opens the cutaway fixture for this slice. `_scripted_fight_opening()` is kept for 2.6's shared opening.
+**Note.** Cutaway fixture is for presentation tests. `make run` uses the shared scripted-fight opening (2.6).
 
 ---
 
@@ -133,7 +135,7 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 **Still open.**
 
-- Opening duplicated in `fight_view._opening()` — see 2.6.
+- (none for 2.4 — shared opening landed in 2.6)
 
 **Done when:** a human can drive the scripted-fight *shape* without the debugger, and every preview is a field on `overlay_queries`.
 
@@ -156,13 +158,11 @@ Defaults in `camera_rig.gd` (`LOCKED_ORTHOGRAPHIC`, `LOCKED_PEEK_ENABLED`) match
 
 ### 2.6 — Scripted fight smoke on screen
 
-**Status:** not started as a shared fixture (the view *looks* like the fight but rebuilds it)
+**Status:** completed
 
-**Ships:** one function or Resource both `tests/fights/test_scripted_fight.gd` and `fight_view.gd` call for the opening `CombatState`. Stepping the recorded command list is optional; matching the opening is not.
+**What landed.** `rules/fixtures/scripted_fight.gd` owns `street()` / `opening()`. Both `tests/fights/test_scripted_fight.gd` and `fight_view.gd` load it — no hand-rebuilt map in the view. `make run` opens the Dry street with four players and three Drifters; contact → Watch break → pin / bleed / extract is playable smoke. Cutaway roof fixture stays under `presentation/fixtures/cutaway_bowl.gd` for 2.2–2.3 tests only. Headless `make test` remains the authority; on-screen is not a second rules suite.
 
-**Done when:** contact → phases → pin → break/bleed is visible from that fixture; `make test` remains the authority. On-screen pass is smoke, not a second rules suite.
-
-**Do not** special-case overlays if a broken enemy still counts as a gun (Phase 1 §7.8). If it feels wrong, raise the GDD.
+**Still open.** Stepping the recorded command list on screen (optional). Broken enemies still count as guns (Phase 1 §7.8) — draw it, don't hide it.
 
 ---
 
@@ -234,7 +234,7 @@ Last unit out breaks on the boat (Phase 1 §7.7): same rule — draw it, don't h
 
 ### 7.6 — Shared opening (blocks 2.6)
 
-Move the scripted-fight `_street` / `_opening` to a module both the test and the view load (e.g. `rules/fixtures/scripted_fight.gd` or `tests/fights/opening.gd` preloaded by the view). A fight_view that rebuilds the map by hand will drift.
+**Landed (2.6):** `rules/fixtures/scripted_fight.gd` — `street()` / `opening()` (preload, no `class_name`). Test and fight view both call it.
 
 ### 7.7 — Path reserve language
 

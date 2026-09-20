@@ -1,54 +1,24 @@
 extends GutTest
 
-## The proof (plan §1.6). One bowl, four bodies: walk until contact, exchange fire, one unit pinned,
+## The proof (plan §1.6 / 2.6). One bowl, four bodies: walk until contact, exchange fire, one unit pinned,
 ## one broken, one bleeding out, extract. Driven entirely through commands and asserted end to end,
 ## headless. It reads as a description of the fight.
 ##
+## Opening state comes from `ScriptedFight` — the same module `fight_view` loads (plan 2.6).
 ## The bowl is a street with a wall across its south half. The squad starts hidden behind the wall.
 ## The Drifters are in the lane to the east: one close enough to fall inside a rifle's cone, two more
 ## than a rifle cone's length away, so they can shoot down the lane but are never frightened by it.
 
-const PLAYER := Taxonomy.Faction.PLAYER
-const DRIFTER := Taxonomy.Faction.DRIFTER
+const ScriptedFight := preload("res://rules/fixtures/scripted_fight.gd")
 
-const P1 := 1 ## trained rifleman, sets the Watch
-const P2 := 2 ## raw recruit, gets pinned
-const P3 := 3 ## medic with a trauma kit
-const P4 := 4 ## raw recruit, goes down
-const D_NEAR := 10 ## in the rifle's cone: routs
-const D_FAR_A := 11 ## out of the cone: shoots P2
-const D_FAR_B := 12 ## out of the cone: shoots P4 twice
-
-const CONTACT_TILE := Vector3i(5, 4, 0)
-
-
-func _street() -> BowlMap:
-	var map := BowlMap.new()
-	map.water_step = Taxonomy.WaterStep.DRY
-	for x in range(0, 17):
-		for y in range(0, 6):
-			map.set_cell(Vector3i(x, y, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
-	for y in range(0, 4):
-		map.set_cell(Vector3i(6, y, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
-	return map
-
-
-func _opening() -> CombatState:
-	var state := CombatState.new()
-	state.map = _street()
-	state.extract_cells = [Vector3i(1, 3, 0), Vector3i(1, 4, 0), Vector3i(1, 5, 0)] as Array[Vector3i]
-	var p1 := Unit.new(P1, Vector3i(5, 3, 0), PLAYER, Taxonomy.WeaponClass.RIFLE)
-	p1.adapted = true
-	var p3 := Unit.new(P3, Vector3i(4, 3, 0), PLAYER)
-	p3.has_trauma_kit = true
-	state.add_unit(p1)
-	state.add_unit(Unit.new(P2, Vector3i(3, 3, 0), PLAYER))
-	state.add_unit(p3)
-	state.add_unit(Unit.new(P4, Vector3i(3, 2, 0), PLAYER))
-	state.add_unit(Unit.new(D_NEAR, Vector3i(9, 4, 0), DRIFTER))
-	state.add_unit(Unit.new(D_FAR_A, Vector3i(15, 4, 0), DRIFTER))
-	state.add_unit(Unit.new(D_FAR_B, Vector3i(15, 5, 0), DRIFTER))
-	return state
+const P1 := ScriptedFight.P1
+const P2 := ScriptedFight.P2
+const P3 := ScriptedFight.P3
+const P4 := ScriptedFight.P4
+const D_NEAR := ScriptedFight.D_NEAR
+const D_FAR_A := ScriptedFight.D_FAR_A
+const D_FAR_B := ScriptedFight.D_FAR_B
+const CONTACT_TILE := ScriptedFight.CONTACT_TILE
 
 
 ## Apply a command, failing loudly with the rules' own reason if it is not legal.
@@ -74,7 +44,7 @@ func _snapshot(state: CombatState) -> String:
 ## The whole fight. Returns the final state; `check` turns the assertions on so a second run can be
 ## compared for determinism without asserting everything twice.
 func _play(check: bool) -> CombatState:
-	var opening := _opening()
+	var opening := ScriptedFight.opening()
 	var s := opening
 	var map := s.map
 
@@ -173,3 +143,16 @@ func test_the_scripted_fight() -> void:
 
 func test_the_scripted_fight_is_deterministic() -> void:
 	assert_eq(_snapshot(_play(false)), _snapshot(_play(false)), "same commands, same fight, twice")
+
+
+func test_opening_is_the_shared_fixture() -> void:
+	## Plan 2.6: view and test must not rebuild the street by hand.
+	var s := ScriptedFight.opening()
+	assert_eq(s.map.water_step, Taxonomy.WaterStep.DRY)
+	assert_eq(s.get_unit(P1).cell, Vector3i(5, 3, 0))
+	assert_eq(s.get_unit(P1).weapon, Taxonomy.WeaponClass.RIFLE)
+	assert_true(s.get_unit(P1).adapted)
+	assert_true(s.get_unit(P3).has_trauma_kit)
+	assert_eq(s.get_unit(D_NEAR).cell, Vector3i(9, 4, 0))
+	assert_eq(s.extract_cells.size(), 3)
+	assert_false(s.in_contact)

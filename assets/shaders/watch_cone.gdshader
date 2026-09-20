@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_never, cull_disabled, unshaded, shadows_disabled, fog_disabled;
+render_mode blend_mix, depth_draw_never, cull_back, unshaded, shadows_disabled, fog_disabled;
 
 #include "res://assets/shaders/water.gdshaderinc"
 
@@ -14,17 +14,19 @@ uniform bool reduced_motion = false;
 uniform float cone_height : hint_range(0.2, 40.0, 0.1) = 8.0;
 uniform float cone_radius : hint_range(0.1, 20.0, 0.1) = 3.0;
 uniform float apex_fade : hint_range(0.05, 0.6, 0.01) = 0.22;
-uniform vec3 tint : source_color = vec3(0.86, 0.84, 0.76);
+uniform vec3 tint : source_color = vec3(0.55, 0.56, 0.52);
 uniform sampler2D hatch_tex : source_color, hint_default_white, filter_linear, repeat_enable;
 uniform float hatch_scale : hint_range(0.1, 8.0, 0.05) = 1.1;
-uniform float fill_alpha : hint_range(0.0, 0.5, 0.01) = 0.16;
-uniform float outline_alpha : hint_range(0.0, 1.0, 0.01) = 0.82;
+uniform float fill_alpha : hint_range(0.0, 0.5, 0.01) = 0.05;
+uniform float outline_alpha : hint_range(0.0, 1.0, 0.01) = 0.55;
 uniform float ring_count : hint_range(2.0, 16.0, 1.0) = 6.0;
+uniform float near_fade_m : hint_range(2.0, 30.0, 0.5) = 10.0;
 
 varying float v_along;
 varying float v_radial;
 varying vec3 v_world;
 varying vec3 v_local;
+varying float v_cam_dist;
 
 void vertex() {
 	float h = max(cone_height, 0.001);
@@ -34,10 +36,15 @@ void vertex() {
 	v_radial = clamp(slice_r / expected, 0.0, 1.5);
 	v_local = VERTEX;
 	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_cam_dist = length((MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz);
 }
 
 void fragment() {
 	if (mode == 3) {
+		discard;
+	}
+	## A long cone that clips the camera near plane becomes a cream wall. Fade it out.
+	if (v_cam_dist < near_fade_m * 0.45) {
 		discard;
 	}
 
@@ -77,6 +84,7 @@ void fragment() {
 		}
 	}
 
+	float near = smoothstep(near_fade_m * 0.45, near_fade_m, v_cam_dist);
 	ALBEDO = col;
-	ALPHA = clamp(a, 0.0, 0.9);
+	ALPHA = clamp(a * near, 0.0, 0.45);
 }

@@ -9,15 +9,15 @@ const _Select := preload("res://presentation/selection_ring.gd")
 const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
-const _CutawayBowl := preload("res://presentation/fixtures/cutaway_bowl.gd")
 const _Queries := preload("res://presentation/overlay_queries.gd")
 const _MINT_3D := preload("res://presentation/mint_key_3d.gdshader")
+const _ScriptedFight := preload("res://rules/fixtures/scripted_fight.gd")
 
 const _NAMES := {
-	1: "Street",
-	2: "Roof",
-	3: "Piet",
-	4: "Ria",
+	_ScriptedFight.P1: "Piet",
+	_ScriptedFight.P2: "Jan",
+	_ScriptedFight.P3: "Els",
+	_ScriptedFight.P4: "Kees",
 }
 const _INVALID := Vector3i(999, 999, 999)
 
@@ -48,7 +48,7 @@ func _ready() -> void:
 	_build_world()
 	_redraw()
 	_hud.set_note(
-		"PgUp/PgDn cutaway · click walk/shoot · Q Watch · Space phase · Tab select · F Falling · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
+		"click walk until contact · shoot · Q Watch · Space phase · Tab select · F Falling · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
 	)
 
 
@@ -99,36 +99,8 @@ func _process(_dt: float) -> void:
 
 
 func _opening() -> CombatState:
-	## Plan 2.2: street + roof deck. 2.6 restores the shared scripted-fight opening.
-	return _CutawayBowl.opening(Taxonomy.WaterStep.FLOODED)
-
-
-func _scripted_fight_opening() -> CombatState:
-	## Kept for 2.6 shared fixture. Not the current make-run default.
-	var map := BowlMap.new()
-	map.water_step = Taxonomy.WaterStep.DRY
-	map.water_z = 0
-	for x in range(0, 17):
-		for y in range(0, 6):
-			map.set_cell(Vector3i(x, y, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
-	for y in range(0, 4):
-		map.set_cell(Vector3i(6, y, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
-	var state := CombatState.new()
-	state.map = map
-	state.extract_cells = [Vector3i(1, 3, 0), Vector3i(1, 4, 0), Vector3i(1, 5, 0)] as Array[Vector3i]
-	var p1 := Unit.new(1, Vector3i(5, 3, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.RIFLE)
-	p1.adapted = true
-	p1.is_founder = true
-	var p3 := Unit.new(3, Vector3i(4, 3, 0), Taxonomy.Faction.PLAYER)
-	p3.has_trauma_kit = true
-	state.add_unit(p1)
-	state.add_unit(Unit.new(2, Vector3i(3, 3, 0), Taxonomy.Faction.PLAYER))
-	state.add_unit(p3)
-	state.add_unit(Unit.new(4, Vector3i(3, 2, 0), Taxonomy.Faction.PLAYER))
-	state.add_unit(Unit.new(10, Vector3i(9, 4, 0), Taxonomy.Faction.DRIFTER))
-	state.add_unit(Unit.new(11, Vector3i(15, 4, 0), Taxonomy.Faction.DRIFTER))
-	state.add_unit(Unit.new(12, Vector3i(15, 5, 0), Taxonomy.Faction.DRIFTER))
-	return state
+	## Same opening the headless scripted fight uses (plan 2.6).
+	return _ScriptedFight.opening()
 
 
 func _build_world() -> void:
@@ -143,9 +115,8 @@ func _build_world() -> void:
 
 	_water = _Water.new()
 	_water.name = "Water"
-	_water.plane_size = Vector2(24.0, 16.0)
-	_water.position = Vector3(7.0, 0.0, 3.0)
 	add_child(_water)
+	_water.fit_map(_state.map)
 	_sync_water_from_map()
 
 	var ridge := (load("res://assets/env/hero/env_ridge_farfield.glb") as PackedScene).instantiate()
@@ -188,17 +159,24 @@ func _build_world() -> void:
 func _add_environment() -> void:
 	var sky_mat := ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color = Color(0.45, 0.51, 0.58)
-	sky_mat.sky_horizon_color = Color(0.68, 0.71, 0.74)
-	sky_mat.ground_bottom_color = Color(0.20, 0.21, 0.19)
-	sky_mat.ground_horizon_color = Color(0.55, 0.56, 0.53)
+	sky_mat.sky_horizon_color = Color(0.58, 0.61, 0.63)
+	## Empty cells must not read as a white table. Wet silt, thin ground band.
+	sky_mat.ground_bottom_color = Color(0.07, 0.08, 0.07)
+	sky_mat.ground_horizon_color = Color(0.16, 0.17, 0.16)
+	sky_mat.ground_curve = 0.12
+	sky_mat.sky_curve = 0.09
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.95
+	env.ambient_light_energy = 0.72
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.18, 0.20, 0.20)
+	env.fog_density = 0.008
+	env.fog_aerial_perspective = 0.35
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -212,7 +190,8 @@ func _add_environment() -> void:
 
 	var rig = _CameraRig.new()
 	rig.name = "CameraRig"
-	rig.look_at_point = PresentationCoords.world(Vector3i(3, 1, 0)) + Vector3(0.0, 1.5, 0.0)
+	## Look at the wall / contact lane — same street the scripted fight walks.
+	rig.look_at_point = PresentationCoords.world(Vector3i(8, 3, 0)) + Vector3(0.0, 1.5, 0.0)
 	add_child(rig)
 	_camera = rig.ensure_camera()
 
@@ -229,7 +208,8 @@ func _redraw() -> void:
 	if sel and _select_ring:
 		var show_ring := not sel.extracted and sel.cell.z <= _cutaway_z
 		_select_ring.visible = show_ring
-		_select_ring.position = PresentationCoords.world_ground(sel.cell) + Vector3(0, 0.02, 0)
+		## Match selection_ring's own lift so path tiles do not bury it.
+		_select_ring.position = PresentationCoords.world_ground(sel.cell) + Vector3(0, 0.08, 0)
 
 
 func _refresh_queries() -> void:
@@ -242,7 +222,6 @@ func _draw_units() -> void:
 	for u in _state.all_units():
 		var view := _UnitView.new()
 		view.name = "U%d" % u.id
-		view.weapon = "machete" if u.weapon == Taxonomy.WeaponClass.MELEE else "pistol"
 		_units_root.add_child(view)
 		view.bind_unit(u, _state.live_watch_for(u.id) != null)
 		## Cutaway hides floors above N; units on those floors hide with them.
@@ -312,8 +291,9 @@ func _draw_preview() -> void:
 		return
 	for i in path.cells.size():
 		var cell: Vector3i = path.cells[i]
-		_mark_path_tile(cell)
-		if i < path.cost_per_cell.size():
+		if i > 0:
+			_mark_path_tile(cell)
+		if i > 0 and i < path.cost_per_cell.size() and path.cost_per_cell[i] != 1:
 			_spawn_preview_label(
 				PresentationCoords.world_ground(cell) + Vector3(-0.55, 0.45, 0.0),
 				str(path.cost_per_cell[i]),
@@ -324,14 +304,16 @@ func _draw_preview() -> void:
 				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.12, 0.0),
 				PresentationCatalog.UI_HUD + "ui_path_reserve_shot.png",
 				Vector2(0.9, 0.9),
-				true
+				true,
+				0.9
 			)
 		if i == path.watch_reserve_at:
 			_spawn_mint_sprite(
 				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.14, 0.0),
 				PresentationCatalog.UI_HUD + "ui_path_reserve_watch.png",
 				Vector2(0.9, 0.9),
-				true
+				true,
+				0.9
 			)
 	for crossing in path.watches_crossed:
 		var xc: WatchCrossing = crossing
@@ -348,8 +330,9 @@ func _mark_path_tile(cell: Vector3i) -> void:
 	_spawn_mint_sprite(
 		PresentationCoords.world_ground(cell) + Vector3(0.0, 0.04, 0.0),
 		PresentationCatalog.UI_HUD + "ui_path_tile.png",
-		Vector2(1.7, 1.7),
-		true
+		Vector2(1.55, 1.55),
+		true,
+		0.32
 	)
 
 
@@ -380,7 +363,7 @@ func _draw_shot_line(from_m: Vector3, to_m: Vector3, clean: bool) -> void:
 
 
 func _spawn_mint_sprite(
-	origin: Vector3, tex_path: String, size: Vector2, flat: bool = false
+	origin: Vector3, tex_path: String, size: Vector2, flat: bool = false, alpha: float = 1.0
 ) -> void:
 	var mi := MeshInstance3D.new()
 	var mesh := PlaneMesh.new()
@@ -389,6 +372,7 @@ func _spawn_mint_sprite(
 	var mat := ShaderMaterial.new()
 	mat.shader = _MINT_3D
 	mat.set_shader_parameter("albedo_tex", load(tex_path))
+	mat.set_shader_parameter("alpha_mul", alpha)
 	mi.material_override = mat
 	mi.position = origin
 	if not flat:
@@ -637,16 +621,22 @@ func _draw_overlay_labels() -> void:
 			_queries.stack_label,
 			0.011
 		)
-	## Path exposure words (not colour-only). Reserve shapes live in `_draw_preview`.
+	## Path exposure: only when the word *changes from the unit's current read*.
+	## The selected body already says "exposed"; don't repeat it down the lane.
 	if _queries.path.reachable:
+		var prev := _Queries.exposure_word(_queries.exposure)
 		for i in _queries.path.exposure_per_cell.size():
 			var cell: Vector3i = _queries.path.cells[i]
 			if cell.z > _cutaway_z:
 				continue
 			var exp: Exposure = _queries.path.exposure_per_cell[i]
+			var word := _Queries.exposure_word(exp)
+			if word == prev:
+				continue
+			prev = word
 			_spawn_label(
 				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.55, 0.0),
-				_Queries.exposure_word(exp),
+				word,
 				0.01
 			)
 
@@ -731,6 +721,8 @@ func _sync_water_from_map() -> void:
 		return
 	_water.water_step = int(_state.map.water_step)
 	_water.water_height_m = PresentationCoords.water_height_m(_state.map.water_z)
+	## Dry is the slabs. A ground plane at y=0 z-fights them and paints the void.
+	_water.visible = _state.map.water_step != Taxonomy.WaterStep.DRY
 
 
 func _toggle_falling_flooded() -> void:
@@ -747,6 +739,9 @@ func _draw_height_labels() -> void:
 		c.queue_free()
 	var sel: Unit = _state.get_unit(_selected_id)
 	if sel == null or not sel.is_active():
+		return
+	## Flat z=0 streets do not need a 0 on every slab. Show height when it can differ.
+	if _max_z <= 0:
 		return
 	for coord in _state.map.cells.keys():
 		if coord.z > _cutaway_z:

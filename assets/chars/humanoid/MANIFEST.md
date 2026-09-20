@@ -71,15 +71,22 @@ Rebuild:
 
 | File | What |
 | --- | --- |
-| `char_humanoid.glb` | Mesh + armature + sockets + all clips |
+| `char_humanoid.glb` | Unclassed basin kit. Mesh + armature + sockets + all clips |
+| `char_humanoid_drifter_a.glb` | Drifter cloth A — tarp poncho, hood, rope belt. Same skeleton/sockets/clips. No flag |
+| `char_humanoid_drifter_b.glb` | Drifter cloth B — olive oilskin, orange vest scrap. Same skeleton/sockets/clips. No flag |
 | `char_kit_machete.glb` | Held machete, origin at grip |
 | `char_kit_pistol.glb` | Held compact sidearm, origin at grip |
 | `../anims/char_humanoid_anims.glb` | Same skeleton + clips (AnimationLibrary-friendly duplicate) |
-| `_build_humanoid.py` | Headless rebuild |
+| `_build_humanoid.py` | Headless rebuild of unclassed |
+| `_build_drifter.py` | Headless rebuild of Drifter A/B |
 
 `char_humanoid_light.glb` is **not** shipped. The concept light/mid delta is a hanging left hand and a slightly opener coat, not a distinct mesh. FLAG.
 
-No founder mark, no crown. Dutch tricolor on the **left** upper arm is unclassed clothes language.
+No founder mark, no crown. Dutch tricolor on the **left** upper arm is unclassed clothes language. Drifter A/B drop the flag (salvage, not basin-folk kit). Rebuild:
+
+```
+/snap/bin/blender --background --python assets/chars/humanoid/_build_drifter.py
+```
 
 Weapons are **not** skinned onto the body. Engine instances them on `hand_r`.
 

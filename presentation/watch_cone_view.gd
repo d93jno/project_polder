@@ -45,7 +45,8 @@ func aim(from_m: Vector3, to_m: Vector3) -> void:
 	delta.y = 0.0
 	var length := maxf(delta.length(), 0.5)
 	cone_height_m = length
-	cone_radius_m = length * 0.38
+	## Visual shell, not the 90° data wedge (that would swallow the camera).
+	cone_radius_m = length * 0.22
 	if mesh is CylinderMesh:
 		var cyl := mesh as CylinderMesh
 		cyl.height = cone_height_m

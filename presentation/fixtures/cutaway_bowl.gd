@@ -1,7 +1,7 @@
 class_name CutawayBowl
 extends Object
 ## Street + roof for cutaway / water (2.2) and cone/exposure honesty (2.3).
-## Not the scripted fight. 2.6 restores the shared fight opening.
+## Not the scripted fight — that opening lives in `rules/fixtures/scripted_fight.gd` (2.6).
 
 const ROOF := Vector3i(3, 1, 1)
 const STREET := Vector3i(1, 1, 0)

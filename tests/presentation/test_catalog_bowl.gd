@@ -65,6 +65,29 @@ func test_unsupported_material_returns_empty_piece() -> void:
 	assert_true(PresentationCatalog.path_for_piece("env_canal_wall_tall").ends_with("env_canal_wall_tall.glb"))
 
 
+func test_drifter_humanoid_alternates_a_b() -> void:
+	assert_eq(
+		PresentationCatalog.humanoid_for(Taxonomy.Faction.DRIFTER, 10),
+		PresentationCatalog.HUMANOID_DRIFTER_A
+	)
+	assert_eq(
+		PresentationCatalog.humanoid_for(Taxonomy.Faction.DRIFTER, 11),
+		PresentationCatalog.HUMANOID_DRIFTER_B
+	)
+	assert_eq(
+		PresentationCatalog.humanoid_for(Taxonomy.Faction.PLAYER, 10),
+		PresentationCatalog.HUMANOID
+	)
+	assert_true(
+		FileAccess.file_exists(PresentationCatalog.HUMANOID_DRIFTER_A),
+		"Drifter A glb on disk"
+	)
+	assert_true(
+		FileAccess.file_exists(PresentationCatalog.HUMANOID_DRIFTER_B),
+		"Drifter B glb on disk"
+	)
+
+
 func test_path_for_piece_routes_props_and_kit() -> void:
 	assert_true(PresentationCatalog.path_for_piece("prop_plank_wood").begins_with("res://assets/props/"))
 	assert_true(PresentationCatalog.path_for_piece("env_street_slab_a").begins_with("res://assets/env/kits/terrace/"))
