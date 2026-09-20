@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.5.1 completed — next is 1.6 (§7.2 resolved in GDD 1.9)
+**Status:** 1.6 completed — phase 1 is done: a scripted fight runs headless and asserts its own outcome
 **Tracks:** GDD v1.9, UI/UX v0.5
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -301,6 +301,8 @@ This is a behaviour change to shipped 1.3 code, so it lands in 1.5.1 with its ow
 
 ### 1.6 — Break, contact, and the scripted fight
 
+**Status:** completed
+
 The proof.
 
 **Ships:** `break_rule.gd`, `contact.gd`, `tests/fights/`.
@@ -364,6 +366,24 @@ Run after every free-move step (UI §17). Seeing is never contact. Contact start
 - The squad's own line never starts a fight (one-sided, on purpose)
 
 **Final deliverable — the scripted fight.** One bowl, four bodies, walk until contact, exchange fire, one unit pinned, one broken, one bleeding out, extract. Asserted end to end, headless. When that test is green, this phase is done.
+
+**What landed, and where it differs from the spec above.**
+
+- `break_rule.gd`, `contact.gd`, `contact_result.gd`, and `tests/fights/test_scripted_fight.gd`. `BreakRule.check` is pure and returns `SAFE`, `WOULD_BREAK_IF_PINNED` or `BREAKS`; `BreakRule.resolve` is the one place a break lands.
+- **It added data, against the "should add no new data" line above.** `Unit.break_phases_left` (a break is served over the unit's own phases, §7.3), `Unit.extracted`, `CombatState.in_contact` and `CombatState.extract_cells`. The first is what §7.3's working default needs; the other three are what "walk until contact" and "extract" in the scripted fight need, and none of them existed. The generic round-trip test covers the two new `Unit` fields without being told about them.
+- **It added commands the spec did not list.** `FreeMoveCommand` (walking: no AP, no Watch, stops on the tile where contact begins), `ExtractCommand`, and `KNOCK` and `MACHINE` kinds on `InteractCommand`. `Command.apply` now starts phases when the player's action does, then lets any break that action caused land in the same command.
+- **The broken move is implemented**, in `MoveCommand.validate`. The spec only said "Pinned + broken takes the broken move"; the rule itself (GDD §5.5) had never been coded. Cover is a tile no standing hostile has a clean line on, "closer" is walking cost (`Movement.cost_to_nearest`, the flood run backwards), a unit already in cover may only move to more cover, and with nowhere safe to go nothing is forbidden.
+- **Decided:** §7.4 is `AP_POOL`. A pinned unit is given a full phase's AP for the "in the open" test.
+- **Made up without asking, now written into GDD 1.10 as working defaults:** a broken unit drops its Watch; phases begin with the player's side; "Live" means some standing squad body can see the hostile; a knock is contact only when a hostile is in the shelter; friends are the same faction or any two non-player factions; the founder stands inside their own Call; clause 1 needs at least one friend to have dropped, so a lone unit has not lost a squad.
+- **Not built, still out of scope:** the off-ramp options on a broken enemy, an enemy fleeing or dropping its gun (a broken enemy is only flagged), the day cost of surrounding an interior, and MEDEVAC. A fight ends with the stabilised unit alive and waiting.
+
+**Two things the scripted fight and the tests turned up.** Both are real consequences of the rules as written, so they are recorded as open questions and not silently resolved: §7.7, the last unit out breaks on the boat, and §7.8, a broken enemy still counts as a gun.
+
+**Verified:** 186 tests pass across 16 scripts (101 before 1.6). Twenty-six mutations of the 1.6 code were each caught by a test; three survived the first pass and now have tests: the own-phase forfeit (tested only through a break that pins, which zeroes AP anyway), neutrals counting as friends (only ever paired with the player, which hits an earlier branch), and Manhattan instead of Chebyshev distance (only straight-line friends, where they agree). `rules/` has no scene, `Node` or raycast use.
+
+**A test that was vacuous, and how it was found.** The Agoraphobia cover test first had an `if in_the_open: pending() else: assert_ne(...)` escape. Replacing the escape with a real assertion showed the scene had put the unit outside the cone entirely, so the weaker `else` branch had been passing for nothing. The mutation run found a second one: a break that forfeits the phase was tested only through a reaction-fire break, which pins the unit and zeroes its AP anyway, so removing the forfeit went unnoticed. It now has a test with no pin involved (the phase-start check).
+
+**The scripted fight** (one bowl, four bodies): the squad starts hidden behind a wall and walks until one body steps into the lane, stopping on the first tile a Drifter could see. A rifle Watch routs the one Drifter inside its cone, while two more than a cone's length away can still shoot down the lane. One recruit is pinned and not broken (friends stand near), the other is dropped by two pistol hits and stabilised by the medic, the rifleman drops the shooters, and the squad extracts, leaving the stabilised unit alive with its clock stopped. It also asserts the opening state is untouched and runs the whole script twice for determinism.
 
 ---
 
@@ -443,7 +463,7 @@ Three more calls were made without asking and are worth a look:
 
 **UI follow-up, done in UI/UX 0.5.** UI §4.6 was rewritten to draw what the rule counts: guns on the unit against friends within 3 tiles, cover in reach with the AP held, and a loaded long cone. Agoraphobia now reads as the third clause with kit, training and terrain waived, and §4.4 labels long cones with a word.
 
-### 7.3 — When does `broken` clear? (working default, 1.5.1)
+### 7.3 — When does `broken` clear? (working default, implemented in 1.6, in GDD 1.10)
 
 GDD §5.5 says a broken player unit loses the rest of the current phase and that its next move must end closer to cover or extraction. It never says when the state ends.
 
@@ -451,7 +471,7 @@ GDD §5.5 says a broken player unit loses the rest of the current phase and that
 
 **Raise to:** GDD §5.5 when it next opens. Low stakes, but undefined, and 1.6 cannot be written without picking something.
 
-### 7.4 — What AP does a pinned unit have for "in the open"? (blocks the 1.6 tests)
+### 7.4 — What AP does a pinned unit have for "in the open"? (decided: `AP_POOL`, in GDD 1.10)
 
 GDD §5.5 says Pinned does not zero the AP for the test. The state machine zeroes it anyway (`apply_pin`), so the AP a pinned unit "holds" is not recoverable from `unit.ap`. 1.6 has to hand `Movement.reachable` a budget, and the choice is a real one:
 
@@ -474,15 +494,27 @@ Whatever is chosen belongs in GDD §5.5's "Break, defined" as a working default.
 
 `test_validate_does_not_mutate` is how this went unnoticed: it only checked a unit's AP.
 
-### 7.6 — Two smaller ones
+### 7.6 — Two smaller ones (both settled)
 
 - **Exposure wording (non-blocking).** UI §4.2 says exposure shows "the count and where from." Add a line saying a hidden hostile contributes to the count without being located, mirroring §4.4's apex rule. Documentation, not a code change.
 - **Levee maps (resolved for 1.1).** UI §3 allows two water surfaces on one map. `BowlMap` keeps one plane with `TODO(levee)` and a documenting test; promote to a region list before Act II levee maps.
 
 ---
 
+### 7.7 — The last unit out breaks (open, in GDD §10)
+
+Once the others have extracted, the last standing member of a squad that left someone wounded is "the last friend", so clause 1 applies to it on the way out. The scripted fight shows it: the medic, last off the map, is marked broken as it stands on the boat. It costs nothing there, since extraction takes no AP, but it is the rule reading oddly rather than the rule working. `test_the_last_unit_out_breaks_when_a_squadmate_was_left_wounded` pins today's behaviour so a change is a decision.
+
+Options: leave it (extracted friends are not dropped, and the wounded were, so the literal reading stands); count a unit standing on an extract tile as exempt; or count a stabilised wounded unit as neither standing nor dropped. The second is the smallest change.
+
+### 7.8 — A broken enemy is still a gun (open, in GDD §10)
+
+GDD §5.5 says a broken enemy flees or drops the gun, but nothing removes it from `attackers_of`: it is standing and has a line, so it counts toward exposure and toward a unit's "outnumbered". In the scripted fight the routed Drifter is one of the guns counted against the squad. If a broken enemy is not a threat, exposure and outnumbered overstate the danger. It is one line in `hostiles_of`, but `hostiles_of` is also what every count is built on, so it is a rule decision first.
+
 ## 8. What comes after
 
-Phase 2 is the ugly debug view: a GridMap blockout with coloured tiles and text labels, no art, driven entirely by this layer. That is where the camera questions get settled (peek yaw, perspective vs orthographic — UI §18 wants both decided before a second bowl is authored), and where enemy cones and player exposure are seen on screen together for the first time.
+Phase 2 puts the Phase 1 rules on screen using the **P0 art pack** (terrace kit, water/cone shaders, humanoid, HUD) — not a coloured-tile blockout. That is where camera questions get settled (peek yaw, perspective vs orthographic — UI §18 wants both decided before a second bowl is authored), and where enemy cones and player exposure are seen on screen together for the first time.
 
-That pairing is the real test of this design, since UI §4.4 already warns cones are *"the easiest to turn into soup"* and v0.4 put a second volumetric read on top of them. Reaching it quickly is the point of keeping phase 1 headless and small.
+That pairing is the real test of this design, since UI §4.4 already warns cones are *"the easiest to turn into soup."* Reaching it quickly was the point of keeping phase 1 headless and small.
+
+**Plan:** [`plans/02_debug_view_rules_on_screen.md`](02_debug_view_rules_on_screen.md).

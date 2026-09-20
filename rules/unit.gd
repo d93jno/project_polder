@@ -33,6 +33,12 @@ var broken: bool = false
 ## The Call is a radius around the founder (GDD §8.4) and founder-down changes the mission
 ## (GDD §8.5). Nothing else on the map says which body that is.
 var is_founder: bool = false
+## Own-side phases left before `broken` clears (plan §7.3 working default). A break that lands in the
+## unit's own phase forfeits the rest of it and constrains the next, so it is 2; one that lands in
+## the opponent's phase constrains only the next own phase, so it is 1. Cleared at that phase's end.
+var break_phases_left: int = 0
+## Off the map through an extract tile. Neither a target, a gun, a friend, nor a body in the way.
+var extracted: bool = false
 
 
 func _init(
@@ -65,6 +71,8 @@ func duplicate_unit() -> Unit:
 	u.scars = scars
 	u.broken = broken
 	u.is_founder = is_founder
+	u.break_phases_left = break_phases_left
+	u.extracted = extracted
 	return u
 
 
@@ -83,7 +91,7 @@ func give_scar(scar: int) -> void:
 
 
 func is_active() -> bool:
-	return not dead and not bleeding
+	return not dead and not bleeding and not extracted
 
 
 func is_pinned() -> bool:

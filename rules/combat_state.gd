@@ -13,6 +13,11 @@ var watches: Array = [] ## LiveWatch
 var active_side: PhaseSide = PhaseSide.PLAYER
 ## Increments each time a full round (player + enemy) completes.
 var round_index: int = 0
+## Free movement until contact, phases after (GDD §3.1). Break is a combat state: it is only
+## evaluated once phases have started.
+var in_contact: bool = false
+## Tiles where a standing unit can leave the map (the boat, a marked roof). Authored per fight.
+var extract_cells: Array[Vector3i] = []
 
 
 func add_unit(unit: Unit) -> void:
@@ -83,6 +88,8 @@ func duplicate_state() -> CombatState:
 	copy.map = map
 	copy.active_side = active_side
 	copy.round_index = round_index
+	copy.in_contact = in_contact
+	copy.extract_cells = extract_cells.duplicate()
 	for unit in units.values():
 		copy.units[unit.id] = unit.duplicate_unit()
 	for watch in watches:
@@ -111,8 +118,11 @@ func live_watch_for(unit_id: int) -> LiveWatch:
 
 
 ## Apply a non-drop hit's pin (GDD §5.4). No-ops if already paying a pinned phase.
+## Pinned and broken: broken wins — the unit takes its broken move, not a duck (GDD §5.5, 1.7).
 func apply_pin(target: Unit) -> void:
 	cancel_watches_for(target.id)
+	if target.broken:
+		return
 	if target.pin != Unit.PinState.NONE:
 		return ## No stunlock — one hit costs one phase at most
 	if side_of(target) == active_side:
@@ -148,6 +158,12 @@ func end_phase() -> CombatState:
 	for unit in next.units_on_side(ending):
 		if unit.pin == Unit.PinState.DUCKED:
 			unit.pin = Unit.PinState.NONE
+		## A break is served over the unit's own phases and clears at the end of the last (plan §7.3).
+		if unit.broken:
+			unit.break_phases_left -= 1
+			if unit.break_phases_left <= 0:
+				unit.broken = false
+				unit.break_phases_left = 0
 
 	next.active_side = PhaseSide.ENEMY if ending == PhaseSide.PLAYER else PhaseSide.PLAYER
 	for unit in next.units_on_side(next.active_side):
@@ -166,6 +182,11 @@ func end_phase() -> CombatState:
 	if ending == PhaseSide.ENEMY:
 		next.round_index += 1
 		next._tick_bleed()
+
+	## Break is checked again at each phase start, so a unit still outnumbered in the open simply
+	## breaks again (GDD §5.5, plan §7.3).
+	if next.in_contact and next.map != null:
+		BreakRule.resolve(next)
 	return next
 
 
@@ -176,6 +197,16 @@ func _tick_bleed() -> void:
 		unit.bleed_rounds_left -= 1
 		if unit.bleed_rounds_left <= 0:
 			unit.dead = true
+
+
+## Friends: the same faction, or any two non-player, non-neutral factions. P0's sides are the player
+## against everyone else, so the enemy factions fight as one; neutrals (roof people) are nobody's.
+static func is_friend(a: Taxonomy.Faction, b: Taxonomy.Faction) -> bool:
+	if a == b:
+		return a != Taxonomy.Faction.NEUTRAL
+	if a == Taxonomy.Faction.PLAYER or b == Taxonomy.Faction.PLAYER:
+		return false
+	return a != Taxonomy.Faction.NEUTRAL and b != Taxonomy.Faction.NEUTRAL
 
 
 ## P0: player vs everyone else (except neutral); non-player only hostile to player.

@@ -22,6 +22,9 @@ const MOVE_COST_SWIM := 2 ## Flooded swim
 const MOVE_COST_FALLING := 2 ## Chest-deep ugly footing
 const MOVE_COST_VERTICAL_SURCHARGE := 1 ## Added when z changes (climb / dive)
 
+## --- Break (*working default*, GDD §5.5 as of 1.9) ---
+const OUTNUMBERED_FRIEND_RADIUS := 3 ## Chebyshev tiles within which standing friends protect a unit
+
 ## --- The Call (*working default*, GDD §8.4) ---
 ## GDD gives no number: "small" early, "full weight" late. One constant now; scaling is later.
 const CALL_RADIUS := 2 ## Chebyshev tiles around the founder within which allies cannot break

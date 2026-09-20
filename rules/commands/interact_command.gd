@@ -5,6 +5,8 @@ extends Command
 enum Kind {
 	GENERIC,
 	TRAUMA_KIT,
+	KNOCK, ## Knock a shelter: contact if a hostile is in it, a meeting or a quiet night if not
+	MACHINE, ## Start a machine: contact if a Live hostile stands on its tile
 }
 
 var unit_id: int
@@ -38,6 +40,19 @@ func validate(state: CombatState) -> CommandResult:
 	elif not state.map.has_cell(target_cell):
 		return CommandResult.failure("no cell to interact with")
 	return CommandResult.success()
+
+
+func _starts_contact(state: CombatState) -> bool:
+	var unit: Unit = state.get_unit(unit_id)
+	if unit == null or unit.faction != Taxonomy.Faction.PLAYER:
+		return false
+	match kind:
+		Kind.KNOCK:
+			return Contact.knock_starts_contact(state, unit, target_cell)
+		Kind.MACHINE:
+			return Contact.machine_starts_contact(state.map, state, unit, target_cell)
+		_:
+			return false
 
 
 func _apply(state: CombatState) -> CombatState:

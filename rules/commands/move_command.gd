@@ -22,6 +22,8 @@ func validate(state: CombatState) -> CommandResult:
 		return CommandResult.failure("not enough AP")
 	if to == unit.cell:
 		return CommandResult.failure("already there")
+	if unit.broken and not BreakRule.broken_move_ok(state.map, state, unit, to):
+		return CommandResult.failure("broken: must end closer to cover or extraction")
 	return CommandResult.success()
 
 

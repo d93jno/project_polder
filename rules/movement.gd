@@ -62,6 +62,33 @@ static func reachable(
 	return out
 
 
+## Cost, from every tile, of the cheapest walk into any of `targets` (the targets cost 0). The flood
+## `path` runs, run backwards: relaxing tile `t` from settled neighbour `n` costs entering `n` from
+## `t`. Tiles that cannot reach a target are absent. Used for "closer to cover" (GDD §5.5).
+static func cost_to_nearest(
+	map: BowlMap,
+	state: CombatState,
+	unit: Unit,
+	targets: Array[Vector3i],
+) -> Dictionary:
+	var dist: Dictionary = {} ## Vector3i -> int
+	var frontier: Array[Vector3i] = []
+	for t in targets:
+		dist[t] = 0
+		frontier.append(t)
+	while not frontier.is_empty():
+		var settled: Vector3i = _pop_min(frontier, dist)
+		for t in _neighbors(settled):
+			if not is_free(map, state, t, unit) and t != unit.cell:
+				continue
+			var cost: int = (dist[settled] as int) + move_cost(map, settled, unit, t)
+			if not dist.has(t) or cost < (dist[t] as int):
+				dist[t] = cost
+				if t not in frontier:
+					frontier.append(t)
+	return dist
+
+
 ## One traversal for `path` and `reachable`, so they cannot disagree. `max_cost < 0` is unbounded;
 ## `stop_at` (when given) ends the search as soon as that tile is settled.
 static func _flood(

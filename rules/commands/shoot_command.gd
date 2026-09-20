@@ -34,6 +34,13 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
+## The player fires (GDD §3.1). The squad's own line starting fights is deliberate: contact is one-sided
+## when it is a hostile's line, and the player's own action is the other way in.
+func _starts_contact(state: CombatState) -> bool:
+	var attacker: Unit = state.get_unit(attacker_id)
+	return attacker != null and attacker.faction == Taxonomy.Faction.PLAYER
+
+
 func _apply(state: CombatState) -> CombatState:
 	var next := state.duplicate_state()
 	var attacker: Unit = next.get_unit(attacker_id)

@@ -1,6 +1,6 @@
 # Game Design Document: "Project Polder" (Working Title)
 
-**Version:** 1.9 — break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. (1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned; bleed-out is 3 rounds (working default). 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
+**Version:** 1.10 — break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). (1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned; bleed-out is 3 rounds (working default). 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
 
 ## 0. Document Scope
 This document is the base foundation for the game's mechanics: its systems, rules, campaign structure, and the design tone those rules express. When a later document disagrees with a mechanic described here, this one wins until it is revised.
@@ -144,6 +144,12 @@ Contact starts when:
 *   the player acts: fires, knocks a shelter, or starts a machine on a tile with a Live hostile.
 
 A meeting is never contact. Once phases start they run until extract, until no hostile holds the street, or until dusk forces a camp.
+
+Working defaults for the edges (1.10):
+*   Phases begin with the player's side.
+*   **Live** means some standing squad body can see the hostile. A machine is contested when a Live hostile stands on its tile.
+*   A knock is contact only if a hostile is in the shelter. A friendly roof is a meeting, and an empty one a quiet night.
+*   Neutrals never start contact: only hostiles do.
 
 Contact is one-sided on purpose. If the squad's own line started fights, contact range would depend on loadout, and spotting a camp then turning the boat around would stop being a choice.
 
@@ -342,10 +348,12 @@ A trained Muckraker does not dump the street because it is dry. The player versi
 *   **Long and short.** Every weapon class is one or the other. **Long:** rifle, LMG, sniper. **Short:** pistol, shotgun, melee, speargun. The same table sorts the cone (below) and the kit.
 *   **CQB kit** means every weapon the unit carries is short. One long weapon and it is not CQB kit. This is the "shotguns, machetes, and sidearms" of 6.3.
 *   **Long cone.** A loaded Watch cone (5.2) of a long weapon class, with the unit's tile inside it and a clean line to it (5.4). A spent cone does not count. Nor does a long weapon with a clean line but no Watch: the panic is the visible geometry the enemy paid AP for, which the player can see and answer.
-*   **Outnumbered.** More standing hostiles have a clean line on the unit than there are standing friends within 3 tiles of it, counting itself. Downed units count for neither side. Friends near you are the protection, so isolation matters and a tight group looks after itself.
-*   **In the open.** At least one hostile has a clean line on the unit, and no tile the unit can reach with the AP it holds now is free of a clean line from every hostile that has one. This is the mud line in 6.3, "without AP to reach hard cover," made exact. It is weapon-aware because material is the only cover (5.4): a plank hides a body from a pistol and not from a rifle. Pinned does not zero the AP for this test; otherwise a pinned unit could never reach cover and the phrase would stop meaning anything.
+*   **Outnumbered.** More standing hostiles have a clean line on the unit than there are standing friends within 3 tiles of it, counting itself. Downed units count for neither side. Friends are the same faction, or any two non-player factions, since the enemy fights as one side; neutrals are nobody's friend. Friends near you are the protection, so isolation matters and a tight group looks after itself.
+*   **In the open.** At least one hostile has a clean line on the unit, and no tile the unit can reach with the AP it holds now is free of a clean line from every hostile that has one. This is the mud line in 6.3, "without AP to reach hard cover," made exact. It is weapon-aware because material is the only cover (5.4): a plank hides a body from a pistol and not from a rifle. Pinned does not zero the AP for this test; otherwise a pinned unit could never reach cover and the phrase would stop meaning anything. A pinned unit is given a full phase's AP here, since its own has been forfeited.
 
 **When it lands.** Break is a state, checked after every action resolves and again at the start of each phase. It takes effect the moment its condition becomes true. A player unit that breaks mid-phase loses the rest of that phase; an enemy that breaks acts on it in its own phase (5.11). Clauses 1 and 3 are facts about the map and are known before the click. Clause 2 also needs the unit to be Pinned, which needs an enemy to choose to shoot, so before the click the most that is knowable is that a unit is outnumbered and in the open where it stands: *if hit here, breaks.*
+
+**Serving a break** (working default, 1.10). A break that lands in the unit's own phase costs the rest of that phase and constrains its next; one that lands in the opponent's phase constrains only its next. It clears at the end of the last of those, and is checked again at the next phase start, so a unit still outnumbered in the open, or still under a loaded long cone, simply breaks again. A broken unit drops any Watch it holds. Its move must end closer to cover or to the extraction point. Cover is a tile no standing hostile has a clean line on; closer is walking cost; a unit already in cover may only move to more cover; with nowhere safe to go, nothing is forbidden. The founder stands inside their own Call.
 
 **Agoraphobia** (8.5) is the third clause with the kit, training and terrain conditions taken off: a long cone sees the unit in the open, as defined here, and it breaks, on any ground.
 
@@ -808,6 +816,13 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Break is checked after every action and at each phase start, and lands the moment its condition is true.
 *   Agoraphobia is the third clause with kit, training and terrain waived.
 
+**Working defaults added in 1.10, not locks (§3.1, §5.5):**
+*   A pinned unit is given a full phase's AP for the "in the open" test.
+*   A break is served over the unit's own phases and clears at the end of the last, then is checked again at the next phase start.
+*   A broken unit drops any Watch it holds. Its move must end closer to cover or to the extraction point.
+*   Phases begin with the player's side. Live means a standing squad body can see it. A knock is contact only if a hostile is in the shelter.
+*   Friends are the same faction or any two non-player factions. The founder stands inside their own Call.
+
 ## 10. Still open
 *   Final name of the unique trait.
 *   Exact neighbor count / "majority of the ring" for a step down.
@@ -825,6 +840,9 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Bleed-out length (working default 3 rounds) and Pinned duration (tuning).
 *   Downed bodies: does a downed unit block a line? Working default: it does not, and deep water still hides it (5.9).
 *   Break thresholds (§5.5): the 3-tile friend radius, which classes are long, and whether Agoraphobia should keep the Dry condition. Working defaults; validate in one bowl, then lock.
+*   Whether a broken enemy is still a gun. It is meant to flee or drop the gun (§5.5), but it is standing and has a line, so it currently counts for exposure and for a unit's "outnumbered".
+*   The last unit out. Clause 1 applies to the last standing member of a squad that left a wounded comrade behind, so once the others have extracted, the last one breaks on the boat. Harmless in a fight, odd on the page.
+*   Getting the wounded off the map is MEDEVAC (§8.5), a table-scale matter. A fight ends with the stabilised unit alive and waiting; nothing in it moves them.
 *   What a taken boat costs (§3.1): a walk home, a fuel loss, a leg on foot. Tuning.
 *   How tightly a redirection previews in a half-fixed ring (§6.4) — where the range stops being useful and starts being noise.
 
