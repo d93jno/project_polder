@@ -1,6 +1,6 @@
 # Phase 1 — BowlMap and the rules layer, headless
 
-**Status:** 1.5 combat commands completed — next is 1.6, unblocked (§7.2 resolved in GDD 1.9)
+**Status:** 1.5 combat commands completed — next is 1.5.1, then 1.6 (§7.2 resolved in GDD 1.9)
 **Tracks:** GDD v1.9, UI/UX v0.5
 **Goal:** the rules of a fight, as pure functions and a small state machine over data, with no scene loaded and no art authored.
 
@@ -231,6 +231,62 @@ Previews call `validate()`. The UI in phase 3 renders the `Result`. Nothing draw
 
 ---
 
+### 1.5.1 — The data and helpers 1.6 needs
+
+Break reads state that no phase has built yet. This is that state, split out so 1.6 is the rule and not a scavenger hunt. Nothing here is a rules question; the rules were settled in GDD 1.9.
+
+**Ships:** new fields on `unit.gd`, a scar enum in `taxonomy.gd`, `Taxonomy.is_long()`, `Movement.reachable()`, `CombatState.attackers_of()`, a faction filter on `Cones.cone_stack()`, `RulesConstants.CALL_RADIUS`.
+
+#### Data on the unit
+
+| Field | Default | Why |
+| --- | --- | --- |
+| `adapted: bool` | `false` | Break clause 3 is about the *unadapted*: Drifters, untrained AI, raw unclassed recruits (GDD §5.5). P0's whole cast is unadapted — basin folk against Drifters — so `false` is the honest default. Classed units set it true when training and kit arrive (GDD §8) |
+| `scars: int` | `0` | Bitfield over a new `Taxonomy.Scar` enum: `AGORAPHOBIA`, `LUNG_DAMAGE`. GDD §8.5 names both. Only Agoraphobia is consumed in 1.6; Lung Damage is data until movement reads it. With `has_scar(scar) -> bool` |
+| `broken: bool` | `false` | The state GDD §5.5 gives a broken unit. 1.6 sets it; the broken *move* constraint is 1.6's job |
+| `is_founder: bool` | `false` | **Not in the original prerequisite list.** The Call is a radius *around the founder* (GDD §8.4), and nothing on the map currently says which body that is. Also what founder-down keys off later (GDD §8.5) |
+
+`_init` already takes six parameters; do not add four more. Set these after construction.
+
+**`duplicate_unit()` must copy every one of them.** It does not copy what it does not know about, and `Movement.path` builds a probe with `duplicate_at` for each tile's exposure — so a field that fails to copy makes every per-tile break read silently wrong, in exactly the preview the player trusts. One test per field asserting the round trip, and one asserting `duplicate_at` keeps them while changing only the cell.
+
+#### Helpers
+
+**`Taxonomy.is_long(weapon) -> bool`.** Rifle, LMG, sniper (GDD §5.5). The rifle/LMG/sniper `match` is currently written out four times — three in `constants.gd` (`shot_cost`, `shot_damage`, `can_fire_in_deep_water`) and once in `taxonomy.gd`'s stopping table. Fold all four into this call in the same change, so "long" has one definition and the break rule cannot drift from the damage rule.
+
+**`CombatState.attackers_of(map, unit) -> Array[Unit]`.** The standing hostiles with a clean line on `unit`. `Exposure` gives a count; break needs the bodies, because "in the open" asks whether a tile is free of a line from *every one of them*. Build `attackers_of` as the primitive and let exposure's count fall out of it, rather than writing the LOS loop twice.
+
+**`Movement.reachable(map, state, unit) -> Array[Vector3i]`.** Every tile the unit can stand on with the AP it holds now. The same flood `path` already runs — `move_cost`, `_neighbors`, `_pop_min` — but bounded by `unit.ap` instead of aimed at a destination, and returning the frontier rather than one route. Pull the shared flood out of `path` so there is one traversal, not two that can disagree.
+
+Two things it must handle that `path` currently does not:
+
+- **Occupancy.** `is_walkable(map, cell)` checks material only; `Cell.occupant` is ignored. A tile with another body on it is not somewhere you can stand, so `reachable` must exclude it. That means `path` can currently route straight through a standing enemy — an existing gap from 1.4. Fix both here or neither; a `reachable` that excludes occupied tiles while `path` walks through them is worse than either alone.
+- **Pinned does not zero the AP.** GDD §5.5 is explicit. `reachable` takes `unit.ap` as it stands and does not consult `unit.pin`.
+
+**`Cones.cone_stack(map, state, cell, hostile_to := <none>)`.** The current stack counts every live Watch, friendly ones included. Break clause 3 needs hostile long cones only. Add an optional faction filter rather than a second function, and leave the default counting everything so the two existing tests in `test_exposure_cones.gd` still describe the UI §4.4 overlay read.
+
+**`RulesConstants.CALL_RADIUS`.** *Working default.* GDD §8.4 gives no number — "small radius" early, "full weight" late — and the scaling is explicitly a later problem. One constant now, tagged like the rest.
+
+#### Bleeders: filtered everywhere (decided)
+
+`CombatState.hostiles_of` currently keeps bleeding units (`if not other.is_active() and not other.bleeding: continue`), so `ExposureQuery` counts a downed rifleman as a gun on you. A bleeder cannot fire.
+
+**Decided: filter bleeders everywhere.** One definition of hostile, shared by exposure and break. The exposure count then means *guns on you*, which is exactly what UI §4.6 draws and what "outnumbered" counts. The alternative — filtering only inside break — would have kept two notions of hostile that have to stay in step forever.
+
+What this touches:
+
+- `hostiles_of` drops the `and not other.bleeding` escape, so it returns standing units only. If something later genuinely needs "who could see you, firing or not", that is a separate named helper, not a flag on this one.
+- `ExposureQuery` inherits the change for free. A downed hostile stops contributing to `count` and to `sources`.
+- `attackers_of` is built on the same primitive, so break and exposure cannot disagree by construction.
+- `tests/invariants/test_exposure_los.gd` iterates `hostiles_of` directly and its invariant still holds, since both sides of the equivalence narrow together.
+- Add a test asserting the change directly: a hostile with a clean line drops to Bleeding Out and the target's exposure count falls by one. Stabilising it does not bring the count back — a stabilised unit is still down (GDD §5.5).
+
+This is a behaviour change to shipped 1.3 code, so it lands in 1.5.1 with its own test rather than riding along inside the break rule.
+
+**Done when:** every field round-trips through `duplicate_unit` and `duplicate_at` under test; `is_long` has one definition and the four old copies are gone; `reachable` agrees with `path` on any tile both can reach, asserted as a property; `attackers_of` agrees with `Exposure.count`, both counting standing hostiles only; and the cone filter counts hostile Watches only while the existing stack tests still pass.
+
+---
+
 ### 1.6 — Break, contact, and the scripted fight
 
 The proof.
@@ -269,17 +325,7 @@ break_check(map, state, unit) -> BreakResult
 
 Break is a state. Evaluate it after every command resolves and at each phase start, and let it land the moment it is true: a player unit that breaks mid-phase forfeits the rest of that phase (GDD §5.5). Pinned + broken takes the broken move.
 
-**Prerequisites that do not exist yet.** None of these are rules questions; they are missing data or helpers:
-
-- `Unit` fields: `adapted: bool` (Drifters, untrained AI, raw recruits are false), `agoraphobia: bool`, `broken: bool`. There is no scar field at all yet.
-- The Call: a radius around the founder that makes allies inside it immune. GDD §8.4 gives no number ("small early, full weight late"), so add `RulesConstants.CALL_RADIUS` as a working default and leave scaling for later.
-- `Movement.reachable(map, state, unit) -> Array[Vector3i]`: the same flood `Movement.path` already runs (`move_cost`, `_neighbors`, `_pop_min`), bounded by `unit.ap`, unoccupied tiles only.
-- Per-tile freedom from attackers: reuse the probe-unit trick `Movement.path` uses for `exposure_per_cell`, then test the attackers rather than the count.
-- A faction-filtered `cone_stack`. The current one counts friendly Watches too, and clause 4 needs hostile ones only.
-- A helper for "standing hostiles with a clean line on `unit`" that returns the units, not only `Exposure.count`.
-- One `Taxonomy.is_long()`. `constants.gd` repeats the rifle/LMG/sniper `match` three times and `taxonomy.gd` once; new code should call the helper, and those four can be folded into it while you are there.
-
-**Decide before writing the tests.** `CombatState.hostiles_of` includes bleeding units (`if not other.is_active() and not other.bleeding: continue`), so `ExposureQuery` currently counts a downed rifleman as a gun on you. A bleeder cannot fire, and the break rule needs standing units only. Either filter them out of exposure too, which is what the definitions imply, or keep exposure as "who could see you" and filter only in break. The first is simpler; the second keeps the UI §4.2 read unchanged.
+**Prerequisites** are phase 1.5.1: the unit fields (`adapted`, `scars`, `broken`, `is_founder`), `Taxonomy.is_long`, `Movement.reachable`, `CombatState.attackers_of`, the cone-stack faction filter and `CALL_RADIUS`. 1.6 is the rule on top of them and should add no new data.
 
 **Break tests, one per definition, taken from the examples the definitions were chosen with:**
 
@@ -337,7 +383,7 @@ Not in this phase, and not to be "just quickly added":
 
 1.2 (LOS) is the keystone — 1.3, 1.4, 1.5 and 1.6 all consume it. Do not start 1.3 until the LOS invariant suite is green, because an asymmetric LOS bug found later reads as an exposure bug and costs a day to trace.
 
-1.6 was blocked on the §7.2 raise; it was answered in GDD 1.9, so nothing blocks it now. The prerequisites listed under 1.6 are the first work in the phase.
+1.6 was blocked on the §7.2 raise; it was answered in GDD 1.9, so nothing blocks it now. 1.5.1 carries the data and helpers it reads, and exists because the original plan specified 1.6 by what it returns and never traced what it consumes. Do 1.5.1 first: writing the break rule against fields that do not exist yet is how a phase turns into a scavenger hunt.
 
 ---
 
@@ -385,7 +431,15 @@ Three more calls were made without asking and are worth a look:
 
 **UI follow-up, done in UI/UX 0.5.** UI §4.6 was rewritten to draw what the rule counts: guns on the unit against friends within 3 tiles, cover in reach with the AP held, and a loaded long cone. Agoraphobia now reads as the third clause with kit, training and terrain waived, and §4.4 labels long cones with a word.
 
-### 7.3 — Two smaller ones
+### 7.3 — When does `broken` clear? (working default, 1.5.1)
+
+GDD §5.5 says a broken player unit loses the rest of the current phase and that its next move must end closer to cover or extraction. It never says when the state ends.
+
+*Working default:* `broken` clears at the end of the unit's next phase, and break is re-checked at each phase start — so a unit still standing outnumbered in the open simply breaks again. This mirrors Pinned's "one hit costs one phase of action at most" (GDD §5.4) and needs no new concept.
+
+**Raise to:** GDD §5.5 when it next opens. Low stakes, but undefined, and 1.6 cannot be written without picking something.
+
+### 7.4 — Two smaller ones
 
 - **Exposure wording (non-blocking).** UI §4.2 says exposure shows "the count and where from." Add a line saying a hidden hostile contributes to the count without being located, mirroring §4.4's apex rule. Documentation, not a code change.
 - **Levee maps (resolved for 1.1).** UI §3 allows two water surfaces on one map. `BowlMap` keeps one plane with `TODO(levee)` and a documenting test; promote to a region list before Act II levee maps.
