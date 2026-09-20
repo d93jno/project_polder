@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" load_steps=7 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/water_ghost.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_water_flooded.png" id="2_flood"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_water_falling.png" id="3_fall"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_ground_mud.png" id="4_mud"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_ground_dry.png" id="5_dry"]
+[ext_resource type="Texture2D" path="res://assets/vfx/vfx_cone_hatch.png" id="6_hatch"]
+
+[resource]
+render_priority = 1
+shader = ExtResource("1_shader")
+shader_parameter/step = 0
+shader_parameter/is_range = false
+shader_parameter/reduced_motion = false
+shader_parameter/ghost_alpha = 0.38
+shader_parameter/albedo_flooded = ExtResource("2_flood")
+shader_parameter/albedo_falling = ExtResource("3_fall")
+shader_parameter/albedo_mud = ExtResource("4_mud")
+shader_parameter/albedo_dry = ExtResource("5_dry")
+shader_parameter/hatch_tex = ExtResource("6_hatch")
+shader_parameter/uv_scale = 0.25
+shader_parameter/tint = Color(0.78, 0.8, 0.82, 1)

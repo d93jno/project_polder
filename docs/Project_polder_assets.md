@@ -821,12 +821,28 @@ First art pass, six parallel agents, style lock in `assets/_style/`. Manifests l
 | UI | `assets/ui/icons/`, `assets/ui/theme/` | Food/fuel/scrap/people (128/64/32), 9-slice panel, hit circle pip, AP diamond pip, confirm frame |
 | World plates | `assets/worldtext/` | 8 load-bearing plates + painted waterline. Glyphs from PIL, not an image model |
 
-**Not this pass (still open on the P0 list):**
+### Pass 2 — shaders, HUD, humanoid, lighting tests
 
-- Godot water / fog / cone **shaders** (flooded and dry are albedos, not a step-driven shader)
-- Combat overlay chrome: selection, line preview, move path, exposure, Watch volumes, Pinned states, bleed-out count, height numbers, undo, fireteam strip, phase control
-- Character **animation frames** and a rigged humanoid `.glb` (`image_to_video` blocked; concepts only)
-- Lighting test scenes (Flooded roof / Dry street)
-- Falling water look (P1)
+Four agents. Closed the leftovers from pass 1.
+
+| Slice | Where | Landed |
+| --- | --- | --- |
+| Water / fog / cones / selection | `assets/shaders/` | `water.gdshader` (four looks, `reduced_motion`), ghost water, ageing fog, Watch cone (outline / live / unresolved apex / spent), selection. Preview: `water_preview.tscn` |
+| Falling + Mud albedos | `assets/env/kits/terrace/textures/` | `env_water_falling.png`, `env_ground_mud.png` + 2×2 verifies |
+| Combat HUD | `assets/ui/hud/`, new files in `ui/icons/` and `ui/theme/` | Exposure, Pinned (ducked / ducking next), Watch ticks, selection, path/line, bleed teardrop, phase plaques, PIL digit atlas `0–9` |
+| Rigged humanoid | `assets/chars/humanoid/char_humanoid.glb` | ~1.7 m, 21 bones, sockets `hand_r/l`, `back`, `head`. Clips: idle, walk, swim, climb, watch, aim_pistol, melee, flinch, downed, boat_sit |
+| Weapons as meshes | `char_kit_machete.glb`, `char_kit_pistol.glb` | Origin at grip; instance on `hand_r` |
+| Lighting tests | `scenes/p0/` | `flooded_roof.tscn` (water Y=2.4 m) and `dry_street.tscn` (plane at street). Same 25° camera. Open with `make editor`, F6 |
+
+**Still not this pass:**
+
+- Binding HUD setters to CombatState (phase 3; 1.6 still owns the rules)
+- GridMap MeshLibrary (test scenes instance MeshInstance3D)
+- `char_humanoid_light.glb` (concept delta too small)
+- Dusk looks B/C and after-dark chrome (GDD §10)
+
+### Pass 3 — presentation wiring (no rules)
+
+`presentation/` instances art. It does not edit `rules/` or `tests/`. `make run` opens `fight_view.gd`: the scripted-fight street drawn with the kit, units from `CombatState`, cones from `Cones.watch_cone`, hover previews from `Los` / `Movement.path` / `BreakRule.check`. Commands apply only after `validate()`.
 
 Known defects are in the per-folder manifests, not restated here.

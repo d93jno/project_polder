@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/fog_ageing.gdshader" id="1_shader"]
+
+[resource]
+render_priority = 2
+shader = ExtResource("1_shader")
+shader_parameter/staleness = 0.65
+shader_parameter/reduced_motion = false
+shader_parameter/dust_tint = Color(0.62, 0.6, 0.56, 1)
+shader_parameter/cold_tint = Color(0.46, 0.52, 0.56, 1)
+shader_parameter/veil = 0.34
+shader_parameter/dust_scale = 18.0

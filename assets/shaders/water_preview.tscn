@@ -1,0 +1,262 @@
+[gd_scene load_steps=30 format=3]
+
+[ext_resource type="Shader" path="res://assets/shaders/water.gdshader" id="1_water"]
+[ext_resource type="Shader" path="res://assets/shaders/water_ghost.gdshader" id="2_ghost"]
+[ext_resource type="Shader" path="res://assets/shaders/fog_ageing.gdshader" id="3_fog"]
+[ext_resource type="Shader" path="res://assets/shaders/watch_cone.gdshader" id="4_cone"]
+[ext_resource type="Shader" path="res://assets/shaders/selection.gdshader" id="5_sel"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_water_flooded.png" id="6_flood"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_water_falling.png" id="7_fall"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_ground_mud.png" id="8_mud"]
+[ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_ground_dry.png" id="9_dry"]
+[ext_resource type="Texture2D" path="res://assets/vfx/vfx_cone_hatch.png" id="10_hatch"]
+[ext_resource type="Texture2D" path="res://assets/vfx/vfx_selection_ring.png" id="11_ring"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.62, 0.66, 0.7, 1)
+sky_horizon_color = Color(0.7, 0.72, 0.74, 1)
+ground_bottom_color = Color(0.22, 0.22, 0.22, 1)
+ground_horizon_color = Color(0.68, 0.7, 0.72, 1)
+sun_angle_max = 4.0
+sun_curve = 0.15
+
+[sub_resource type="Sky" id="Sky1"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Env1"]
+background_mode = 2
+sky = SubResource("Sky1")
+ambient_light_source = 2
+ambient_light_color = Color(0.72, 0.74, 0.76, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+
+[sub_resource type="ShaderMaterial" id="MatFlood"]
+shader = ExtResource("1_water")
+shader_parameter/step = 0
+shader_parameter/water_height = 2.0
+shader_parameter/reduced_motion = false
+shader_parameter/displace_to_height = false
+shader_parameter/albedo_flooded = ExtResource("6_flood")
+shader_parameter/albedo_falling = ExtResource("7_fall")
+shader_parameter/albedo_mud = ExtResource("8_mud")
+shader_parameter/albedo_dry = ExtResource("9_dry")
+shader_parameter/uv_scale = 0.25
+shader_parameter/flood_speed = 1.0
+shader_parameter/falling_speed = 0.28
+shader_parameter/flood_wave_cm = 4.0
+
+[sub_resource type="ShaderMaterial" id="MatFall"]
+shader = ExtResource("1_water")
+shader_parameter/step = 1
+shader_parameter/water_height = 0.9
+shader_parameter/reduced_motion = false
+shader_parameter/displace_to_height = false
+shader_parameter/albedo_flooded = ExtResource("6_flood")
+shader_parameter/albedo_falling = ExtResource("7_fall")
+shader_parameter/albedo_mud = ExtResource("8_mud")
+shader_parameter/albedo_dry = ExtResource("9_dry")
+shader_parameter/uv_scale = 0.25
+shader_parameter/flood_speed = 1.0
+shader_parameter/falling_speed = 0.28
+shader_parameter/flood_wave_cm = 4.0
+
+[sub_resource type="ShaderMaterial" id="MatMud"]
+shader = ExtResource("1_water")
+shader_parameter/step = 2
+shader_parameter/water_height = 0.05
+shader_parameter/reduced_motion = false
+shader_parameter/displace_to_height = false
+shader_parameter/albedo_flooded = ExtResource("6_flood")
+shader_parameter/albedo_falling = ExtResource("7_fall")
+shader_parameter/albedo_mud = ExtResource("8_mud")
+shader_parameter/albedo_dry = ExtResource("9_dry")
+shader_parameter/uv_scale = 0.25
+shader_parameter/flood_speed = 1.0
+shader_parameter/falling_speed = 0.28
+shader_parameter/flood_wave_cm = 4.0
+
+[sub_resource type="ShaderMaterial" id="MatDry"]
+shader = ExtResource("1_water")
+shader_parameter/step = 3
+shader_parameter/water_height = 0.0
+shader_parameter/reduced_motion = false
+shader_parameter/displace_to_height = false
+shader_parameter/albedo_flooded = ExtResource("6_flood")
+shader_parameter/albedo_falling = ExtResource("7_fall")
+shader_parameter/albedo_mud = ExtResource("8_mud")
+shader_parameter/albedo_dry = ExtResource("9_dry")
+shader_parameter/uv_scale = 0.25
+shader_parameter/flood_speed = 1.0
+shader_parameter/falling_speed = 0.28
+shader_parameter/flood_wave_cm = 4.0
+
+[sub_resource type="ShaderMaterial" id="MatGhost"]
+render_priority = 1
+shader = ExtResource("2_ghost")
+shader_parameter/step = 0
+shader_parameter/is_range = true
+shader_parameter/reduced_motion = false
+shader_parameter/ghost_alpha = 0.38
+shader_parameter/albedo_flooded = ExtResource("6_flood")
+shader_parameter/albedo_falling = ExtResource("7_fall")
+shader_parameter/albedo_mud = ExtResource("8_mud")
+shader_parameter/albedo_dry = ExtResource("9_dry")
+shader_parameter/hatch_tex = ExtResource("10_hatch")
+shader_parameter/uv_scale = 0.25
+shader_parameter/tint = Color(0.78, 0.8, 0.82, 1)
+
+[sub_resource type="ShaderMaterial" id="MatFog"]
+render_priority = 2
+shader = ExtResource("3_fog")
+shader_parameter/staleness = 0.7
+shader_parameter/reduced_motion = false
+shader_parameter/dust_tint = Color(0.62, 0.6, 0.56, 1)
+shader_parameter/cold_tint = Color(0.46, 0.52, 0.56, 1)
+shader_parameter/veil = 0.34
+shader_parameter/dust_scale = 18.0
+
+[sub_resource type="ShaderMaterial" id="MatConeEnemy"]
+render_priority = 3
+shader = ExtResource("4_cone")
+shader_parameter/mode = 1
+shader_parameter/reduced_motion = false
+shader_parameter/cone_height = 8.0
+shader_parameter/cone_radius = 3.0
+shader_parameter/apex_fade = 0.22
+shader_parameter/tint = Color(0.86, 0.84, 0.76, 1)
+shader_parameter/hatch_tex = ExtResource("10_hatch")
+shader_parameter/hatch_scale = 1.1
+shader_parameter/fill_alpha = 0.16
+shader_parameter/outline_alpha = 0.82
+shader_parameter/ring_count = 6.0
+
+[sub_resource type="ShaderMaterial" id="MatConeHidden"]
+render_priority = 3
+shader = ExtResource("4_cone")
+shader_parameter/mode = 2
+shader_parameter/reduced_motion = false
+shader_parameter/cone_height = 8.0
+shader_parameter/cone_radius = 3.0
+shader_parameter/apex_fade = 0.22
+shader_parameter/tint = Color(0.86, 0.84, 0.76, 1)
+shader_parameter/hatch_tex = ExtResource("10_hatch")
+shader_parameter/hatch_scale = 1.1
+shader_parameter/fill_alpha = 0.16
+shader_parameter/outline_alpha = 0.82
+shader_parameter/ring_count = 6.0
+
+[sub_resource type="ShaderMaterial" id="MatConeFriend"]
+render_priority = 3
+shader = ExtResource("4_cone")
+shader_parameter/mode = 0
+shader_parameter/reduced_motion = false
+shader_parameter/cone_height = 8.0
+shader_parameter/cone_radius = 3.0
+shader_parameter/apex_fade = 0.22
+shader_parameter/tint = Color(0.86, 0.84, 0.76, 1)
+shader_parameter/hatch_tex = ExtResource("10_hatch")
+shader_parameter/hatch_scale = 1.1
+shader_parameter/fill_alpha = 0.16
+shader_parameter/outline_alpha = 0.82
+shader_parameter/ring_count = 6.0
+
+[sub_resource type="ShaderMaterial" id="MatSel"]
+render_priority = 4
+shader = ExtResource("5_sel")
+shader_parameter/tint = Color(0.9, 0.88, 0.8, 1)
+shader_parameter/ring_tex = ExtResource("11_ring")
+shader_parameter/use_ring_tex = true
+shader_parameter/inner = 0.42
+shader_parameter/outer = 0.86
+shader_parameter/alpha = 0.85
+shader_parameter/reduced_motion = false
+
+[sub_resource type="PlaneMesh" id="PlaneWater"]
+size = Vector2(8, 8)
+subdivide_width = 24
+subdivide_depth = 24
+
+[sub_resource type="PlaneMesh" id="PlaneGhost"]
+size = Vector2(8, 8)
+
+[sub_resource type="PlaneMesh" id="PlaneFog"]
+size = Vector2(8, 8)
+
+[sub_resource type="PlaneMesh" id="PlaneSel"]
+size = Vector2(1.4, 1.4)
+
+[sub_resource type="CylinderMesh" id="ConeVol"]
+top_radius = 0.01
+bottom_radius = 3.0
+height = 8.0
+radial_segments = 32
+rings = 8
+cap_top = false
+cap_bottom = false
+
+[node name="WaterPreview" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 12, 0)
+light_color = Color(0.9, 0.92, 0.95, 1)
+light_energy = 0.85
+shadow_enabled = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 11, 20)
+current = true
+fov = 50.0
+
+[node name="WaterFlooded" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2, 0)
+mesh = SubResource("PlaneWater")
+surface_material_override/0 = SubResource("MatFlood")
+
+[node name="WaterFalling" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.9, 0)
+mesh = SubResource("PlaneWater")
+surface_material_override/0 = SubResource("MatFall")
+
+[node name="WaterMud" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.05, 0)
+mesh = SubResource("PlaneWater")
+surface_material_override/0 = SubResource("MatMud")
+
+[node name="WaterDry" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0, 0)
+mesh = SubResource("PlaneWater")
+surface_material_override/0 = SubResource("MatDry")
+
+[node name="WaterGhostRange" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.04, 0)
+mesh = SubResource("PlaneGhost")
+surface_material_override/0 = SubResource("MatGhost")
+
+[node name="FogKnownQuiet" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.08, 0)
+mesh = SubResource("PlaneFog")
+surface_material_override/0 = SubResource("MatFog")
+
+[node name="ConeFriendly" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -4.5, 1.2, -10)
+mesh = SubResource("ConeVol")
+surface_material_override/0 = SubResource("MatConeFriend")
+
+[node name="ConeEnemyLive" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1.2, -10)
+mesh = SubResource("ConeVol")
+surface_material_override/0 = SubResource("MatConeEnemy")
+
+[node name="ConeUnresolved" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 4.5, 1.2, -10)
+mesh = SubResource("ConeVol")
+surface_material_override/0 = SubResource("MatConeHidden")
+
+[node name="Selection" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 0.03, -6)
+mesh = SubResource("PlaneSel")
+surface_material_override/0 = SubResource("MatSel")

@@ -1,3 +1,6 @@
-[gd_scene format=3 uid="uid://bq8polder_main001"]
+[gd_scene load_steps=2 format=3 uid="uid://bq8polder_main001"]
+
+[ext_resource type="Script" path="res://presentation/fight_view.gd" id="1_fight"]
 
 [node name="Main" type="Node3D"]
+script = ExtResource("1_fight")
