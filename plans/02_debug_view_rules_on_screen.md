@@ -1,6 +1,6 @@
 # Phase 2 — Rules on screen (P0 kit)
 
-**Status:** 2.0–2.3 completed — overlay queries drive cones/exposure/path; next is path/line HUD chrome (2.4) then camera decision lock (2.5)
+**Status:** 2.0–2.4 completed — path/line HUD chrome on overlay queries; next is camera decision lock (2.5) then shared opening (2.6)
 **Tracks:** GDD v1.10, UI/UX v0.5, assets inventory §16 (P0 pack)
 **Depends on:** Phase 1 complete (`plans/01_bowlmap_functions_headless.md`); P0 art under `assets/`
 **Filename:** "debug" is historical. The surface is the P0 kit, not a coloured GridMap. Do not rename mid-phase; links already point here.
@@ -127,20 +127,12 @@ Each slice ends with `make test` green. Checkpoint when the **read is honest**, 
 
 ### 2.4 — Path, line, HUD, commands
 
-**Status:** partial
+**Status:** completed
 
-**What landed.** Click tile → `FreeMoveCommand` until contact, then `MoveCommand`. Click hostile → `ShootCommand`. Q → `WatchCommand`. Space / phase plaque → `end_phase`, then a presentation-side greedy enemy. Hover path from `Movement.path` with reserve **indices**. Line hover names pins / drops / kills / named blocker in the HUD string. Break telegraph (`if hit here, breaks`) on the selected unit. `validate()` before `apply()`.
+**What landed.** Click tile → `FreeMoveCommand` until contact, then `MoveCommand`. Click hostile → `ShootCommand`. Q → `WatchCommand`. Space / phase plaque → `end_phase`, then a presentation-side greedy enemy. Hover path from `Movement.path` with reserve **shapes** (`ui_path_reserve_shot` T-bar, `ui_path_reserve_watch` wedge), per-tile AP cost, and Watch crossing labels (`crosses shotgun`). Line uses `ui_line_clean` / `ui_line_blocked` plus HUD outcome (pins / drops / kills / named blocker) and shot cost — unaffordable stays visible. Cover hover names `Taxonomy.stops` via `cover_stops_label`. Confirm on **kills a bleeder** (second click; Esc cancels). Hit pips on every visible body. Break telegraph on the selected unit. `validate()` before `apply()`. Overlay fields live on `overlay_queries` (tests in `test_overlay_queries.gd`).
 
 **Still open.**
 
-- Reserve marks must be **shapes** (`ui_path_reserve_shot` T-bar, `ui_path_reserve_watch` wedge), not two cream tints. Colour-only reserves fail UI §14.
-- Path shows AP **cost per tile** (Mud doubles in the step, not as a surprise at the end).
-- Path shows Watch **crossings** and the one shot a crossing draws (`MovePath.watches_crossed`).
-- Line uses `ui_line_clean` / `ui_line_blocked` (dash vs solid), not only a HUD sentence.
-- Hovering **cover** (no unit) names which classes it stops (`Taxonomy.stops`).
-- Unaffordable shot is drawn with its cost, not hidden (UI §4.1).
-- Confirm on **kills a bleeder** (UI §4.3 / §5).
-- Both sides' hit pips on the body, not only the selected HUD.
 - Opening duplicated in `fight_view._opening()` — see 2.6.
 
 **Done when:** a human can drive the scripted-fight *shape* without the debugger, and every preview is a field on `overlay_queries`.

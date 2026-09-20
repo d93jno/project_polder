@@ -11,6 +11,7 @@ const _Water := preload("res://presentation/water_plane.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
 const _CutawayBowl := preload("res://presentation/fixtures/cutaway_bowl.gd")
 const _Queries := preload("res://presentation/overlay_queries.gd")
+const _MINT_3D := preload("res://presentation/mint_key_3d.gdshader")
 
 const _NAMES := {
 	1: "Street",
@@ -37,6 +38,7 @@ var _cutaway_z: int = 99
 var _max_z: int = 0
 var _queries
 var _labels_root: Node3D
+var _confirm_target_id: int = -1
 
 
 func _ready() -> void:
@@ -46,7 +48,7 @@ func _ready() -> void:
 	_build_world()
 	_redraw()
 	_hud.set_note(
-		"PgUp/PgDn cutaway · click walk/shoot · Q Watch · Space phase · Tab select · [ ] yaw · wheel zoom · O ortho"
+		"PgUp/PgDn cutaway · click walk/shoot · Q Watch · Space phase · Tab select · F Falling · Esc cancel confirm"
 	)
 
 
@@ -77,6 +79,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				## A/B Falling vs Flooded on the same kit (exposure word + water step).
 				_toggle_falling_flooded()
 				get_viewport().set_input_as_handled()
+			KEY_ESCAPE:
+				if _confirm_target_id != -1:
+					_confirm_target_id = -1
+					_hud.set_note("")
+					_redraw()
+					get_viewport().set_input_as_handled()
 
 
 func _process(_dt: float) -> void:
@@ -240,6 +248,8 @@ func _draw_units() -> void:
 		## Cutaway hides floors above N; units on those floors hide with them.
 		## Tab / fireteam still select a roof unit while the street cutaway is up.
 		view.visible = view.visible and u.cell.z <= _cutaway_z
+		if view.visible and not u.extracted and not u.dead:
+			_spawn_hit_pips(view, u)
 
 
 func _draw_cones() -> void:
@@ -291,42 +301,139 @@ func _draw_preview() -> void:
 	if _queries.hover_hostile:
 		var occ := _unit_at(_hover)
 		if occ != null and _queries.los != null:
-			var col := (
-				Color(0.95, 0.85, 0.7, 0.45) if _queries.los.clean
-				else Color(0.4, 0.35, 0.3, 0.5)
+			_draw_shot_line(
+				PresentationCoords.world_ground(unit.cell) + Vector3(0, 1.2, 0),
+				PresentationCoords.world_ground(occ.cell) + Vector3(0, 1.2, 0),
+				_queries.los.clean
 			)
-			_mark_cell(occ.cell, col)
 		return
 	var path = _queries.path
 	if not path.reachable:
 		return
 	for i in path.cells.size():
-		var col := Color(0.9, 0.88, 0.8, 0.22)
+		var cell: Vector3i = path.cells[i]
+		_mark_path_tile(cell)
+		if i < path.cost_per_cell.size():
+			_spawn_preview_label(
+				PresentationCoords.world_ground(cell) + Vector3(-0.55, 0.45, 0.0),
+				str(path.cost_per_cell[i]),
+				0.011
+			)
 		if i == path.shot_reserve_at:
-			col = Color(0.85, 0.7, 0.45, 0.4)
+			_spawn_mint_sprite(
+				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.12, 0.0),
+				PresentationCatalog.UI_HUD + "ui_path_reserve_shot.png",
+				Vector2(0.9, 0.9),
+				true
+			)
 		if i == path.watch_reserve_at:
-			col = Color(0.75, 0.55, 0.35, 0.45)
-		_mark_cell(path.cells[i], col)
+			_spawn_mint_sprite(
+				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.14, 0.0),
+				PresentationCatalog.UI_HUD + "ui_path_reserve_watch.png",
+				Vector2(0.9, 0.9),
+				true
+			)
+	for crossing in path.watches_crossed:
+		var xc: WatchCrossing = crossing
+		if xc.cell.z > _cutaway_z:
+			continue
+		_spawn_preview_label(
+			PresentationCoords.world_ground(xc.cell) + Vector3(0.0, 0.9, 0.0),
+			_Queries.crossing_label(xc),
+			0.01
+		)
 
 
-func _mark_cell(cell: Vector3i, color: Color) -> void:
+func _mark_path_tile(cell: Vector3i) -> void:
+	_spawn_mint_sprite(
+		PresentationCoords.world_ground(cell) + Vector3(0.0, 0.04, 0.0),
+		PresentationCatalog.UI_HUD + "ui_path_tile.png",
+		Vector2(1.7, 1.7),
+		true
+	)
+
+
+func _draw_shot_line(from_m: Vector3, to_m: Vector3, clean: bool) -> void:
+	var delta := to_m - from_m
+	var length := delta.length()
+	if length < 0.05:
+		return
 	var mi := MeshInstance3D.new()
-	var mesh := PlaneMesh.new()
-	mesh.size = Vector2(1.7, 1.7)
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(length, 0.04, 0.08)
 	mi.mesh = mesh
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
+	var tex := load(
+		PresentationCatalog.UI_HUD + ("ui_line_clean.png" if clean else "ui_line_blocked.png")
+	) as Texture2D
+	mat.albedo_texture = tex
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.uv1_scale = Vector3(maxi(1.0, length / 2.0), 1.0, 1.0)
 	mi.material_override = mat
-	mi.position = PresentationCoords.world_ground(cell) + Vector3(0, 0.05, 0)
+	mi.position = (from_m + to_m) * 0.5
+	mi.look_at_from_position(mi.position, to_m, Vector3.UP)
+	## BoxMesh extends on local X after look_at points -Z; rotate to lay along the line.
+	mi.rotate_object_local(Vector3.UP, PI * 0.5)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_preview_root.add_child(mi)
+
+
+func _spawn_mint_sprite(
+	origin: Vector3, tex_path: String, size: Vector2, flat: bool = false
+) -> void:
+	var mi := MeshInstance3D.new()
+	var mesh := PlaneMesh.new()
+	mesh.size = size
+	mi.mesh = mesh
+	var mat := ShaderMaterial.new()
+	mat.shader = _MINT_3D
+	mat.set_shader_parameter("albedo_tex", load(tex_path))
+	mi.material_override = mat
+	mi.position = origin
+	if not flat:
+		mi.rotation_degrees.x = -90.0
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_preview_root.add_child(mi)
+
+
+func _spawn_hit_pips(parent: Node3D, u: Unit) -> void:
+	## Both sides: hit pips on the body (UI §4.3).
+	var max_hp := RulesConstants.HP_PIPS
+	var row := Node3D.new()
+	row.name = "HitPips"
+	row.position = Vector3(0.0, 1.95, 0.0)
+	parent.add_child(row)
+	var gap := 0.3
+	var start_x := -0.5 * gap * float(max_hp - 1)
+	for i in max_hp:
+		var mi := MeshInstance3D.new()
+		var mesh := PlaneMesh.new()
+		mesh.size = Vector2(0.24, 0.24)
+		mi.mesh = mesh
+		var mat := ShaderMaterial.new()
+		mat.shader = _MINT_3D
+		mat.set_shader_parameter("albedo_tex", load(PresentationCatalog.UI_THEME + "ui_pip_hit.png"))
+		mat.set_shader_parameter("alpha_mul", 1.0 if i < u.hp else 0.22)
+		mi.material_override = mat
+		mi.position = Vector3(start_x + gap * float(i), 0.0, 0.0)
+		mi.rotation_degrees = Vector3(-55.0, 0.0, 0.0)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		row.add_child(mi)
+	var label := Label3D.new()
+	label.text = "%d/%d" % [u.hp, max_hp]
+	label.font_size = 28
+	label.pixel_size = 0.008
+	label.position = Vector3(0.0, 0.32, 0.0)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = Color(0.94, 0.9, 0.8, 0.95)
+	row.add_child(label)
 
 
 func _click_cell(cell: Vector3i) -> void:
 	var occupant := _unit_at(cell)
 	if occupant != null and occupant.faction == Taxonomy.Faction.PLAYER:
+		_confirm_target_id = -1
 		_selected_id = occupant.id
 		_redraw()
 		return
@@ -334,8 +441,20 @@ func _click_cell(cell: Vector3i) -> void:
 	if actor == null:
 		return
 	if occupant != null and CombatState.is_hostile(actor.faction, occupant.faction):
+		var los := Los.line_of_sight(_state.map, actor.cell, occupant.cell, actor.weapon)
+		if los.clean and occupant.bleeding:
+			if _confirm_target_id == occupant.id:
+				_confirm_target_id = -1
+				_try(ShootCommand.new(actor.id, occupant.id))
+			else:
+				_confirm_target_id = occupant.id
+				_hud.set_note("confirm: kills a bleeder — click again · Esc cancels")
+				_redraw()
+			return
+		_confirm_target_id = -1
 		_try(ShootCommand.new(actor.id, occupant.id))
 		return
+	_confirm_target_id = -1
 	if _state.in_contact:
 		_try(MoveCommand.new(actor.id, cell))
 	else:
@@ -448,18 +567,15 @@ func _sync_hud() -> void:
 	var hover_txt := "cell %s" % _hover
 	if _state.map.has_cell(_hover):
 		hover_txt += "  %s" % _cover_name_at(_hover)
-	var occupant := _unit_at(_hover)
-	if _queries.hover_hostile and _queries.los != null and occupant != null:
-		if _queries.los.clean:
-			var dmg := RulesConstants.shot_damage(u.weapon)
-			if occupant.bleeding:
-				hover_txt += "  kills a bleeder"
-			elif dmg >= occupant.hp:
-				hover_txt += "  drops to Bleeding Out"
-			else:
-				hover_txt += "  pins"
-		else:
-			hover_txt += "  blocked: %s" % Taxonomy.material_name(_queries.los.blocker)
+	if _queries.cover_stops_label != "":
+		hover_txt += "  %s" % _queries.cover_stops_label
+	if _queries.hover_hostile and _queries.shot_outcome != "":
+		hover_txt += "  %s" % _queries.shot_outcome
+		hover_txt += "  cost %d" % _queries.shot_cost
+		if not _queries.shot_affordable:
+			hover_txt += "  unaffordable"
+	if _confirm_target_id != -1:
+		hover_txt += "  CONFIRM kills a bleeder"
 	var step_name := str(Taxonomy.WaterStep.keys()[_state.map.water_step])
 	var bits: Array[String] = [
 		hover_txt,
@@ -521,7 +637,7 @@ func _draw_overlay_labels() -> void:
 			_queries.stack_label,
 			0.011
 		)
-	## Path exposure words (not colour-only). Reserve chrome stays for 2.4.
+	## Path exposure words (not colour-only). Reserve shapes live in `_draw_preview`.
 	if _queries.path.reachable:
 		for i in _queries.path.exposure_per_cell.size():
 			var cell: Vector3i = _queries.path.cells[i]
@@ -545,6 +661,18 @@ func _spawn_label(origin: Vector3, text: String, pixel: float) -> void:
 	label.pixel_size = pixel
 	label.outline_size = 4
 	_labels_root.add_child(label)
+
+
+func _spawn_preview_label(origin: Vector3, text: String, pixel: float) -> void:
+	var label := Label3D.new()
+	label.text = text
+	label.font_size = 42
+	label.modulate = Color(0.94, 0.9, 0.8, 0.92)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = origin
+	label.pixel_size = pixel
+	label.outline_size = 4
+	_preview_root.add_child(label)
 
 
 func _unit_at(cell: Vector3i) -> Unit:

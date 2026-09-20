@@ -109,3 +109,104 @@ func test_falling_exposure_word_is_no_hide() -> void:
 	var q = Queries.compute(map, state, 1, Vector3i(0, 0, 0))
 	assert_eq(Queries.exposure_word(q.exposure), "no hide")
 	assert_eq(q.exposure.state, Exposure.State.NO_HIDE)
+
+
+## --- plan 2.4: path chrome / line / cover stops / shot afford ---
+
+
+func test_path_cost_and_crossings_match_movement() -> void:
+	var map := BowlMap.new()
+	for x in range(0, 9):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+		map.set_cell(Vector3i(x, 1, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	var w1 := Unit.new(
+		10, Vector3i(2, 1, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.SHOTGUN, Vector3i(0, -1, 0)
+	)
+	var w2 := Unit.new(
+		11, Vector3i(6, 1, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.SHOTGUN, Vector3i(0, -1, 0)
+	)
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER)
+	var state := CombatState.new()
+	state.add_unit(player)
+	state.add_unit(w1)
+	state.add_unit(w2)
+	state.in_contact = true
+	state.add_watch(LiveWatch.new(10, Vector3i(0, -1, 0)))
+	state.add_watch(LiveWatch.new(11, Vector3i(0, -1, 0)))
+	var hover := Vector3i(8, 0, 0)
+	var q = Queries.compute(map, state, 1, hover)
+	var path := Movement.path(map, state, player, hover)
+	assert_true(q.path.reachable)
+	assert_eq(q.path.cost_per_cell, path.cost_per_cell)
+	assert_eq(q.path.watches_crossed.size(), path.watches_crossed.size())
+	assert_eq(q.path.watches_crossed.size(), 2)
+	assert_eq(Queries.crossing_label(q.path.watches_crossed[0]), "crosses shotgun")
+
+
+func test_cover_hover_names_stops() -> void:
+	var map := BowlMap.new()
+	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	map.set_cell(Vector3i(1, 0, 0), Cell.new(Taxonomy.CoverMaterial.PLANK))
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER)
+	var state := CombatState.new()
+	state.add_unit(player)
+	var q = Queries.compute(map, state, 1, Vector3i(1, 0, 0))
+	assert_true(q.hover_cover)
+	assert_eq(q.cover_stops_label, Queries.format_cover_stops(Taxonomy.CoverMaterial.PLANK))
+	assert_true(q.cover_stops_label.contains("pistol"))
+	assert_true(q.cover_stops_label.contains("shotgun"))
+	assert_false(q.cover_stops_label.contains("rifle"), "soft cover does not stop long")
+
+
+func test_shot_outcome_pins_and_blocker() -> void:
+	var map := BowlMap.new()
+	for x in range(0, 5):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var enemy := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER)
+	var state := CombatState.new()
+	state.add_unit(player)
+	state.add_unit(enemy)
+	var clean = Queries.compute(map, state, 1, enemy.cell)
+	assert_true(clean.hover_hostile)
+	assert_eq(clean.shot_outcome, "pins")
+	assert_eq(clean.shot_cost, RulesConstants.shot_cost(Taxonomy.WeaponClass.PISTOL))
+	assert_true(clean.shot_affordable)
+	assert_false(clean.kills_bleeder)
+
+	map.set_cell(Vector3i(2, 0, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
+	var blocked = Queries.compute(map, state, 1, enemy.cell)
+	assert_true(blocked.shot_outcome.begins_with("blocked:"))
+	assert_true(blocked.shot_outcome.contains("MASONRY") or blocked.shot_outcome.contains("masonry"))
+
+
+func test_shot_outcome_kills_bleeder_and_unaffordable() -> void:
+	var map := BowlMap.new()
+	for x in range(0, 5):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.RIFLE)
+	player.ap = 0
+	var enemy := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER)
+	enemy.bleeding = true
+	var state := CombatState.new()
+	state.add_unit(player)
+	state.add_unit(enemy)
+	var q = Queries.compute(map, state, 1, enemy.cell)
+	assert_eq(q.shot_outcome, "kills a bleeder")
+	assert_true(q.kills_bleeder)
+	assert_eq(q.shot_cost, RulesConstants.shot_cost(Taxonomy.WeaponClass.RIFLE))
+	assert_false(q.shot_affordable, "cost stays visible when AP is short")
+
+
+func test_shot_outcome_drops_to_bleeding() -> void:
+	var map := BowlMap.new()
+	for x in range(0, 5):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.RIFLE)
+	var enemy := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER)
+	enemy.hp = RulesConstants.HP_PIPS
+	var state := CombatState.new()
+	state.add_unit(player)
+	state.add_unit(enemy)
+	var q = Queries.compute(map, state, 1, enemy.cell)
+	assert_eq(q.shot_outcome, "drops to Bleeding Out")

@@ -1,6 +1,6 @@
 extends RefCounted
-## Pure overlay reads for the fight view (plan 2.3). The view may draw these fields
-## only — never a parallel LOS / path / cone of its own.
+## Pure overlay reads for the fight view (plan 2.3–2.4). The view may draw these
+## fields only — never a parallel LOS / path / cone of its own.
 ## Preload this script (no class_name) so headless tests do not need a global-class refresh.
 
 var exposure: Exposure = Exposure.new()
@@ -9,8 +9,16 @@ var stack_label: String = ""
 var path: MovePath = MovePath.new()
 var los: LosResult = null
 var hover_hostile: bool = false
+var hover_cover: bool = false
 ## One entry per live (unspent) Watch the view may draw.
 var watches: Array = [] ## Dictionary
+
+## Shot / line preview (UI §4.1 / §4.3).
+var shot_cost: int = 0
+var shot_affordable: bool = true
+var shot_outcome: String = "" ## pins | drops to Bleeding Out | kills a bleeder | blocked | ""
+var cover_stops_label: String = ""
+var kills_bleeder: bool = false
 
 
 static func compute(
@@ -27,6 +35,8 @@ static func compute(
 	## Stack the hovered coordinate even if the sparse map has no cell there (open air).
 	q.stack = Cones.cone_stack(map, state, hover)
 	q.stack_label = format_stack(q.stack)
+	q.shot_cost = RulesConstants.shot_cost(unit.weapon)
+	q.shot_affordable = unit.ap >= q.shot_cost
 
 	var occupant := _unit_at(state, hover)
 	if (
@@ -37,7 +47,14 @@ static func compute(
 	):
 		q.hover_hostile = true
 		q.los = Los.line_of_sight(map, unit.cell, occupant.cell, unit.weapon)
+		q.shot_outcome = _shot_outcome(unit, occupant, q.los)
+		q.kills_bleeder = q.los.clean and occupant.bleeding
 	elif map.has_cell(hover) and hover != unit.cell:
+		if occupant == null:
+			var cell: Cell = map.get_cell(hover)
+			if cell != null and cell.material != Taxonomy.CoverMaterial.AIR:
+				q.hover_cover = true
+				q.cover_stops_label = format_cover_stops(cell.material)
 		q.path = Movement.path(map, state, unit, hover)
 
 	var path_cells: Array[Vector3i] = []
@@ -98,6 +115,36 @@ static func exposure_word(exp: Exposure) -> String:
 			return "no hide"
 		_:
 			return "exposed"
+
+
+## "stops pistol, melee, spear, shotgun" — material hover (UI §4.3).
+static func format_cover_stops(material: Taxonomy.CoverMaterial) -> String:
+	if material == Taxonomy.CoverMaterial.AIR:
+		return ""
+	var parts: Array[String] = []
+	for weapon in Taxonomy.WeaponClass.values():
+		if Taxonomy.stops(material, weapon):
+			parts.append(Taxonomy.weapon_class_name(weapon).to_lower())
+	if parts.is_empty():
+		return "stops nothing"
+	return "stops %s" % ", ".join(parts)
+
+
+static func crossing_label(crossing: WatchCrossing) -> String:
+	return "crosses %s" % weapon_label(crossing.weapon)
+
+
+static func _shot_outcome(attacker: Unit, target: Unit, los: LosResult) -> String:
+	if los == null:
+		return ""
+	if not los.clean:
+		return "blocked: %s" % Taxonomy.material_name(los.blocker)
+	var dmg := RulesConstants.shot_damage(attacker.weapon)
+	if target.bleeding:
+		return "kills a bleeder"
+	if dmg >= target.hp:
+		return "drops to Bleeding Out"
+	return "pins"
 
 
 static func _path_crosses(path_cells: Array[Vector3i], cone_cells: Array[Vector3i]) -> bool:
