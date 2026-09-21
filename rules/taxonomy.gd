@@ -103,3 +103,17 @@ static func stops(material: CoverMaterial, weapon: WeaponClass) -> bool:
 		_:
 			push_error("Taxonomy.stops: unhandled material %s" % material)
 			return true
+
+
+## Whether this material blocks sight (eyes, not a weapon — GDD §5.4).
+## Written out on its own: do not derive from stops(). Soft cover and deployed
+## barriers stop some shots and never hide a body you can see over (plan 04 §7.1).
+static func blocks_sight(material: CoverMaterial) -> bool:
+	match material:
+		CoverMaterial.AIR, CoverMaterial.WATER_CHEST, CoverMaterial.PLANK, CoverMaterial.CRATE, CoverMaterial.DEPLOYED_BARRIER:
+			return false
+		CoverMaterial.MASONRY, CoverMaterial.METAL, CoverMaterial.GROUND, CoverMaterial.SMOKE, CoverMaterial.WATER_DEEP:
+			return true
+		_:
+			push_error("Taxonomy.blocks_sight: unhandled material %s" % material)
+			return true

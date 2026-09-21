@@ -77,6 +77,32 @@ static func line_of_sight(
 	return LosResult.ok()
 
 
+## Sight line: same supercover walk as line_of_sight, sight predicate instead of
+## weapon stops. Eyes are not a weapon — a plank stops a pistol and not a look
+## (plan 04 §4.0 / GDD §5.4). Body-hide (smoke, deep water) applies both ways.
+static func sight_line(map: BowlMap, from: Vector3i, to: Vector3i) -> LosResult:
+	if from == to:
+		return LosResult.ok()
+
+	var hide_from := _body_hide_material(map, from)
+	if hide_from != -1:
+		return LosResult.blocked(hide_from as Taxonomy.CoverMaterial, from)
+
+	var hide_to := _body_hide_material(map, to)
+	if hide_to != -1:
+		return LosResult.blocked(hide_to as Taxonomy.CoverMaterial, to)
+
+	var path := line3d(from, to)
+	for cell in path:
+		if cell == from or cell == to:
+			continue
+		var material := _material_at(map, cell)
+		if Taxonomy.blocks_sight(material):
+			return LosResult.blocked(material, cell)
+
+	return LosResult.ok()
+
+
 ## Deep water and smoke hide a body — no line to or from (GDD §5.4).
 ## Chest-deep water does not, including under Falling (GDD §5.8).
 ## Returns CoverMaterial as int, or -1 if the body is not hidden.
