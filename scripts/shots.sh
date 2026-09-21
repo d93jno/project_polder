@@ -7,7 +7,7 @@
 #   scripts/shots.sh --do=EXPR ...        one ad-hoc capture of whatever state you set up;
 #                                         options are listed in the header of capture.gd, e.g.
 #     scripts/shots.sh --do='set_process(false)' --do='set("_hover", Vector3i(10,5,0))' \
-#                      --do='_try_watch()' --out=build/shots/watch.png --crop=10,590,300,60
+#                      --do='_state.set("in_contact", true)' --do='_try_watch()' --out=build/shots/watch.png --crop=10,590,300,60
 #   SIZE=1166x689 scripts/shots.sh ...    window size (default 1280x720)
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

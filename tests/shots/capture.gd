@@ -145,6 +145,9 @@ func _setup_adhoc() -> bool:
 
 func _setup_street_watch() -> bool:
 	## Piet (selected) sets a rifle Watch toward (10,5); AP drops 6 → 3.
+	## A Watch needs phases (GDD §3.1) and the street opens out of contact, so start them the
+	## way the rules do rather than poke a flag.
+	Contact.begin(_fight._state)
 	_fight._hover = _WATCH_HOVER
 	_fight._try_watch()
 	var piet: Unit = _fight._state.get_unit(1)

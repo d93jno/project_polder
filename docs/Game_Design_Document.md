@@ -1,6 +1,6 @@
 # Game Design Document: "Project Polder" (Working Title)
 
-**Version:** 1.14 — fog is decided at fight scale: sight is its own line and low cover does not block it; knowledge is held per body and shared by earshot; a wiped squad's intel is sealed until another squad finds it; the MEDEVAC route is priced over known ground with a floor window; stacked Watches resolve oldest first. (1.13: Watch reacts to cone entry and committed in-cone actions, resolving every eligible Watch in a fixed previewed order; a founderless squad wipe has no campaign-wide effect beyond losing that squad. 1.12: the hidden causeway threshold advances through readable highland-pressure bands: watching, surveying, then building. 1.11: stabilization starts a deterministic, knowable MEDEVAC window; missing it kills the casualty and ends the campaign for the founder. 1.10: break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). 1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned. 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
+**Version:** 1.15 — Act III and Phase 3 are decoupled: Act III is a war state played from Phase 2 or 3, hidden highland pressure cannot reach Building until the inner ring is Dry, a player-made bridge over a wet floor is a legitimate harder line, and a campaign that never reaches Act III has no ending. (1.14: fog is decided at fight scale: sight is its own line and low cover does not block it; knowledge is held per body and shared by earshot; a wiped squad's intel is sealed until another squad finds it; the MEDEVAC route is priced over known ground with a floor window; stacked Watches resolve oldest first. 1.13: Watch reacts to cone entry and committed in-cone actions, resolving every eligible Watch in a fixed previewed order; a founderless squad wipe has no campaign-wide effect beyond losing that squad. 1.12: the hidden causeway threshold advances through readable highland-pressure bands: watching, surveying, then building. 1.11: stabilization starts a deterministic, knowable MEDEVAC window; missing it kills the casualty and ends the campaign for the founder. 1.10: break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). 1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned. 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
 
 ## 0. Document Scope
 This document is the base foundation for the game's mechanics: its systems, rules, campaign structure, and the design tone those rules express. When a later document disagrees with a mechanic described here, this one wins until it is revised.
@@ -195,20 +195,22 @@ Earlier versions used *phase*, *act*, and *chapter* loosely. From here on, **pha
 | Opening | The boat | Squad mode only | Phase 0: The Boat |
 | Act I | The penthouse, waking | Squad mode plus the first table verbs | Phase 1: The Penthouse |
 | Act II | The descent | Table mode is real; founder optional | Phase 2: The Descent |
-| Act III | The compound becomes possible | The Vanguard on the floor | Phase 3: The Compound |
+| Act III | The descent or the compound, whichever is built | The Vanguard on the floor | Phase 2 or 3 |
 
 **Triggers.**
 *   **Opening → Act I:** the dome is found by walking. It is not scripted. If the player wanders away from the ridge, the Citadel stays a rumor.
 *   **Act I → Act II:** the first terrace ring reaches Dry and the player holds the dome, even if its gauges are still waking.
-*   **Act II → Act III:** either a player-made land bridge points toward the ridge, or the highland's visible pressure reaches causeway construction. The hidden threshold is population plus at least one field, but it advances through readable bands before building begins. Act III does not require the player to build a bridge (see Turtling).
+*   **Act II → Act III:** either a player-made land bridge points toward the ridge, or the highland's visible pressure reaches causeway construction. The hidden threshold is population plus at least one field, but it advances through readable bands before building begins. **Building does not begin until the inner ring is Dry** (the Phase 3 condition below), so pressure alone never opens Act III on a base that cannot yet build the compound. Watching and Surveying still advance without it, so a town with a wet floor sees the marks and is never surprised. A player-made bridge is not gated: see *A bridge over a wet floor*. Act III does not require the player to build a bridge (see Turtling).
 *   **Phase 3 (the Compound)** unlocks when the inner ring, meaning the terrace plus the first floor ring around the ridge, is Dry. The whole basin does not need to be dry. A wet moat chosen at the edge does not lock out garages.
 
-**Turtling is allowed.** The Vanguard are masters of dry. Without a player bridge, no heavy column crosses the sump; they do not swim an army. A player who stays small on the terrace gets a late Act III or none: a small town, no highway, a legitimate way to play.
+**Turtling is allowed.** The Vanguard are masters of dry. Without a player bridge, no heavy column crosses the sump; they do not swim an army. A player who stays small on the terrace, or keeps the floor wet, gets a late Act III or none: a small town, no highway, a legitimate way to play. With no Act III there is no ending to compute, and the campaign simply continues (*working default*; Section 10).
+
+**A bridge over a wet floor.** Act III can begin with the base still in Phase 2 only through a player-made bridge. Then there are no garages and no heavy munitions until the inner ring is Dry. Nothing else changes: defense is already forward, on posts and forward camps that come off the labor board (4.3), and the "land that feeds" count in 6.6 already covers only the inner tiles that were Dry when Act III began. It is a harder line the player chose, not a broken state. It is not the lost-first-contact case of 6.5, which is a separate way for Act III to start badly.
 
 **Highland pressure is not a meter.** The exact population-and-field threshold stays hidden, but it is never silent. As a town grows loud without building a bridge, the player sees the highland move through three map facts:
 *   **Watching:** distant observation, reports, or highland lights say the ridge has been noticed.
 *   **Surveying:** survey marks and staged material identify where a causeway could run.
-*   **Building:** the Vanguard start the **causeway** from the rim. Its route and progress are visible.
+*   **Building:** the Vanguard start the **causeway** from the rim, once the inner ring is Dry. Its route and progress are visible.
 
 The causeway is a target: raids can slow it, and a redirection can drown a stretch of it, with the usual hangover and the Bitter rule in Section 6.6. A loud town cannot make itself unseen again by waiting. First contact on a causeway follows Section 6.5.
 
@@ -857,6 +859,12 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   The MEDEVAC route is priced over ground the squad knows. With no known route, a Trauma Kit still starts a fixed floor window (*working default* 1 round).
 *   Stacked Watches resolve oldest set first.
 
+**Locked in 1.15:**
+*   Act III is a war state and Phase 3 is a base state. Act III is played from Phase 2 or Phase 3, whichever the player has reached.
+*   Hidden highland pressure does not reach Building until the inner ring is Dry. Watching and Surveying advance without it. A player-made bridge is not gated.
+*   Act III begun over a wet floor means no garages or heavy munitions until the inner ring is Dry. Posts, forward camps and the ending's land-that-feeds count are unchanged.
+*   A campaign that never reaches Act III has no ending and simply continues (*working default*).
+
 ## 10. Still open
 *   Final name of the unique trait.
 *   Exact neighbor count / "majority of the ring" for a step down.
@@ -865,6 +873,8 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Which table verbs are available in each act (tuning). The empty-chair tax hits research, radio, and the readiness of the one fireteam when the founder is out.
 *   Late population: upside only plus a target, or also a cost if fields die.
 *   Incoming camps: automatically yours, or sometimes still half Drifter.
+*   Causeway lead time (tuning, §3.2): the minimum time between Building starting and a column being able to reach the terrace, so a base that has just Dried its inner ring still has room to build.
+*   A campaign that never reaches Act III (§3.2): working default is no ending; it simply continues. Whether a turtled town wants a quiet ending of its own.
 *   Ending thresholds (tuning): how many quiet days mean the push has broken, where the harm line sits, and the hidden thresholds that advance highland pressure from watching to surveying to building.
 *   Starting boat-camp size (working default 8–12), founder recovery days, and how fast the rim trickle runs dry.
 *   ~~How visible First Gauge is on the tactical map.~~ Settled in UI/UX 0.4: a map change the player can see, plus the squad reacting. The mechanic stays locked here.

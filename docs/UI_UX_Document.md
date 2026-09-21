@@ -1,12 +1,12 @@
 # Project Polder — UI/UX Document
 
-**Version:** 0.10 — cut the per-tile level digits from section 2; the height read's mechanism is open. (0.9: matched to GDD 1.14: fog is drawn from what each unit and the squad know; exposure marks are located by what a unit can locate; intel from a lost squad arrives aged; the MEDEVAC preview says when no route is known; stacked Watches resolve oldest first. 0.8: matched to GDD 1.13: Watch previews show entry and qualifying-action reactions, including the fixed order for stacked cones. 0.7: wall fade (plan 3.1): tall pieces between the camera and a friendly ease to ~25 % opacity so the silhouette stays; only friendlies trigger it. 0.6: camera lock (plan 2.5): perspective 25° FOV and hold-to-peek are decided; orthographic is diagnostic only. 0.5: matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. 0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
+**Version:** 0.12 — housekeeping: scope cites GDD 1.15, and section 18 ticks the items the code now builds. Break's on-screen counts, bleed-out previews and First Gauge stay open. (0.11: section 2's height read records why the level digits were cut: nobody in the world reads an exact height or depth off a tile. 0.10: cut the per-tile level digits; the height read's mechanism is open. 0.9: matched to GDD 1.14: fog is drawn from what each unit and the squad know; exposure marks are located by what a unit can locate; intel from a lost squad arrives aged; the MEDEVAC preview says when no route is known; stacked Watches resolve oldest first. 0.8: matched to GDD 1.13: Watch previews show entry and qualifying-action reactions, including the fixed order for stacked cones. 0.7: wall fade (plan 3.1): tall pieces between the camera and a friendly ease to ~25 % opacity so the silhouette stays; only friendlies trigger it. 0.6: camera lock (plan 2.5): perspective 25° FOV and hold-to-peek are decided; orthographic is diagnostic only. 0.5: matched to GDD 1.9: break's terms are defined, so the telegraph draws what the rule counts (guns on the unit against friends near it, cover in reach, a loaded long cone); Agoraphobia waives kit, training and terrain; a break lands the moment it is true. 0.4: review findings applied in full. New: AP and actions, exposure, health, commit policy, the base, roster and scars, research and the handoff, bands, the ending, accessibility, teaching. Corrected: the line preview names *pins*, Pinned is two states, break clause 2 is telegraphed as a condition and not a verdict, prisoner joins the off-ramp, cones from hidden watchers resolved. 0.3: matched to GDD 1.7; Pinned cancels a live Watch; broken beats Pinned; dusk is three looks. 0.2: Model C, table surface, cone stacking, ageing fog. 0.1: first draft.)
 
 **Versioning.** The version lives in this header, not in the filename. This file stays `UI_UX_Document.md` for the life of the project so links, citations and git history follow one path. `Game_Design_Document.md` follows the same rule.
 
 ## 0. Scope
 
-This document owns how the game is shown and how the player touches it. The Game Design Document (GDD v1.9) owns what the rules are. When the two disagree about a rule, the GDD wins. When they disagree about how a rule is drawn, this document wins.
+This document owns how the game is shown and how the player touches it. The Game Design Document (GDD 1.15) owns what the rules are. When the two disagree about a rule, the GDD wins. When they disagree about how a rule is drawn, this document wins.
 
 **Owns:** camera, views, input, previews, overlays, how water, fog, cones and time are drawn, how in-world text is rendered, what the table shows, what commits and what does not.
 
@@ -14,7 +14,7 @@ This document owns how the game is shown and how the player touches it. The Game
 
 Art direction gets its own document. Audio gets its own document, with one standing brief from here: several reads in this document are **events, not pictures** — contact starting, dusk turning over, a cone going live, a bleed-out round ticking, mail arriving. Audio owns those, and this document will not pretend a picture covers them.
 
-Citations like *GDD §5.4* point at the mechanics document. Items marked *working default* are prototype starting points. Vocabulary follows GDD v1.9: **Pinned** is the combat state, a **band** is a nomad group, a **marked roof** is a shelter, a **squad** is the units on one tactical map, and the up-to-four bodies you deploy are the **fireteam** (GDD §5.1).
+Citations like *GDD §5.4* point at the mechanics document. Items marked *working default* are prototype starting points. Vocabulary follows GDD 1.15: **Pinned** is the combat state, a **band** is a nomad group, a **marked roof** is a shelter, a **squad** is the units on one tactical map, and the up-to-four bodies you deploy are the **fireteam** (GDD §5.1).
 
 ## 1. Principles
 
@@ -48,7 +48,7 @@ The tactical map is 3D geometry on a data grid. The camera rests at a fixed, ele
 
 **Floor cutaway.** A level selector hides everything above level N. Roof shelters, flooded interiors and overpass decks are unreadable without it.
 
-**Height reads.** The player always knows: is that roof above the water, and can I reach it this phase? The mechanism is open. Per-tile level digits were built and cut (plan 3 review): on a mostly flat bowl they were a lattice of identical zeros, and they drew over cells the squad had not seen.
+**Height reads.** The player always knows: is that roof above the water, and can I reach it this phase? The mechanism is open, and it carries no exact numbers. Someone living in this world cannot read a height or a depth off a tile by looking at it, so the interface does not either (Principles 7 and 8: it names only what the player's people could name, and the world is the text). Per-tile level digits were built and cut on that ground (plan 3 review). They were also a lattice of identical zeros on a mostly flat bowl, and they drew over cells the squad had not seen.
 
 **Orientation.** 90° snap plus cutaway on a bowl large enough to walk will lose people. The ridge does the work: it is a horizon object in the middle of the basin (GDD §2, section 7 here), visible from terrace bowls, and it orients without being the compass objective section 16 forbids. Where the ridge is not visible — floor and sump bowls — orientation falls back on the water itself, which always runs downhill, and on the levee lines, which are the basin's grid. No compass rose. If playtests show this failing in the sump, that is a real finding, not a reason to add a minimap.
 
@@ -572,17 +572,17 @@ Cost notes beside the design. None of these change a rule.
 
 **Blocking the first playable bowl (walk plus one fight):**
 
-- [ ] AP pool, per-action costs and the reserve read. The tactical HUD does not exist without it.
-- [ ] Exposure, per unit and per tile, as the line-of-sight function run backwards.
-- [ ] Health pips and the three-outcome line preview, keyed off them.
-- [ ] Cone apex behaviour when the watcher is hidden. Cheap to build, easy to get wrong.
+- [x] AP pool, per-action costs and the reserve read. The tactical HUD does not exist without it. Built (plan 2): pips on the unit, per-tile cost, shot and Watch reserve marks on the path.
+- [x] Exposure, per unit and per tile, as the line-of-sight function run backwards. Built (plan 2); locating a source moved onto knowledge in plan 4.3.
+- [x] Health pips and the three-outcome line preview, keyed off them. Built (plan 2): pins / drops to Bleeding Out / kills a bleeder.
+- [x] Cone apex behaviour when the watcher is hidden. Built; fog (plan 4.3) is what now drives it.
 - [x] Peek yaw or 90° only. Decide before a second bowl is authored. **Hold-to-peek** (plan 2.5).
 - [x] Projection test on that bowl: one Flooded roof, one long Dry line. **Perspective 25°** (plan 2.5).
 - [ ] Walk pace and boat handling in one bowl, on mouse and keyboard.
-- [ ] Contact in code as a pure function, not a feeling.
+- [x] Contact in code as a pure function, not a feeling. `Contact`, over `Vision` (plan 4.1). Still a working default in the GDD.
 - [ ] Bleed-out clock and Pinned × Watch in code, with their previews.
 - [ ] Break's ingredients as readable counts: guns on the unit, friends within 3 tiles, cover in reach, a loaded long cone. Cover in reach moves with AP, so it shares the path with the reserve marks.
-- [ ] Commit policy: the information boundary for undo, in code, before it is a habit.
+- [x] Commit policy: the information boundary for undo, in code, before it is a habit. `RevealResult` (plan 4.5). The undo chrome itself is not built.
 - [ ] First Gauge placeholder: a visible map change plus the squad reacting. Plate reads are a separate, cheaper item.
 
 **Blocking the Opening end to end:**

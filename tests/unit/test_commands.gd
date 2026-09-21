@@ -91,6 +91,7 @@ func test_hit_in_own_phase_ducks_immediately() -> void:
 
 func test_pin_cancels_live_watch() -> void:
 	var state := _two_unit_fight()
+	state.in_contact = true ## Watch needs phases (GDD §3.1)
 	state = WatchCommand.new(1, Vector3i(1, 0, 0)).apply(state)
 	assert_not_null(state.live_watch_for(1))
 	state = state.end_phase()
@@ -127,8 +128,22 @@ func test_no_stunlock_second_pin_ignored() -> void:
 	assert_eq(enemy.hp, 2, "apply_pin alone does not damage")
 
 
+func test_watch_is_refused_before_contact() -> void:
+	## GDD §3.1: squad mode has no AP coin, no End Turn and no Watch. Phases start at contact.
+	var state := _two_unit_fight()
+	assert_false(state.in_contact, "precondition: nothing has started phases")
+	var check := WatchCommand.new(1, Vector3i(1, 0, 0)).validate(state)
+	assert_false(check.ok, "no Watch while walking")
+	assert_true(check.reason.contains("contact"), "the refusal says why: %s" % check.reason)
+	assert_eq(state.get_unit(1).ap, RulesConstants.AP_POOL, "validate spends nothing")
+	assert_null(state.live_watch_for(1))
+	state.in_contact = true
+	assert_true(WatchCommand.new(1, Vector3i(1, 0, 0)).validate(state).ok, "same state, once phases have started")
+
+
 func test_watch_one_shot_then_spent() -> void:
 	var state := _two_unit_fight()
+	state.in_contact = true ## Watch needs phases (GDD §3.1)
 	state = WatchCommand.new(1, Vector3i(1, 0, 0)).apply(state)
 	assert_false(WatchCommand.new(1, Vector3i(1, 0, 0)).validate(state).ok)
 	assert_not_null(state.live_watch_for(1))

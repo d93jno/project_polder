@@ -14,6 +14,9 @@ func validate(state: CombatState) -> CommandResult:
 	var ready := _actor_ready(state, unit_id)
 	if not ready.ok:
 		return ready
+	## GDD §3.1: squad mode has no AP coin, no End Turn and no Watch. Phases start at contact.
+	if not state.in_contact:
+		return CommandResult.failure("no Watch until contact")
 	var unit: Unit = state.get_unit(unit_id)
 	if unit.ap < RulesConstants.WATCH_COST:
 		return CommandResult.failure("not enough AP")

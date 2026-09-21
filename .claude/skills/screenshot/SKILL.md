@@ -15,6 +15,7 @@ One driver does both jobs: `tests/shots/capture.gd`, run by `scripts/shots.sh`.
 scripts/shots.sh --out=build/shots/name.png \
   --do='set_process(false)' \
   --do='set("_hover", Vector3i(10,5,0))' \
+  --do='_state.set("in_contact", true)' \
   --do='_try_watch()'
 ```
 
@@ -40,7 +41,7 @@ Always start with `set_process(false)`. Otherwise `_process` overwrites your hov
 | --- | --- |
 | Hover a cell | `set("_hover", Vector3i(10,5,0))`, then `_redraw()` |
 | Select a unit | `set("_selected_id", 2)`, then `_redraw()` (ids 1–4 are the squad) |
-| Set Piet's Watch | `_try_watch()` (faces the hovered cell; costs 3 AP) |
+| Set Piet's Watch | `_state.set("in_contact", true)`, then `_try_watch()` (faces the hovered cell; costs 3 AP). A Watch is refused before contact (GDD §3.1) |
 | Cycle selection / end phase | `_cycle_selected()` / `_end_phase()` |
 | Cutaway level | `_set_cutaway(1)` |
 | Flip Falling ↔ Flooded | `_toggle_falling_flooded()` |

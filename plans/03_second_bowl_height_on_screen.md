@@ -231,7 +231,9 @@ Working default: 25 % opacity, only pieces on the camera → friendly segment. A
 
 UI §2 says the ridge orients the player and is "visible from terrace bowls". At pitch 40.7° / FOV 25° / three zoom levels, the fight street shows only a thin sliver of it at the top edge. If the terrace at rest shows none either, that is a real finding for UI §18 (options: per-bowl look point or zoom, peek reveals it, or accept it is a peek/zoom-out read). It is not a reason to add a compass or move the ridge onto the tiles.
 
-### 7.4 — Watch before contact vs GDD §3.1 (found in review; not this phase's to solve)
+### 7.4 — Watch before contact vs GDD §3.1 (found in review; **resolved after the phase**)
+
+**Resolved.** The GDD wording was already right, so the rule followed it: `WatchCommand.validate` refuses with "no Watch until contact". `tests/unit/test_commands.gd` has the refusal test, the two Watch tests that assumed otherwise now set `in_contact`, and the `street_watch` shot starts contact with `Contact.begin` before it sets the Watch. Only Watch is refused. Shoot and interact start contact themselves, so they stay legal. The original finding follows.
 
 GDD §3.1: squad mode has "no AP coin, no End Turn, no Watch". `WatchCommand.validate` does not check `in_contact`, so a Watch can be set and 3 AP spent before contact. The scripted fight only Watches after contact, but `tests/unit/test_commands.gd` builds its states with `_two_unit_fight()`, which never sets `in_contact`, and applies `WatchCommand` (and other AP commands) to them. Adding the check would therefore change those fixtures too, not just one rule. Either the rule gets the check (a Phase-1-style slice: GDD wording first, then the test fixtures set `in_contact = true`) or the GDD says why pre-contact Watch is allowed.
 
