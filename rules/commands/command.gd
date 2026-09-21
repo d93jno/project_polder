@@ -19,6 +19,8 @@ func apply(state: CombatState) -> CombatState:
 	if not state.in_contact and _starts_contact(state):
 		Contact.begin(next)
 	BreakRule.resolve(next) ## no-op until phases have started
+	## Fog peels after every command; move commands also peel per step (plan 04 §4.2).
+	next.knowledge.peel(next.map, next)
 	return next
 
 

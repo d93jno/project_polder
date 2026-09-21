@@ -25,6 +25,10 @@ const MOVE_COST_VERTICAL_SURCHARGE := 1 ## Added when z changes (climb / dive)
 ## --- Break (*working default*, GDD §5.5 as of 1.9) ---
 const OUTNUMBERED_FRIEND_RADIUS := 3 ## Chebyshev tiles within which standing friends protect a unit
 
+## --- Comms / fog (*working default*, plan 04 §7.3 / §7.5) ---
+const EARSHOT_RADIUS := 3 ## Chebyshev; same shape as OUTNUMBERED_FRIEND_RADIUS. Ignores walls.
+const STALE_FULL_AFTER_VISITS := 5 ## Visits since seen → staleness 1.0 (shader float; never a digit)
+
 ## --- The Call (*working default*, GDD §8.4) ---
 ## GDD gives no number: "small" early, "full weight" late. One constant now; scaling is later.
 const CALL_RADIUS := 2 ## Chebyshev tiles around the founder within which allies cannot break

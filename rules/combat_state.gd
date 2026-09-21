@@ -18,6 +18,8 @@ var round_index: int = 0
 var in_contact: bool = false
 ## Tiles where a standing unit can leave the map (the boat, a marked roof). Authored per fight.
 var extract_cells: Array[Vector3i] = []
+## Per-unit fog. Copied like units, never shared like the map (plan 04 §4.2).
+var knowledge: Knowledge = Knowledge.new()
 
 
 func add_unit(unit: Unit) -> void:
@@ -90,6 +92,7 @@ func duplicate_state() -> CombatState:
 	copy.round_index = round_index
 	copy.in_contact = in_contact
 	copy.extract_cells = extract_cells.duplicate()
+	copy.knowledge = knowledge.duplicate_knowledge() if knowledge != null else Knowledge.new()
 	for unit in units.values():
 		copy.units[unit.id] = unit.duplicate_unit()
 	for watch in watches:

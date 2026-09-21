@@ -35,6 +35,7 @@ func _apply(state: CombatState) -> CombatState:
 	var path := Movement.path(next.map, next, unit, to)
 	for i in range(1, path.cells.size()):
 		unit.cell = path.cells[i]
+		next.knowledge.peel(next.map, next)
 		if Contact.check(next.map, next).contact:
 			Contact.begin(next)
 			break

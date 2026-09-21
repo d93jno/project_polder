@@ -41,6 +41,7 @@ func _apply(state: CombatState) -> CombatState:
 		var step_from := unit.cell
 		unit.ap -= step_cost
 		unit.cell = step_to
+		next.knowledge.peel(next.map, next)
 		_resolve_watch_reactions(next, unit, step_from, step_to)
 	return next
 

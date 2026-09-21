@@ -93,3 +93,18 @@ func test_sibling_states_diverge_without_touching_each_other() -> void:
 	## Occupancy is per state: a's move must not have cleared or claimed anything for b.
 	assert_true(Movement.is_free(map, a, Vector3i(3, 0, 0), a.get_unit(1)), "a never went to 3")
 	assert_false(Movement.is_free(map, b, Vector3i(3, 0, 0), b.get_unit(2)), "b's unit stands on 3")
+
+
+func test_a_peeled_copy_leaves_its_parent_untouched() -> void:
+	## Knowledge is copied like units, not shared like the map (plan 04 §4.2).
+	var map := _corridor(4)
+	var root := _fight(map)
+	assert_eq(root.knowledge.own_sight(1, Vector3i(0, 0, 0)), Knowledge.CellSight.UNKNOWN)
+	var next := MoveCommand.new(1, Vector3i(2, 0, 0)).apply(root)
+	assert_eq(next.knowledge.own_sight(1, Vector3i(2, 0, 0)), Knowledge.CellSight.LIVE)
+	assert_eq(
+		root.knowledge.own_sight(1, Vector3i(2, 0, 0)),
+		Knowledge.CellSight.UNKNOWN,
+		"peel must not leak into the state the command promised not to touch"
+	)
+	assert_eq(root.knowledge.known_cells(root).size(), 0)
