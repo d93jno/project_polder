@@ -138,3 +138,65 @@ func test_water_draws_first_and_writes_no_depth() -> void:
 	var mat := load(PresentationCatalog.WATER_MAT) as ShaderMaterial
 	assert_lt(mat.render_priority, 0, "water sorts before other transparents")
 	assert_true(mat.shader.code.contains("depth_draw_never"), "water writes no depth")
+
+
+## The extract dock is a floating dock on guide piles. Its deck is 0.38 m above its origin (measured
+## from env_pier: the posts drop to -1.4 m), built for water near street level. Under a 2.0 m Flooded
+## surface it is 1.6 m underwater, and the extract place cannot be found. It rides the water instead.
+func test_a_dock_rides_the_water_and_never_goes_under() -> void:
+	for step in [Taxonomy.WaterStep.FLOODED, Taxonomy.WaterStep.FALLING]:
+		var surface := PresentationCoords.water_surface_m(step, 0)
+		assert_almost_eq(
+			PresentationCoords.dock_deck_y(0, step, 0) - surface,
+			PresentationCoords.DOCK_FREEBOARD_M, 0.001, "the deck stands a freeboard clear of the water"
+		)
+	assert_almost_eq(PresentationCoords.dock_deck_y(0, Taxonomy.WaterStep.DRY, 0), PresentationCoords.DOCK_DECK_TOP_M, 0.001, "dry: it stands as built")
+	assert_eq(PresentationCoords.dock_lift_m(Taxonomy.WaterStep.DRY, 0), 0.0)
+	assert_eq(PresentationCoords.dock_lift_m(Taxonomy.WaterStep.MUD, 0), 0.0, "a film of mud does not lift it")
+	assert_gt(
+		PresentationCoords.dock_lift_m(Taxonomy.WaterStep.FLOODED, 0),
+		PresentationCoords.dock_lift_m(Taxonomy.WaterStep.FALLING, 0)
+	)
+
+
+func test_a_body_on_the_dock_stands_on_the_deck_and_does_not_swim() -> void:
+	var cell := Vector3i(2, 0, 0)
+	var flooded := Taxonomy.WaterStep.FLOODED
+	var deck := PresentationCoords.dock_deck_y(0, flooded, 0)
+	assert_almost_eq(PresentationCoords.world_play(cell, flooded, 0, true).y, deck + 0.02, 0.001)
+	assert_almost_eq(PresentationCoords.unit_origin(cell, flooded, 0, false, true).y, deck + 0.02, 0.001, "no draft: feet on the boards")
+	assert_lt(PresentationCoords.unit_origin(cell, flooded, 0).y, deck, "the same cell without a dock is water")
+
+
+func test_dock_cells_come_from_the_stamps_that_ride_the_water() -> void:
+	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	var cells: Dictionary = PresentationCatalog.dock_cells(TerraceStamps.stamps())
+	for extract in FloodedTerrace.opening().extract_cells:
+		assert_true(cells.has(extract), "the extract cell %s is on the dock" % extract)
+	assert_eq(cells.size(), 3, "1 x 3 cells and nothing else rides")
+
+
+func test_the_pier_mesh_is_lifted_with_the_water() -> void:
+	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
+	var BowlDraw = load("res://presentation/bowl_draw.gd")
+	var ys := {}
+	for step in [Taxonomy.WaterStep.DRY, Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.FLOODED]:
+		var map := _terrace_map(step)
+		var bowl = BowlDraw.new()
+		add_child_autofree(bowl)
+		bowl.draw_map(map, TerraceStamps.stamps())
+		for n in bowl.get_children():
+			if n.has_meta("polder_piece") and str(n.get_meta("polder_piece")) == "env_pier":
+				ys[step] = (n as Node3D).position.y
+	assert_gt(ys[Taxonomy.WaterStep.FLOODED], ys[Taxonomy.WaterStep.FALLING])
+	assert_gt(ys[Taxonomy.WaterStep.FALLING], ys[Taxonomy.WaterStep.DRY])
+	assert_almost_eq(
+		ys[Taxonomy.WaterStep.FLOODED] - ys[Taxonomy.WaterStep.DRY],
+		PresentationCoords.dock_lift_m(Taxonomy.WaterStep.FLOODED, 0), 0.001
+	)
+
+
+func _terrace_map(step: Taxonomy.WaterStep) -> BowlMap:
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	return FloodedTerrace.map(step)

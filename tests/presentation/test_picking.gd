@@ -170,3 +170,20 @@ func test_a_ray_that_meets_no_authored_cell_picks_nothing() -> void:
 	var map := _street_and_roof()
 	var ray := _ray_at(Vector3(200.0, 0.0, 200.0))
 	assert_true(Picking.cell_under_ray(map, 1, ray[0], ray[1], _plane(Taxonomy.WaterStep.DRY)).is_empty())
+
+
+## A dock deck rides above the water plane. A click on the deck picks the dock cell, and a click on
+## the water beside it still picks the water cell.
+func test_a_click_on_the_dock_deck_picks_the_dock_cell() -> void:
+	var map := _street_and_roof()
+	var flooded := Taxonomy.WaterStep.FLOODED
+	var dock := Vector3i(2, 1, 0)
+	var deck_y := PresentationCoords.dock_deck_y(0, flooded, 0)
+	var docks := {dock: deck_y}
+	var on_deck := Vector3(float(dock.x) * PresentationCoords.CELL_M, deck_y, float(dock.y) * PresentationCoords.CELL_M)
+	var ray := _ray_at(on_deck)
+	var hit: Dictionary = Picking.cell_under_ray(map, 0, ray[0], ray[1], _plane(flooded), docks)
+	assert_eq(hit.get("cell"), dock, "the deck is drawn there")
+	var beside := Vector3i(6, 4, 0)
+	var ray2 := _ray_at(PresentationCoords.world_play(beside, flooded, 0))
+	assert_eq(Picking.cell_under_ray(map, 0, ray2[0], ray2[1], _plane(flooded), docks).get("cell"), beside)

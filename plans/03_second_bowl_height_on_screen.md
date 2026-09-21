@@ -189,7 +189,9 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 
 **Done when.** `make shots` has `terrace_water_bare` (Flooded: the street is gone) and `terrace_falling_bare` (the slabs show through), with probes calibrated against the regressions they guard: a zero-depth plane, and Falling drawn opaque.
 
-**What landed.** As above. Open: the pier's deck sits under a Flooded surface (extract cells are hard to read), the rules still price a roof cell as swim in Flooded (`Movement` ignores `water_z`), and a diegetic freeboard or waterline read is the UI §2 height read the user will invent.
+**What landed.** As above. **The dock.** `env_pier` was built for water near street level (deck top 0.38 m over its origin, posts to -1.4 m), so a 2.0 m Flooded surface buried the extract place. It is now a floating dock on guide piles: `PresentationCatalog.RIDES_WATER` pieces are lifted to stay `DOCK_FREEBOARD_M` clear of the surface (as built when dry), bodies on them stand on the deck and never swim, and picking casts the deck plane. Presentation only; no rule or fixture changed. `terrace_dock` shot: the deck must read pale against the water (0.60 fixed, 0.30 submerged).
+
+Open: the rules still price every cell as the step's water (`Movement` ignores `water_z`), so a unit on the dock or a roof in Flooded reads `hidden` while standing in plain sight, and a roof costs swim; a diegetic freeboard or waterline read is the UI §2 height read the user will invent.
 
 ---
 

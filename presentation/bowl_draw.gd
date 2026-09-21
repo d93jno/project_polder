@@ -35,14 +35,19 @@ func draw_map(map: BowlMap, stamps: Array = [], known: Dictionary = {}) -> void:
 		var yaw: float = choice.get("yaw", 0.0)
 		pieces[coord] = piece_id
 		_instance_piece(piece_id, PresentationCoords.world(coord), yaw, coord.z, "%s_%s" % [piece_id, coord])
-	draw_stamps(stamps, known)
+	draw_stamps(stamps, known, map.water_step, map.water_z)
 	cutaway_z = max_z
 	apply_cutaway()
 
 
 ## Instance each stamp once at its footprint centre. Safe to call after draw_map's cell pass.
 ## With a known filter, the stamp draws only when every footprint cell is known.
-func draw_stamps(stamps: Array, known: Dictionary = {}) -> void:
+func draw_stamps(
+	stamps: Array,
+	known: Dictionary = {},
+	step: Taxonomy.WaterStep = Taxonomy.WaterStep.DRY,
+	water_z: int = 0,
+) -> void:
 	var filter := not known.is_empty()
 	for s in stamps:
 		var stamp: Stamp = s
@@ -57,6 +62,8 @@ func draw_stamps(stamps: Array, known: Dictionary = {}) -> void:
 			if not all_known:
 				continue
 		var pos := PresentationCatalog.stamp_world_origin(stamp)
+		if stamp.piece_id in PresentationCatalog.RIDES_WATER:
+			pos.y += PresentationCoords.dock_lift_m(step, water_z, stamp.origin.z)
 		var node_name := "%s_%s" % [stamp.piece_id, stamp.origin]
 		_instance_piece(stamp.piece_id, pos, stamp.yaw, stamp.origin.z, node_name)
 

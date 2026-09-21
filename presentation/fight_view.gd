@@ -52,6 +52,7 @@ var _units_root: Node3D
 var _cones_root: Node3D
 var _preview_root: Node3D
 var _select_ring
+var _dock_cells: Dictionary = {} ## cells under a piece that rides the water
 var _player_ids: Array[int] = []
 var _cutaway_z: int = 99
 var _max_z: int = 0
@@ -68,6 +69,7 @@ func _ready() -> void:
 	KnowledgeStore.load_from().begin_fight(_state, _bowl_id)
 	_state.knowledge.peel(_state.map, _state)
 	_stamps = _stamps_for_bowl()
+	_dock_cells = PresentationCatalog.dock_cells(_stamps)
 	_player_ids = _ids_of(Taxonomy.Faction.PLAYER)
 	_selected_id = _player_ids[0] if not _player_ids.is_empty() else 1
 	_build_world()
@@ -830,7 +832,8 @@ func _pick_cell() -> Vector3i:
 	var water_z := _state.map.water_z
 	var hit := _Picking.cell_under_ray(
 		_state.map, _cutaway_z, origin, dir,
-		func(z: int) -> float: return PresentationCoords.play_y(z, step, water_z)
+		func(z: int) -> float: return PresentationCoords.play_y(z, step, water_z),
+		_dock_decks()
 	)
 	if not hit.is_empty():
 		## A floor between the camera and the body (roof over a street unit) wins.
@@ -852,20 +855,33 @@ func _set_cutaway(level: int) -> void:
 ## Where overlays for a cell sit: on the floor, or on the water surface where a body would float
 ## (UI 3). Everything the player points at is drawn on the plane a click resolves on.
 func _ground(cell: Vector3i) -> Vector3:
-	return PresentationCoords.world_play(cell, _state.map.water_step, _state.map.water_z)
+	return PresentationCoords.world_play(
+		cell, _state.map.water_step, _state.map.water_z, _dock_cells.has(cell)
+	)
 
 
 ## Where a body's origin goes: on the floor, or a draft below the surface while it floats. The
 ## draft follows the pose the unit is drawn in: prone when swimming, standing when treading.
 func _body_origin(u: Unit) -> Vector3:
 	return PresentationCoords.unit_origin(
-		u.cell, _state.map.water_step, _state.map.water_z, _locomotion_clip(u) == "swim"
+		u.cell, _state.map.water_step, _state.map.water_z,
+		_locomotion_clip(u) == "swim", _dock_cells.has(u.cell)
 	)
 
 
 ## Anchor for a label or line on whoever stands in `cell`, when only the cell is known.
 func _unit_origin(cell: Vector3i) -> Vector3:
-	return PresentationCoords.unit_origin(cell, _state.map.water_step, _state.map.water_z)
+	return PresentationCoords.unit_origin(
+		cell, _state.map.water_step, _state.map.water_z, false, _dock_cells.has(cell)
+	)
+
+
+## Dock cell -> Y of its deck, for picking.
+func _dock_decks() -> Dictionary:
+	var out: Dictionary = {}
+	for cell: Vector3i in _dock_cells.keys():
+		out[cell] = PresentationCoords.dock_deck_y(cell.z, _state.map.water_step, _state.map.water_z)
+	return out
 
 
 func _sync_water_from_map() -> void:
@@ -897,6 +913,8 @@ func _locomotion_clip(u: Unit) -> String:
 	var cell: Cell = _state.map.get_cell(u.cell)
 	if cell != null and cell.has_flag(Taxonomy.CellFlags.DECK):
 		return ""
+	if _dock_cells.has(u.cell):
+		return "" ## on the boards
 	if PresentationCoords.floats(u.cell, _state.map.water_step, _state.map.water_z):
 		return "swim"
 	return ""

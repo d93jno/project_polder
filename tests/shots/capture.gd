@@ -108,7 +108,7 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway":
 			return _setup_terrace()
-		"terrace_water_bare", "terrace_falling_bare":
+		"terrace_water_bare", "terrace_falling_bare", "terrace_dock":
 			return _setup_terrace_water_bare()
 		"terrace_fog_unknown":
 			return _setup_terrace_fog_unknown()
@@ -209,7 +209,7 @@ func _setup_terrace() -> bool:
 		_exit_code = 1
 		return false
 	match _setup:
-		"terrace_flooded", "terrace_water_bare":
+		"terrace_flooded", "terrace_water_bare", "terrace_dock":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
 		"terrace_falling", "terrace_falling_bare":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
@@ -321,6 +321,8 @@ func _capture_and_probe() -> void:
 			_probe_water_not_zfighting(img)
 		"terrace_falling_bare":
 			_probe_falling_shows_bottom(img)
+		"terrace_dock":
+			_probe_dock_above_water(img)
 		_:
 			pass
 
@@ -469,6 +471,31 @@ func _probe_falling_shows_bottom(img: Image) -> void:
 		_exit_code = 1
 	elif stats.spread < FALLING_BOTTOM_MIN_SPREAD:
 		push_error("shots: Falling water is a flat sheet, not water over a street: spread %.3f" % stats.spread)
+		_exit_code = 1
+
+
+## Guards the extract dock going under. It was built for water near street level, so a 2.0 m
+## Flooded surface buried its deck and the extract place could not be found. The deck must read
+## pale against the dark water, at the middle of the extract cell (setup terrace_dock).
+func _probe_dock_above_water(img: Image) -> void:
+	var cam: Camera3D = _fight._camera
+	var map: BowlMap = _fight._state.map
+	if cam == null:
+		push_error("shots: dock probe needs a camera")
+		_exit_code = 1
+		return
+	var extract: Vector3i = _fight._state.extract_cells[1]
+	var deck := PresentationCoords.world(extract)
+	deck.y = PresentationCoords.dock_deck_y(extract.z, map.water_step, map.water_z) + 0.02
+	var screen := cam.unproject_position(deck)
+	if screen.x < 0 or screen.x > img.get_width() or screen.y < 0 or screen.y > 580:
+		push_error("shots: the dock is out of frame at %s" % screen)
+		_exit_code = 1
+		return
+	var lum := _sample(img, screen).get_luminance()
+	print("shots: dock probe deck luminance %.3f at %s" % [lum, screen])
+	if lum < 0.40:
+		push_error("shots: the dock deck reads dark (%.3f): it is under the water" % lum)
 		_exit_code = 1
 
 

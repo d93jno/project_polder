@@ -74,6 +74,21 @@ const FOOTPRINTS := {
 }
 
 
+## Kit pieces that ride the water on guide piles (see PresentationCoords.DOCK_*).
+const RIDES_WATER := ["env_pier"]
+
+
+## Cells under a piece that rides the water, as a set. Bodies on them stand on the deck.
+static func dock_cells(stamps: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for s in stamps:
+		var stamp: Stamp = s
+		if stamp.piece_id in RIDES_WATER:
+			for cell in stamp_cells(stamp):
+				out[cell] = true
+	return out
+
+
 ## Cover class of a kit/prop id, or -1 if the piece is not cover (rail, lamp, slab).
 ## Values are Taxonomy.CoverMaterial. Keep in lockstep with assets/*/MANIFEST.md.
 static func cover_of(piece_id: String) -> int:

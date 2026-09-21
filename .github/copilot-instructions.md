@@ -110,7 +110,8 @@ Single source for Claude Code (`CLAUDE.md`), `AGENTS.md` tools and Copilot. Edit
   (never `water_height_m`: coplanar with the slabs it z-fights). In deep water bodies float, so
   anything the player points at uses `world_play` / `play_y`, bodies use `unit_origin`, and clicks
   use `Picking.cell_under_ray`. Do not use `world_ground` for those. `Movement` never reads
-  `water_z`; `PresentationCoords.in_water` is the only "is this cell under water" test.
+  `water_z`; `PresentationCoords.in_water` is the only "is this cell under water" test. Pieces in
+  `PresentationCatalog.RIDES_WATER` (the pier) ride the surface; bodies on them stand on the deck.
 - **Fixtures and query helpers are preloaded, not `class_name`d**
   (`rules/fixtures/scripted_fight.gd`, `presentation/overlay_queries.gd`), so
   headless tests do not depend on a global-class cache refresh. Follow that for

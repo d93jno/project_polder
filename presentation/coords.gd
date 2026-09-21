@@ -72,19 +72,47 @@ static func play_y(level_z: int, step: Taxonomy.WaterStep, water_z: int) -> floa
 	return floor_y
 
 
+## The extract dock is a floating dock on guide piles, so it rides the water. `env_pier`'s deck top is
+## 0.38 m above its origin (measured; the posts drop to -1.4 m): built for water near street level,
+## it would sit 1.6 m under a Flooded surface. Its deck stands a freeboard clear of the water, and
+## as built when there is none.
+const DOCK_DECK_TOP_M := 0.38
+const DOCK_FREEBOARD_M := 0.30
+
+
+## How far above its authored spot a dock is lifted to stay clear of the water at its level.
+static func dock_lift_m(step: Taxonomy.WaterStep, water_z: int, level_z: int = 0) -> float:
+	if not in_water(Vector3i(0, 0, level_z), step, water_z):
+		return 0.0
+	var native := float(level_z) * LEVEL_M + DOCK_DECK_TOP_M
+	return maxf(0.0, water_surface_m(step, water_z) + DOCK_FREEBOARD_M - native)
+
+
+## Y of the dock's walking surface for a level.
+static func dock_deck_y(level_z: int, step: Taxonomy.WaterStep, water_z: int) -> float:
+	return float(level_z) * LEVEL_M + DOCK_DECK_TOP_M + dock_lift_m(step, water_z, level_z)
+
+
 ## Where overlays for a cell sit: `world_ground`, lifted to the surface when the cell floats.
-static func world_play(cell: Vector3i, step: Taxonomy.WaterStep, water_z: int) -> Vector3:
+static func world_play(
+	cell: Vector3i, step: Taxonomy.WaterStep, water_z: int, on_dock: bool = false
+) -> Vector3:
 	var p := world(cell)
-	p.y = play_y(cell.z, step, water_z) + 0.02
+	if on_dock:
+		p.y = dock_deck_y(cell.z, step, water_z) + 0.02
+	else:
+		p.y = play_y(cell.z, step, water_z) + 0.02
 	return p
 
 
 ## Where a unit's body origin goes: on the floor, or a draft below the surface if it floats.
 ## `prone` is the swim clip; any other pose treads water.
 static func unit_origin(
-	cell: Vector3i, step: Taxonomy.WaterStep, water_z: int, prone: bool = false
+	cell: Vector3i, step: Taxonomy.WaterStep, water_z: int, prone: bool = false, on_dock: bool = false
 ) -> Vector3:
-	var p := world_play(cell, step, water_z)
+	var p := world_play(cell, step, water_z, on_dock)
+	if on_dock:
+		return p ## feet on the boards
 	if floats(cell, step, water_z):
 		p.y -= SWIM_DRAFT_M if prone else TREAD_DRAFT_M
 	return p

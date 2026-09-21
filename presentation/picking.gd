@@ -54,10 +54,16 @@ static func ray_vs_cylinder(
 ## Each level is tested at its own hit: reusing the top plane's x/y for the lower floors shifts a
 ## street click by the height of the cutaway.
 static func cell_under_ray(
-	map: BowlMap, cutaway_z: int, origin: Vector3, dir: Vector3, plane_y: Callable
+	map: BowlMap,
+	cutaway_z: int,
+	origin: Vector3,
+	dir: Vector3,
+	plane_y: Callable,
+	docks: Dictionary = {},
 ) -> Dictionary:
 	if absf(dir.y) < 0.0001:
 		return {}
+	var best: Dictionary = {}
 	for z in range(cutaway_z, -1, -1):
 		var t := (float(plane_y.call(z)) - origin.y) / dir.y
 		if t < 0.0:
@@ -67,8 +73,23 @@ static func cell_under_ray(
 			roundi(hit.x / PresentationCoords.CELL_M), roundi(hit.z / PresentationCoords.CELL_M), z
 		)
 		if map.has_cell(cell):
-			return {"cell": cell, "t": t}
-	return {}
+			best = {"cell": cell, "t": t}
+			break
+	## A dock deck rides above its level's plane, so a ray meets it first. `docks` maps each dock
+	## cell to the Y of its deck.
+	for dock: Vector3i in docks.keys():
+		if dock.z > cutaway_z:
+			continue
+		var t := (float(docks[dock]) - origin.y) / dir.y
+		if t < 0.0 or (not best.is_empty() and t >= float(best["t"])):
+			continue
+		var hit := origin + dir * t
+		if (
+			roundi(hit.x / PresentationCoords.CELL_M) == dock.x
+			and roundi(hit.z / PresentationCoords.CELL_M) == dock.y
+		):
+			best = {"cell": dock, "t": t}
+	return best
 
 
 ## Nearest drawn body under the ray: {"unit": Unit, "t": float}, or {} if none.
