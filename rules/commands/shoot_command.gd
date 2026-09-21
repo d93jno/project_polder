@@ -34,6 +34,18 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
+func _is_act() -> bool:
+	return true
+
+
+func _triggers_in_cone_watch() -> bool:
+	return true
+
+
+func _act_unit_id() -> int:
+	return attacker_id
+
+
 ## The player fires (GDD §3.1). The squad's own line starting fights is deliberate: contact is one-sided
 ## when it is a hostile's line, and the player's own action is the other way in.
 func _starts_contact(state: CombatState) -> bool:
@@ -41,7 +53,7 @@ func _starts_contact(state: CombatState) -> bool:
 	return attacker != null and attacker.faction == Taxonomy.Faction.PLAYER
 
 
-func _apply(state: CombatState) -> CombatState:
+func _apply(state: CombatState, _reveal: RevealResult) -> CombatState:
 	var next := state.duplicate_state()
 	var attacker: Unit = next.get_unit(attacker_id)
 	var target: Unit = next.get_unit(target_id)

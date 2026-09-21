@@ -29,13 +29,17 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
-func _apply(state: CombatState) -> CombatState:
+func _apply(state: CombatState, reveal: RevealResult) -> CombatState:
 	var next := state.duplicate_state()
 	var unit: Unit = next.get_unit(unit_id)
 	var path := Movement.path(next.map, next, unit, to)
 	for i in range(1, path.cells.size()):
+		var lines_before := enemy_line_seers(next.map, next, unit)
 		unit.cell = path.cells[i]
 		next.knowledge.peel(next.map, next)
+		for seer_id in enemy_line_seers(next.map, next, unit):
+			if seer_id not in lines_before:
+				reveal.record_enemy_line(seer_id)
 		if Contact.check(next.map, next).contact:
 			Contact.begin(next)
 			break

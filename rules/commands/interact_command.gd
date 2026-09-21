@@ -42,6 +42,18 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
+func _is_act() -> bool:
+	return true
+
+
+func _triggers_in_cone_watch() -> bool:
+	return true
+
+
+func _act_unit_id() -> int:
+	return unit_id
+
+
 func _starts_contact(state: CombatState) -> bool:
 	var unit: Unit = state.get_unit(unit_id)
 	if unit == null or unit.faction != Taxonomy.Faction.PLAYER:
@@ -55,7 +67,7 @@ func _starts_contact(state: CombatState) -> bool:
 			return false
 
 
-func _apply(state: CombatState) -> CombatState:
+func _apply(state: CombatState, _reveal: RevealResult) -> CombatState:
 	var next := state.duplicate_state()
 	var unit: Unit = next.get_unit(unit_id)
 	unit.ap -= RulesConstants.INTERACT_COST

@@ -27,11 +27,10 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
-func _apply(state: CombatState) -> CombatState:
+func _apply(state: CombatState, reveal: RevealResult) -> CombatState:
 	var next := state.duplicate_state()
 	var unit: Unit = next.get_unit(unit_id)
 	var path := Movement.path(next.map, next, unit, to)
-	var from := unit.cell
 	## Step cell-by-cell so Watch crossings resolve in order (GDD §5.2).
 	for i in range(1, path.cells.size()):
 		if unit.pin == Unit.PinState.DUCKED or not unit.is_active():
@@ -39,10 +38,14 @@ func _apply(state: CombatState) -> CombatState:
 		var step_to: Vector3i = path.cells[i]
 		var step_cost: int = path.cost_per_cell[i]
 		var step_from := unit.cell
+		var lines_before := enemy_line_seers(next.map, next, unit)
 		unit.ap -= step_cost
 		unit.cell = step_to
 		next.knowledge.peel(next.map, next)
-		_resolve_watch_reactions(next, unit, step_from, step_to)
+		_resolve_watch_reactions(next, unit, step_from, step_to, reveal)
+		for seer_id in enemy_line_seers(next.map, next, unit):
+			if seer_id not in lines_before:
+				reveal.record_enemy_line(seer_id)
 	return next
 
 
@@ -51,6 +54,7 @@ func _resolve_watch_reactions(
 	mover: Unit,
 	from_cell: Vector3i,
 	to_cell: Vector3i,
+	reveal: RevealResult,
 ) -> void:
 	for watch in state.watches:
 		var live: LiveWatch = watch
@@ -63,6 +67,7 @@ func _resolve_watch_reactions(
 			continue
 		var volume := Cones.cone(state.map, watcher.cell, live.facing, watcher.weapon)
 		if to_cell in volume and from_cell not in volume:
+			reveal.record_watch(watcher.id)
 			live.spent = true
 			var los := Los.line_of_sight(
 				state.map, watcher.cell, mover.cell, watcher.weapon, true
