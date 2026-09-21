@@ -1,6 +1,6 @@
 # Game Design Document: "Project Polder" (Working Title)
 
-**Version:** 1.15 — Act III and Phase 3 are decoupled: Act III is a war state played from Phase 2 or 3, hidden highland pressure cannot reach Building until the inner ring is Dry, a player-made bridge over a wet floor is a legitimate harder line, and a campaign that never reaches Act III has no ending. (1.14: fog is decided at fight scale: sight is its own line and low cover does not block it; knowledge is held per body and shared by earshot; a wiped squad's intel is sealed until another squad finds it; the MEDEVAC route is priced over known ground with a floor window; stacked Watches resolve oldest first. 1.13: Watch reacts to cone entry and committed in-cone actions, resolving every eligible Watch in a fixed previewed order; a founderless squad wipe has no campaign-wide effect beyond losing that squad. 1.12: the hidden causeway threshold advances through readable highland-pressure bands: watching, surveying, then building. 1.11: stabilization starts a deterministic, knowable MEDEVAC window; missing it kills the casualty and ends the campaign for the founder. 1.10: break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). 1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned. 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
+**Version:** 1.16 — water stands at a level: a cell is wet only when its floor is at or below it and it is not a deck, and the step's move cost, its hiding and the Dry clause of break apply to wet cells alone, so a roof above a Flooded street is dry ground. (1.15: Act III and Phase 3 are decoupled: Act III is a war state played from Phase 2 or 3, hidden highland pressure cannot reach Building until the inner ring is Dry, a player-made bridge over a wet floor is a legitimate harder line, and a campaign that never reaches Act III has no ending. 1.14: fog is decided at fight scale: sight is its own line and low cover does not block it; knowledge is held per body and shared by earshot; a wiped squad's intel is sealed until another squad finds it; the MEDEVAC route is priced over known ground with a floor window; stacked Watches resolve oldest first. 1.13: Watch reacts to cone entry and committed in-cone actions, resolving every eligible Watch in a fixed previewed order; a founderless squad wipe has no campaign-wide effect beyond losing that squad. 1.12: the hidden causeway threshold advances through readable highland-pressure bands: watching, surveying, then building. 1.11: stabilization starts a deterministic, knowable MEDEVAC window; missing it kills the casualty and ends the campaign for the founder. 1.10: break is served and cleared (working defaults): a pinned unit is given a full phase's AP for the "in the open" test, a break is served over the unit's own phases, a broken unit drops its Watch and takes a constrained move; contact is pinned down (phases begin with the player's side, what Live means, what a knock and a machine start). 1.9: break is defined: outnumbered, in the open, long cone and CQB kit each get a countable working default, and a break lands the moment its condition becomes true. 1.8: knowability extended: pump upkeep is knowable, the Opening reads water off the world and the founder, and a redirection is previewable before it is spent; prisoner named as a fourth off-ramp option; fuel legs are knowable; the boat is a place on the map. 1.7: squad-mode walking is not phased; contact and the knock (working default); Pinned cancels a live Watch and costs one phase of action; broken beats Pinned. 1.6: vocabulary split: *Pinned* is the combat state, a *band* is a nomad group, a *marked roof* is a shelter; "band" freed from tactical and labor use; §5.12 "Break" renamed. 1.5: endings computed from hidden counts; acts, phases and triggers mapped; table days, economy and classes locked; deterministic break rule and reaction fire; contradictions from 1.4 resolved.)
 
 ## 0. Document Scope
 This document is the base foundation for the game's mechanics: its systems, rules, campaign structure, and the design tone those rules express. When a later document disagrees with a mechanic described here, this one wins until it is revised.
@@ -331,7 +331,7 @@ All of yours, then all of theirs. No interleaved initiative. Easy to teach. Same
 ### 5.3 One AP coin
 Each person gets a pool each player-phase. Move, shoot, interact, swim, deploy cover, smoke, winch, First Gauge, Echo Call — all spend that pool. Exact digits are prototype work.
 
-*   Mud doubles move cost.
+*   Mud doubles move cost, on wet ground (5.8).
 *   Deep water: no rifles / LMGs. Sidearms, melee, spearguns.
 *   A mission, a deployment and a fight are the same thing: one day's tactical map.
 *   First Gauge: at most once per fight. No campaign cap; its rarity comes from how rarely the founder deploys. Passive reads (the bonus read on plates, veteran eyes) do not spend it.
@@ -404,6 +404,14 @@ Do not add a new combat system per act.
 | Dry | fast | long cones | Overwatch, Pioneer cover |
 
 Falling is the worst of both: you cannot disappear into the deep and you cannot run.
+
+**Where the water is.** A bowl's water stands at a level, and the step says how deep it is there: over a head (Flooded), chest-deep (Falling), a film of mud (Mud). A cell is **wet** when its floor is at or below that level and it is not a deck. Everything above the water is **dry ground**, whatever the step: an upstairs floor, a roof, a roof deck, and the deck of a floating dock, which rides the water on its guide piles. The table above describes wet cells. On dry ground:
+*   Move cost is the Dry cost. Climbing to it still pays the vertical surcharge (5.3).
+*   There is no dive and no swim-hide. Hiding is as on Dry: a unit is hidden only in shelter or an interior.
+*   The Dry clause of break (5.5) applies. A unit on a roof over a Flooded street stands on Dry.
+*   The step changes nothing there. A roof is the same roof at Flooded, Falling, Mud and Dry.
+
+*Working default. Prototype in one bowl, then lock.* Whether a roof over a Flooded street should trip the Dry clause of break is the part most likely to need tuning.
 
 ### 5.9 Water as a medium & reactions
 *   Dive to break line of sight in Flooded. Climb out to shoot heavy.
@@ -865,6 +873,10 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   Act III begun over a wet floor means no garages or heavy munitions until the inner ring is Dry. Posts, forward camps and the ending's land-that-feeds count are unchanged.
 *   A campaign that never reaches Act III has no ending and simply continues (*working default*).
 
+**Locked in 1.16:**
+*   Water stands at a level; the step says how deep. A cell is wet when its floor is at or below the level and it is not a deck. Anything above is dry ground whatever the step.
+*   Move cost, the dive-and-hide read and the Dry clause of break apply to wet cells alone. A roof, an upstairs floor, a roof deck and a floating dock's deck are dry ground (*working default*).
+
 ## 10. Still open
 *   Final name of the unique trait.
 *   Exact neighbor count / "majority of the ring" for a step down.
@@ -883,6 +895,7 @@ The Call is not an always-on weather effect for the whole map. Presence has a ra
 *   After dark: what actually changes at dusk. "A worse fight" is locked; the mechanism is not. Do Wake-Riders appear, gain cones, or own swim tiles?
 *   Bleed-out length (working default 3 rounds) and Pinned duration (tuning).
 *   Downed bodies: does a downed unit block a line? Working default: it does not, and deep water still hides it (5.9).
+*   Break on dry ground above the water (§5.8): whether the Dry clause should apply to a roof over a Flooded street. Working default: it does. Validate in one bowl, then lock.
 *   Break thresholds (§5.5): the 3-tile friend radius, which classes are long, and whether Agoraphobia should keep the Dry condition. Working defaults; validate in one bowl, then lock.
 *   Whether a broken enemy is still a gun. It is meant to flee or drop the gun (§5.5), but it is standing and has a line, so it currently counts for exposure and for a unit's "outnumbered".
 *   The last unit out. Clause 1 applies to the last standing member of a squad that left a wounded comrade behind, so once the others have extracted, the last one breaks on the boat. Harmless in a fight, odd on the page.
