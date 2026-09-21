@@ -48,10 +48,7 @@ static func apex_known(
 	watcher_cell: Vector3i,
 	viewer_faction: Taxonomy.Faction,
 ) -> bool:
-	for viewer in state.units_of_faction(viewer_faction):
-		if Los.line_of_sight(map, viewer.cell, watcher_cell, viewer.weapon).clean:
-			return true
-	return false
+	return Vision.sees(map, state, viewer_faction, watcher_cell)
 
 
 ## Live Watches covering `cell`. With `hostile_to` set (a Taxonomy.Faction), only Watches held by

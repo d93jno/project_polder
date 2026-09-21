@@ -1,6 +1,6 @@
 # Phase 4 — Fog: what the squad knows
 
-**Status:** 4.0 completed — sight line; §7 decisions locked (7.9 deferred to table mode)
+**Status:** 4.0–4.1 completed — sight line, Vision; §7 decisions locked (7.9 deferred to table mode)
 **Tracks:** GDD v1.14 §3.1 (fog), §5.4 (LOS), §5.5 (MEDEVAC window), §8.2 (Ironman); UI/UX v0.9 §6 (fog), §5 (what commits), §4.2 (exposure), §17 (occupants are data)
 **Depends on:** Phase 3 (`plans/03_second_bowl_height_on_screen.md`) — fog needs rooms to hide things in, and the terrace's interiors are the first place Known-quiet means anything. Slices 4.0–4.2 touch only `rules/` and tests and can start while Phase 3 is still landing; 4.3 onward edits `fight_view.gd` and waits for 3.4.
 **Goal:** what the player is allowed to know becomes a value `rules/` returns, not something the view happens to draw. One sight line, one vision query, knowledge held per unit and shared by earshot, remembered across visits — and the fact that a move revealed something, which is the boundary `plans/05` needs for undo.

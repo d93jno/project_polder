@@ -64,12 +64,9 @@ static func machine_starts_contact(
 	return false
 
 
-## Visible to the squad right now.
+## Visible to the squad right now — Vision, not a weapon line (plan 04 §4.1).
 static func is_live(map: BowlMap, state: CombatState, hostile: Unit) -> bool:
-	for unit in state.units_of_faction(Taxonomy.Faction.PLAYER):
-		if unit.is_active() and Los.line_of_sight(map, unit.cell, hostile.cell, unit.weapon).clean:
-			return true
-	return false
+	return Vision.sees(map, state, Taxonomy.Faction.PLAYER, hostile.cell)
 
 
 ## Phases start. The player moves first.
