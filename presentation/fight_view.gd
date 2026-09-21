@@ -51,7 +51,6 @@ var _fog
 var _units_root: Node3D
 var _cones_root: Node3D
 var _preview_root: Node3D
-var _heights_root: Node3D
 var _select_ring
 var _player_ids: Array[int] = []
 var _cutaway_z: int = 99
@@ -188,9 +187,6 @@ func _build_world() -> void:
 	_preview_root = Node3D.new()
 	_preview_root.name = "Preview"
 	add_child(_preview_root)
-	_heights_root = Node3D.new()
-	_heights_root.name = "Heights"
-	add_child(_heights_root)
 	_labels_root = Node3D.new()
 	_labels_root.name = "OverlayLabels"
 	add_child(_labels_root)
@@ -274,7 +270,6 @@ func _redraw() -> void:
 	_draw_units()
 	_draw_cones()
 	_draw_preview()
-	_draw_height_labels()
 	_draw_overlay_labels()
 	_sync_hud()
 	var sel: Unit = _state.get_unit(_selected_id)
@@ -863,7 +858,7 @@ func _sync_water_from_map() -> void:
 	if _water == null:
 		return
 	_water.water_step = int(_state.map.water_step)
-	_water.water_height_m = PresentationCoords.water_height_m(_state.map.water_z)
+	_water.water_height_m = PresentationCoords.water_surface_m(_state.map.water_step, _state.map.water_z)
 	## Dry is the slabs. A ground plane at y=0 z-fights them and paints the void.
 	_water.visible = _state.map.water_step != Taxonomy.WaterStep.DRY
 
@@ -901,28 +896,6 @@ func _on_connector_column(cell: Vector3i) -> bool:
 		if stamp.origin.x == cell.x and stamp.origin.y == cell.y:
 			return true
 	return false
-
-
-func _draw_height_labels() -> void:
-	for c in _heights_root.get_children():
-		c.queue_free()
-	var sel: Unit = _state.get_unit(_selected_id)
-	if sel == null or not sel.is_active():
-		return
-	## Flat z=0 streets do not need a 0 on every slab. Show height when it can differ.
-	if _max_z <= 0:
-		return
-	for coord in _state.map.cells.keys():
-		if coord.z > _cutaway_z:
-			continue
-		var label := Label3D.new()
-		label.text = str(coord.z)
-		label.font_size = 48
-		label.modulate = Color(0.92, 0.88, 0.78, 0.85)
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		label.position = PresentationCoords.world_ground(coord) + Vector3(0.0, 0.35, 0.0)
-		label.pixel_size = 0.012
-		_heights_root.add_child(label)
 
 
 func _map_max_z(map: BowlMap) -> int:

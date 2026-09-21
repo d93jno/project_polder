@@ -1,6 +1,6 @@
 # Project Polder — Graphical Asset Inventory
 
-**Version:** 0.3 — verification pass against the renamed `Game_Design_Document.md` (v1.8) and `UI_UX_Document.md` (v0.4). No rule changes from 0.2; filled slots those documents already locked that 0.2 missed: the dome walk-in, load-bearing Opening plates and painted waterlines, church lofts, rooftop bridges, Eureka objects, boat upgrade variants, veteran-eyes overlay (held), thermal optics, construction dressing. (0.2: retargeted to GDD v1.8 / UI/UX v0.4 after the v0.3 review landed in full. 0.1: first inventory, tracking GDD v1.7 / UI/UX v0.3.)
+**Version:** 0.4 — dropped the height-on-tile numbers row (UI 0.10 cut them). (0.3: verification pass against the renamed `Game_Design_Document.md` (v1.8) and `UI_UX_Document.md` (v0.4). No rule changes from 0.2; filled slots those documents already locked that 0.2 missed: the dome walk-in, load-bearing Opening plates and painted waterlines, church lofts, rooftop bridges, Eureka objects, boat upgrade variants, veteran-eyes overlay (held), thermal optics, construction dressing. 0.2: retargeted to GDD v1.8 / UI/UX v0.4 after the v0.3 review landed in full. 0.1: first inventory, tracking GDD v1.7 / UI/UX v0.3.)
 **Tracks:** GDD v1.9, UI/UX v0.5.
 
 **Versioning.** The version lives in this header, not in the filename. `Game_Design_Document.md` and `UI_UX_Document.md` follow the same rule.
@@ -613,7 +613,6 @@ Closed set. If a feature can only be explained with a meter, it does not ship (U
 | Off-ramp options on the unit | Four: let go / meeting / prisoner (Vanguard, post-research) / shoot. No dialogue portraits required |
 | Founder abilities: First Gauge available/used; Call radius; Witness pulse turns; Echo Call available/used | UI §4 |
 | MEDEVAC / extract as a **place** | Drawn where it is. Founder-down switches mission type on screen; no VIP icon from turn one. |
-| Height-on-tile numbers | With a unit selected, every tile shows its level (UI §2) |
 
 **Anti-chrome** (do not draw): hit chance, dodge, any combat percentage, an exposure score or threat heat map, morale/karma/reputation/loyalty/happiness, a band warmth meter, score, ending tracker, an ending screen that tallies the hidden counts, day count on known-quiet, dusk bar, currency bars with targets, Founder Away bar, build queue bar or construction timer pip, research completion percentage, enemy intent arrow, suggested target, a “this unit will break” badge, faction names before research, waypoint on the ridge, lore pop-up, per-citizen list. Full list: UI §16.
 

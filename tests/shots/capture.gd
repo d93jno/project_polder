@@ -105,6 +105,8 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway":
 			return _setup_terrace()
+		"terrace_water_bare":
+			return _setup_terrace_water_bare()
 		"terrace_fog_unknown":
 			return _setup_terrace_fog_unknown()
 		"terrace_fog_peeled":
@@ -201,7 +203,7 @@ func _setup_terrace() -> bool:
 		_exit_code = 1
 		return false
 	match _setup:
-		"terrace_flooded":
+		"terrace_flooded", "terrace_water_bare":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
 		"terrace_falling":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
@@ -212,6 +214,17 @@ func _setup_terrace() -> bool:
 	_fight._hover = Vector3i(4, 5, 2)
 	_fight._selected_id = 4 ## roof body
 	_fight._redraw()
+	return true
+
+
+func _setup_terrace_water_bare() -> bool:
+	## Flooded water with nothing drawn on it, so the water probe reads only the water.
+	if not _setup_terrace():
+		return false
+	for overlay in ["Cones", "OverlayLabels", "Preview", "Units", "Selection"]:
+		var node: Node3D = _fight.get_node_or_null(overlay)
+		if node != null:
+			node.visible = false
 	return true
 
 
@@ -298,6 +311,8 @@ func _capture_and_probe() -> void:
 			_probe_spent_ap_darker(img)
 		"street_yaw180":
 			_probe_quay_faded()
+		"terrace_water_bare":
+			_probe_water_not_zfighting(img)
 		_:
 			pass
 
@@ -377,6 +392,41 @@ func _probe_quay_faded() -> void:
 		_exit_code = 1
 		return
 	print("shots: yaw180 quay fade ok transparency=%s cover=masonry" % best)
+
+
+## Guards the water plane sitting coplanar with the slab tops (z-fight). Flooded water is dark
+## (luma ~0.16) and covers the street; where it fights the slabs, pale slab shards cut through.
+## Samples the surface at cell corners across the known street (setup terrace_water_bare).
+func _probe_water_not_zfighting(img: Image) -> void:
+	var cam: Camera3D = _fight._camera
+	var water: Node3D = _fight.get_node_or_null("Water")
+	if cam == null or water == null:
+		push_error("shots: water probe needs a camera and a Water node")
+		_exit_code = 1
+		return
+	var known: Dictionary = _fight._state.knowledge.known_cells(_fight._state)
+	var n := 0
+	var bright := 0
+	for cell in known.keys():
+		if cell.z != 0:
+			continue
+		var p := PresentationCoords.world(cell) + Vector3(1.0, 0.0, 1.0)
+		p.y = water.position.y
+		var screen := cam.unproject_position(p)
+		## Inside the frame and clear of the HUD strips.
+		if screen.x < 20 or screen.x > img.get_width() - 20 or screen.y < 110 or screen.y > 560:
+			continue
+		n += 1
+		if _sample(img, screen).get_luminance() > 0.40:
+			bright += 1
+	print("shots: water probe %d of %d street corners bright" % [bright, n])
+	if n < 20:
+		push_error("shots: water probe found only %d street corners in frame" % n)
+		_exit_code = 1
+		return
+	if float(bright) / float(n) > 0.10:
+		push_error("shots: Flooded water looks broken: %d of %d street corners bright (z-fight with slabs?)" % [bright, n])
+		_exit_code = 1
 
 
 func _save_crop(img: Image, abs_out: String) -> void:

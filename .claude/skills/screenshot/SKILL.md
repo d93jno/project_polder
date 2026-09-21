@@ -53,7 +53,7 @@ These are private members and will drift with the code. If one fails, the error 
 
 ## The regression suite
 
-`make shots` (or `scripts/shots.sh` with no arguments) captures the named setups and runs pixel probes that guard two past bugs: a cone shader that failed to compile (cream cylinder), and HUD pips that stopped dimming. Add a new named setup to `capture.gd` when a visual bug is worth guarding, with a probe that fails on the bug.
+`make shots` (or `scripts/shots.sh` with no arguments) captures the named setups and runs pixel probes that guard three past bugs: a cone shader that failed to compile (cream cylinder), HUD pips that stopped dimming, and Flooded water z-fighting the slabs (`terrace_water_bare`, which hides every overlay so the probe reads only water). Add a new named setup to `capture.gd` when a visual bug is worth guarding, with a probe that fails on the bug.
 
 ## Gotchas
 

@@ -161,6 +161,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 
 **What landed.** `--bowl=terrace` / `make run BOWL=terrace`; stamps drawn; per-bowl look point; `F` cycles four water steps; swim/climb clips; terrace shot setups.
 
+**Found on screen, fixed after.** The plane sat at exactly `water_z * LEVEL_M`, coplanar with the slab tops, and Flooded's ±4 cm wave turned that into jagged slab shards. `PresentationCoords.water_surface_m(step, water_z)` now adds a per-step clearance (`WATER_CLEARANCE_M`; a clearance, not a depth). The water writes no depth and sorts first (`render_priority` −10), so path tiles, fog veils and the ring under the surface still draw. The per-tile height digits (UI §2) were cut entirely: identical zeros on a flat bowl, and they labelled Unknown cells. UI 0.10; whatever replaces them is a new mechanism, not a revival. Guards: `test_cutaway_water.gd`, and the `terrace_water_bare` shot with a pixel probe. How deep each step should *look* is still open (UI §3).
+
 ---
 
 ### 3.5 — Housekeeping from the on-screen review

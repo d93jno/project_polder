@@ -26,6 +26,23 @@ static func water_height_m(water_z: int) -> float:
 	return float(water_z) * LEVEL_M
 
 
+## How far the drawn surface rides above the slab tops at `water_z`, per water step
+## (Taxonomy.WaterStep order). Not a depth: it only keeps the plane off the tiles. At 0 the plane
+## is coplanar with the slab tops and the two fight for every pixel. Flooded must clear the
+## shader's ±4 cm wave with margin, or the crests cut through and the slabs poke out.
+const WATER_CLEARANCE_M := {
+	Taxonomy.WaterStep.FLOODED: 0.12,
+	Taxonomy.WaterStep.FALLING: 0.08,
+	Taxonomy.WaterStep.MUD: 0.03,
+	Taxonomy.WaterStep.DRY: 0.0,
+}
+
+
+## Y of the water plane as drawn: the authored level plus the step's clearance.
+static func water_surface_m(step: Taxonomy.WaterStep, water_z: int) -> float:
+	return water_height_m(water_z) + float(WATER_CLEARANCE_M.get(step, 0.0))
+
+
 ## Facing is (±1,0,0) or (0,±1,0) on the data plane. Model rest faces Godot −Z.
 static func yaw_degrees(facing: Vector3i) -> float:
 	if facing.x > 0:

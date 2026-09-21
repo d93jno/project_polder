@@ -70,3 +70,30 @@ func test_bowl_cutaway_hides_higher_floor_nodes() -> void:
 			street_visible = street_visible or n.visible
 	assert_false(roof_visible, "cutaway 0 hides roof deck meshes")
 	assert_true(street_visible, "street stays visible")
+
+
+## The z-fight: a plane at exactly `water_z * LEVEL_M` is coplanar with the slab tops
+## (kit MANIFEST: slab top is local Y = 0), so the two fight per pixel and the flooded wave
+## turns it into shards. Headless cannot see the pixels; it can see the geometry that caused them.
+func test_water_surface_clears_slab_tops_by_more_than_the_wave() -> void:
+	var mat := load(PresentationCatalog.WATER_MAT) as ShaderMaterial
+	var flooded_wave_m := float(mat.get_shader_parameter("flood_wave_cm")) * 0.01
+	for step in [Taxonomy.WaterStep.FLOODED, Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.MUD]:
+		var lift := PresentationCoords.water_surface_m(step, 0) - PresentationCoords.water_height_m(0)
+		assert_gt(lift, 0.0, "%s plane sits above the slab tops" % Taxonomy.WaterStep.keys()[step])
+	var flooded := PresentationCoords.water_surface_m(Taxonomy.WaterStep.FLOODED, 0)
+	assert_gt(flooded, flooded_wave_m * 2.0, "Flooded clears the ±wave with margin, crests and troughs")
+
+
+func test_water_surface_is_higher_the_wetter_the_step() -> void:
+	var y := func(s): return PresentationCoords.water_surface_m(s, 1)
+	assert_gt(y.call(Taxonomy.WaterStep.FLOODED), y.call(Taxonomy.WaterStep.FALLING))
+	assert_gt(y.call(Taxonomy.WaterStep.FALLING), y.call(Taxonomy.WaterStep.MUD))
+	assert_gt(y.call(Taxonomy.WaterStep.MUD), PresentationCoords.water_height_m(1))
+
+
+func test_water_draws_first_and_writes_no_depth() -> void:
+	## Overlays sit a few cm above the slabs, under the surface. The water must not cull them.
+	var mat := load(PresentationCatalog.WATER_MAT) as ShaderMaterial
+	assert_lt(mat.render_priority, 0, "water sorts before other transparents")
+	assert_true(mat.shader.code.contains("depth_draw_never"), "water writes no depth")

@@ -1,9 +1,11 @@
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_never, cull_back, diffuse_burley, specular_schlick_ggx;
 
 #include "res://assets/shaders/water.gdshaderinc"
 
 // One plane per bowl. Engine sets `step` and `water_height` from data.
+// Draws before every other transparent thing (render_priority in water.tres) and writes no
+// depth, so path tiles, fog veils and the selection ring that sit under the surface still show.
 // Drop a PlaneMesh on a MeshInstance3D, assign water.tres, set node Y to water_height
 // (leave displace_to_height off) OR enable displace_to_height and leave the node at y=0.
 

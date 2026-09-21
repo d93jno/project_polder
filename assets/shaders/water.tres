@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" path="res://assets/env/kits/terrace/textures/env_ground_dry.png" id="5_dry"]
 
 [resource]
-render_priority = 0
+render_priority = -10
 shader = ExtResource("1_shader")
 shader_parameter/step = 0
 shader_parameter/water_height = 2.0

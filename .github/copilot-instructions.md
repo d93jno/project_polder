@@ -106,6 +106,9 @@ Single source for Claude Code (`CLAUDE.md`), `AGENTS.md` tools and Copilot. Edit
 - **In a `canvas_item` shader, `COLOR` already holds texture x the node's
   `modulate`.** Assigning `COLOR = texture(...)` drops `modulate` (the HUD dims
   spent pips with it); change `COLOR.a` or multiply, do not overwrite.
+- **The water plane must never be coplanar with the slab tops.** They fight per pixel and
+  the Flooded wave turns it into shards. Draw it at `PresentationCoords.water_surface_m`, not
+  `water_height_m`. It writes no depth and sorts first so ground overlays stay visible.
 - **Fixtures and query helpers are preloaded, not `class_name`d**
   (`rules/fixtures/scripted_fight.gd`, `presentation/overlay_queries.gd`), so
   headless tests do not depend on a global-class cache refresh. Follow that for
