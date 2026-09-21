@@ -39,6 +39,8 @@ const GHOST_MAT := SHADERS + "water_ghost.tres"
 
 const FLOODED_BOWL := "res://scenes/p0/flooded_roof.tscn"
 const DRY_BOWL := "res://scenes/p0/dry_street.tscn"
+## Same-basin terrain LOD for the future table view; never tactical collision or cover.
+const BASIN_WORLD_MAP := HERO + "env_basin_world_map.glb"
 
 const SLAB_IDS := [
 	"env_street_slab_a",
