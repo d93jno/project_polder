@@ -1,6 +1,6 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.5 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split
+**Status:** 3.0–3.6 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look
 **Tracks:** GDD v1.10, UI/UX v0.7, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
@@ -161,7 +161,7 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 
 **What landed.** `--bowl=terrace` / `make run BOWL=terrace`; stamps drawn; per-bowl look point; `F` cycles four water steps; swim/climb clips; terrace shot setups.
 
-**Found on screen, fixed after.** The plane sat at exactly `water_z * LEVEL_M`, coplanar with the slab tops, and Flooded's ±4 cm wave turned that into jagged slab shards. `PresentationCoords.water_surface_m(step, water_z)` now adds a per-step clearance (`WATER_CLEARANCE_M`; a clearance, not a depth). The water writes no depth and sorts first (`render_priority` −10), so path tiles, fog veils and the ring under the surface still draw. The per-tile height digits (UI §2) were cut entirely: identical zeros on a flat bowl, and they labelled Unknown cells. UI 0.10; whatever replaces them is a new mechanism, not a revival. Guards: `test_cutaway_water.gd`, and the `terrace_water_bare` shot with a pixel probe. How deep each step should *look* is still open (UI §3).
+**Found on screen, fixed after.** The plane sat at exactly `water_z * LEVEL_M`, coplanar with the slab tops, and Flooded's ±4 cm wave turned that into jagged slab shards. `PresentationCoords.water_surface_m(step, water_z)` added a per-step clearance; slice 3.6 replaced it with real depths. The water writes no depth and sorts first (`render_priority` −10), so path tiles, fog veils and the ring under the surface still draw. The per-tile height digits (UI §2) were cut entirely: identical zeros on a flat bowl, and they labelled Unknown cells. UI 0.10; whatever replaces them is a new mechanism, not a revival. Guards: `test_cutaway_water.gd`, and the `terrace_water_bare` shot with a pixel probe. How deep each step should *look* is still open (UI §3).
 
 ---
 
@@ -172,6 +172,24 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 - **Docs.** Bump the UI/UX header when wall fade lands; add a pointer from `plans/02_…` §8 to this plan. Follow the doc convention: stable filenames, version in the header line.
 
 **What landed.** Body label = exposure word only; HUD = seen-by count + sources (`brk` when broken). Broken attackers get a world label `broken · still a gun`. UI v0.7; plan 02 §8 points here.
+
+---
+
+### 3.6 — The water's depth look
+
+**Why.** After 3.4 the water was an opaque sheet a few centimetres over the slabs. Falling read as gravel, Flooded as a flat dark sheet, and nothing told deep from chest-deep except a word. UI §3 says Falling must never look like Flooded, and UI §14 says that cannot rest on colour or motion.
+
+**Ships.**
+
+- `PresentationCoords.WATER_DEPTH_M`: Flooded 2.0 m (over a 1.7 m head: deep water hides a body), Falling 1.2 m (chest: it does not), Mud a film. `water_z` is now the level whose floor the water stands on; the step sets how deep. `in_water` is geometry (a floor below the surface), because `Movement` prices the step on every cell and never reads `water_z`.
+- Opacity per step in `water.gdshader`: Flooded near-opaque, Falling translucent, so whether the bottom shows carries the difference.
+- A **play plane**: bodies in deep water float on the surface (prone swim pose, spine at the surface; standing pose treads with head and shoulders out), and overlays and clicks use that surface. `world_play`, `play_y`, `unit_origin`, and `Picking.cell_under_ray`, which casts each open level at its own plane. The old pick reused the top plane's x/y for lower floors, which shifted a street click by the cutaway height (reproduced: aimed at (3,3,0) with every level open, it picked (0,3,0)).
+- Swim clip only where the water actually is (an upstairs floor no longer swims).
+- Terrace opening look point moved so the squad is in frame.
+
+**Done when.** `make shots` has `terrace_water_bare` (Flooded: the street is gone) and `terrace_falling_bare` (the slabs show through), with probes calibrated against the regressions they guard: a zero-depth plane, and Falling drawn opaque.
+
+**What landed.** As above. Open: the pier's deck sits under a Flooded surface (extract cells are hard to read), the rules still price a roof cell as swim in Flooded (`Movement` ignores `water_z`), and a diegetic freeboard or waterline read is the UI §2 height read the user will invent.
 
 ---
 

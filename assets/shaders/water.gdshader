@@ -22,6 +22,14 @@ uniform sampler2D albedo_mud : source_color, filter_linear, repeat_enable;
 uniform sampler2D albedo_dry : source_color, filter_linear, repeat_enable;
 uniform float uv_scale : hint_range(0.05, 2.0, 0.01) = 0.25;
 
+// Can the bottom be seen? Deep water is close to opaque, so a swimmer's legs and the street are
+// gone. Chest-deep water is murky but you can see the slabs through it. That "is the bottom
+// there" read carries Flooded against Falling without colour or motion (UI 3, UI 14).
+group_uniforms Opacity;
+uniform float opacity_flooded : hint_range(0.0, 1.0, 0.01) = 0.94;
+uniform float opacity_falling : hint_range(0.0, 1.0, 0.01) = 0.58;
+uniform float opacity_mud : hint_range(0.0, 1.0, 0.01) = 1.0;
+
 group_uniforms Motion;
 uniform float flood_speed : hint_range(0.0, 4.0, 0.01) = 1.0;
 uniform float falling_speed : hint_range(0.0, 4.0, 0.01) = 0.28;
@@ -106,5 +114,11 @@ void fragment() {
 		METALLIC = 0.0;
 	}
 
-	ALPHA = 1.0;
+	if (step == WATER_FLOODED) {
+		ALPHA = opacity_flooded;
+	} else if (step == WATER_FALLING) {
+		ALPHA = opacity_falling;
+	} else {
+		ALPHA = opacity_mud;
+	}
 }

@@ -48,11 +48,34 @@ static func ray_vs_cylinder(
 	return best
 
 
+## The floor cell under a ray, cast against each open level's play plane from the top down.
+## `plane_y` maps a level to the Y its cells are drawn at (the water surface where a body floats).
+## The first level with an authored cell at that plane's hit wins. Returns {"cell", "t"} or {}.
+## Each level is tested at its own hit: reusing the top plane's x/y for the lower floors shifts a
+## street click by the height of the cutaway.
+static func cell_under_ray(
+	map: BowlMap, cutaway_z: int, origin: Vector3, dir: Vector3, plane_y: Callable
+) -> Dictionary:
+	if absf(dir.y) < 0.0001:
+		return {}
+	for z in range(cutaway_z, -1, -1):
+		var t := (float(plane_y.call(z)) - origin.y) / dir.y
+		if t < 0.0:
+			continue
+		var hit := origin + dir * t
+		var cell := Vector3i(
+			roundi(hit.x / PresentationCoords.CELL_M), roundi(hit.z / PresentationCoords.CELL_M), z
+		)
+		if map.has_cell(cell):
+			return {"cell": cell, "t": t}
+	return {}
+
+
 ## Nearest drawn body under the ray: {"unit": Unit, "t": float}, or {} if none.
 ## Same "is there a body here" test as fight_view._unit_at, plus the cutaway: a unit on a
 ## floor above the cutaway level is hidden and must not be clickable.
 static func body_under_ray(
-	state: CombatState, cutaway_z: int, origin: Vector3, dir: Vector3
+	state: CombatState, cutaway_z: int, origin: Vector3, dir: Vector3, feet_of: Callable = Callable()
 ) -> Dictionary:
 	var best: Dictionary = {}
 	var best_t := INF
@@ -63,7 +86,7 @@ static func body_under_ray(
 		var t := ray_vs_cylinder(
 			origin,
 			dir,
-			PresentationCoords.world_ground(u.cell),
+			feet_of.call(u) if feet_of.is_valid() else PresentationCoords.world_ground(u.cell),
 			DOWNED_RADIUS_M if downed else BODY_RADIUS_M,
 			DOWNED_HEIGHT_M if downed else BODY_HEIGHT_M
 		)

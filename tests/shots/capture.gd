@@ -17,6 +17,9 @@ extends SceneTree
 
 ## Hover cell that aims Piet's rifle Watch down the street (plan 3.0 street_watch).
 const _WATCH_HOVER := Vector3i(10, 5, 0)
+## Luminance spread across street corners under Falling water. Slabs and joints differ when the
+## bottom shows through; an opaque sheet is flat.
+const FALLING_BOTTOM_MIN_SPREAD := 0.075
 
 var _setup: String = "street_watch"
 var _setup_given: bool = false
@@ -105,7 +108,7 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway":
 			return _setup_terrace()
-		"terrace_water_bare":
+		"terrace_water_bare", "terrace_falling_bare":
 			return _setup_terrace_water_bare()
 		"terrace_fog_unknown":
 			return _setup_terrace_fog_unknown()
@@ -208,7 +211,7 @@ func _setup_terrace() -> bool:
 	match _setup:
 		"terrace_flooded", "terrace_water_bare":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
-		"terrace_falling":
+		"terrace_falling", "terrace_falling_bare":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
 		"terrace_roof_cutaway":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
@@ -316,6 +319,8 @@ func _capture_and_probe() -> void:
 			_probe_quay_faded()
 		"terrace_water_bare":
 			_probe_water_not_zfighting(img)
+		"terrace_falling_bare":
+			_probe_falling_shows_bottom(img)
 		_:
 			pass
 
@@ -397,18 +402,19 @@ func _probe_quay_faded() -> void:
 	print("shots: yaw180 quay fade ok transparency=%s cover=masonry" % best)
 
 
-## Guards the water plane sitting coplanar with the slab tops (z-fight). Flooded water is dark
-## (luma ~0.16) and covers the street; where it fights the slabs, pale slab shards cut through.
-## Samples the surface at cell corners across the known street (setup terrace_water_bare).
-func _probe_water_not_zfighting(img: Image) -> void:
+## Street corners in frame, and how many read bright. Samples the surface at cell corners across
+## the known street, clear of the HUD strips (setups terrace_water_bare / terrace_falling_bare).
+## Returns {"bright", "n", "spread"}: corners over 0.40 luminance, corners sampled, and the standard
+## deviation of their luminance. Empty with an error set when there is nothing to sample.
+func _street_corner_brightness(img: Image) -> Dictionary:
 	var cam: Camera3D = _fight._camera
 	var water: Node3D = _fight.get_node_or_null("Water")
 	if cam == null or water == null:
 		push_error("shots: water probe needs a camera and a Water node")
 		_exit_code = 1
-		return
+		return {"bright": 0, "n": 0, "spread": 0.0}
 	var known: Dictionary = _fight._state.knowledge.known_cells(_fight._state)
-	var n := 0
+	var lums: Array[float] = []
 	var bright := 0
 	for cell in known.keys():
 		if cell.z != 0:
@@ -416,19 +422,53 @@ func _probe_water_not_zfighting(img: Image) -> void:
 		var p := PresentationCoords.world(cell) + Vector3(1.0, 0.0, 1.0)
 		p.y = water.position.y
 		var screen := cam.unproject_position(p)
-		## Inside the frame and clear of the HUD strips.
 		if screen.x < 20 or screen.x > img.get_width() - 20 or screen.y < 110 or screen.y > 560:
 			continue
-		n += 1
-		if _sample(img, screen).get_luminance() > 0.40:
+		var lum := _sample(img, screen).get_luminance()
+		lums.append(lum)
+		if lum > 0.40:
 			bright += 1
-	print("shots: water probe %d of %d street corners bright" % [bright, n])
-	if n < 20:
-		push_error("shots: water probe found only %d street corners in frame" % n)
+	var mean := 0.0
+	for l in lums:
+		mean += l
+	mean /= maxf(1.0, float(lums.size()))
+	var variance := 0.0
+	for l in lums:
+		variance += (l - mean) * (l - mean)
+	variance /= maxf(1.0, float(lums.size()))
+	return {"bright": bright, "n": lums.size(), "spread": sqrt(variance)}
+
+
+## Guards the water plane sitting coplanar with the slab tops (z-fight). Flooded water is dark and
+## nearly opaque, so the street is gone; where it fights the slabs, pale shards cut through.
+func _probe_water_not_zfighting(img: Image) -> void:
+	var stats := _street_corner_brightness(img)
+	print("shots: flooded probe %d of %d street corners bright, spread %.3f" % [stats.bright, stats.n, stats.spread])
+	if stats.n < 20:
+		push_error("shots: flooded probe found only %d street corners in frame" % stats.n)
 		_exit_code = 1
 		return
-	if float(bright) / float(n) > 0.10:
-		push_error("shots: Flooded water looks broken: %d of %d street corners bright (z-fight with slabs?)" % [bright, n])
+	if float(stats.bright) / float(stats.n) > 0.10:
+		push_error("shots: Flooded water looks broken: %d of %d street corners bright (z-fight, or the bottom is showing)" % [stats.bright, stats.n])
+		_exit_code = 1
+
+
+## Guards UI 3's non-negotiable: Falling never reads as Flooded, and not by colour or motion alone.
+## Chest-deep water is murky but the bottom shows through it, so the pale slabs read; deep water
+## hides them. If Falling goes opaque and dark it becomes Flooded, and a Falling street that draws
+## as ground is a lie the other way.
+func _probe_falling_shows_bottom(img: Image) -> void:
+	var stats := _street_corner_brightness(img)
+	print("shots: falling probe %d of %d street corners bright, spread %.3f" % [stats.bright, stats.n, stats.spread])
+	if stats.n < 20:
+		push_error("shots: falling probe found only %d street corners in frame" % stats.n)
+		_exit_code = 1
+		return
+	if float(stats.bright) / float(stats.n) < 0.50:
+		push_error("shots: Falling water hides the bottom like Flooded: %d of %d street corners bright" % [stats.bright, stats.n])
+		_exit_code = 1
+	elif stats.spread < FALLING_BOTTOM_MIN_SPREAD:
+		push_error("shots: Falling water is a flat sheet, not water over a street: spread %.3f" % stats.spread)
 		_exit_code = 1
 
 

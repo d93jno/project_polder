@@ -32,5 +32,5 @@ func redraw(map: BowlMap, state: CombatState) -> void:
 		mi.material_override = mat
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		## Sit just above the slab so the veil reads on Known-quiet terrain.
-		mi.position = PresentationCoords.world_ground(cell) + Vector3(0.0, 0.05, 0.0)
+		mi.position = PresentationCoords.world_play(cell, map.water_step, map.water_z) + Vector3(0.0, 0.05, 0.0)
 		add_child(mi)

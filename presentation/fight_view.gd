@@ -146,8 +146,10 @@ func _stamps_for_bowl() -> Array:
 
 func _look_at_for_bowl() -> Vector3:
 	if _bowl_id == "terrace":
-		## Canal axis mid-street, facing the terrace run.
-		return PresentationCoords.world(Vector3i(8, 4, 0)) + Vector3(0.0, 2.0, 0.0)
+		## Between the squad on the canal and the terrace run, so the opening frame holds the
+		## squad, the stair, the roof body and the levee rifle. Centred on the canal's far end, the
+		## squad (and the pier) fell below the bottom edge of the frame.
+		return PresentationCoords.world(Vector3i(5, 4, 0)) + Vector3(0.0, 2.0, 0.0)
 	return PresentationCoords.world(Vector3i(8, 3, 0)) + Vector3(0.0, 1.5, 0.0)
 
 
@@ -277,7 +279,7 @@ func _redraw() -> void:
 		var show_ring := not sel.extracted and sel.cell.z <= _cutaway_z
 		_select_ring.visible = show_ring
 		## Match selection_ring's own lift so path tiles do not bury it.
-		_select_ring.position = PresentationCoords.world_ground(sel.cell) + Vector3(0, 0.08, 0)
+		_select_ring.position = _ground(sel.cell) + Vector3(0, 0.08, 0)
 
 
 func _draw_bowl() -> void:
@@ -310,7 +312,7 @@ func _draw_units() -> void:
 		var view := _UnitView.new()
 		view.name = "U%d" % u.id
 		_units_root.add_child(view)
-		view.bind_unit(u, _state.live_watch_for(u.id) != null)
+		view.bind_unit(u, _state.live_watch_for(u.id) != null, _body_origin(u))
 		var loco := _locomotion_clip(u)
 		if loco != "":
 			view.play(loco)
@@ -354,8 +356,8 @@ func _draw_cones() -> void:
 			view.mode = 2
 		_cones_root.add_child(view)
 		view.aim(
-			PresentationCoords.world_ground(from_cell) + Vector3(0, 1.4, 0),
-			PresentationCoords.world_ground(far) + Vector3(0, 1.4, 0)
+			_unit_origin(from_cell) + Vector3(0, 1.4, 0),
+			_ground(far) + Vector3(0, 1.4, 0)
 		)
 
 
@@ -381,8 +383,8 @@ func _draw_preview() -> void:
 		var occ := _unit_at(_hover)
 		if occ != null and _queries.los != null:
 			_draw_shot_line(
-				PresentationCoords.world_ground(unit.cell) + Vector3(0, 1.2, 0),
-				PresentationCoords.world_ground(occ.cell) + Vector3(0, 1.2, 0),
+				_unit_origin(unit.cell) + Vector3(0, 1.2, 0),
+				_unit_origin(occ.cell) + Vector3(0, 1.2, 0),
 				_queries.los.clean
 			)
 		return
@@ -395,13 +397,13 @@ func _draw_preview() -> void:
 			_mark_path_tile(cell)
 		if i > 0 and i < path.cost_per_cell.size() and path.cost_per_cell[i] != 1:
 			_spawn_preview_label(
-				PresentationCoords.world_ground(cell) + Vector3(-0.55, 0.45, 0.0),
+				_ground(cell) + Vector3(-0.55, 0.45, 0.0),
 				str(path.cost_per_cell[i]),
 				0.011
 			)
 		if i == path.shot_reserve_at:
 			_spawn_mint_sprite(
-				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.12, 0.0),
+				_ground(cell) + Vector3(0.0, 0.12, 0.0),
 				PresentationCatalog.UI_HUD + "ui_path_reserve_shot.png",
 				Vector2(0.9, 0.9),
 				true,
@@ -409,7 +411,7 @@ func _draw_preview() -> void:
 			)
 		if i == path.watch_reserve_at:
 			_spawn_mint_sprite(
-				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.14, 0.0),
+				_ground(cell) + Vector3(0.0, 0.14, 0.0),
 				PresentationCatalog.UI_HUD + "ui_path_reserve_watch.png",
 				Vector2(0.9, 0.9),
 				true,
@@ -420,7 +422,7 @@ func _draw_preview() -> void:
 		if xc.cell.z > _cutaway_z:
 			continue
 		_spawn_preview_label(
-			PresentationCoords.world_ground(xc.cell) + Vector3(0.0, 0.9, 0.0),
+			_ground(xc.cell) + Vector3(0.0, 0.9, 0.0),
 			_Queries.crossing_label(xc),
 			0.01
 		)
@@ -428,7 +430,7 @@ func _draw_preview() -> void:
 
 func _mark_path_tile(cell: Vector3i) -> void:
 	_spawn_mint_sprite(
-		PresentationCoords.world_ground(cell) + Vector3(0.0, 0.04, 0.0),
+		_ground(cell) + Vector3(0.0, 0.04, 0.0),
 		PresentationCatalog.UI_HUD + "ui_path_tile.png",
 		Vector2(1.55, 1.55),
 		true,
@@ -704,7 +706,7 @@ func _draw_overlay_labels() -> void:
 	if sel != null and sel.is_active() and sel.cell.z <= _cutaway_z:
 		## Word only on the body; count/sources live in the HUD (plan 3.5).
 		_spawn_label(
-			PresentationCoords.world_ground(sel.cell) + Vector3(0.0, _EXPOSURE_LABEL_Y, 0.0),
+			_unit_origin(sel.cell) + Vector3(0.0, _EXPOSURE_LABEL_Y, 0.0),
 			_Queries.exposure_word(_queries.exposure),
 			0.011
 		)
@@ -714,7 +716,7 @@ func _draw_overlay_labels() -> void:
 			if not hostile.broken or hostile.cell.z > _cutaway_z:
 				continue
 			_spawn_label(
-				PresentationCoords.world_ground(hostile.cell) + Vector3(0.0, 2.4, 0.0),
+				_unit_origin(hostile.cell) + Vector3(0.0, 2.4, 0.0),
 				"broken · still a gun",
 				0.01
 			)
@@ -727,13 +729,13 @@ func _draw_overlay_labels() -> void:
 		if far.z > _cutaway_z:
 			continue
 		_spawn_label(
-			PresentationCoords.world_ground(far) + Vector3(0.0, 1.8, 0.0),
+			_ground(far) + Vector3(0.0, 1.8, 0.0),
 			entry["label"],
 			0.012
 		)
 	if _queries.stack_label != "" and _state.map.has_cell(_hover) and _hover.z <= _cutaway_z:
 		_spawn_label(
-			PresentationCoords.world_ground(_hover) + Vector3(0.0, 1.1, 0.0),
+			_ground(_hover) + Vector3(0.0, 1.1, 0.0),
 			_queries.stack_label,
 			0.011
 		)
@@ -751,7 +753,7 @@ func _draw_overlay_labels() -> void:
 				continue
 			prev = word
 			_spawn_label(
-				PresentationCoords.world_ground(cell) + Vector3(0.0, 0.55, 0.0),
+				_ground(cell) + Vector3(0.0, 0.55, 0.0),
 				word,
 				0.01
 			)
@@ -819,29 +821,22 @@ func _pick_cell() -> Vector3i:
 		return _INVALID
 	## A body is a standing volume, not a point on the floor: pick it first, or a click on an
 	## enemy's torso lands on the tile behind their feet (a move instead of a shot).
-	var body := _Picking.body_under_ray(_state, _cutaway_z, origin, dir)
+	var body := _Picking.body_under_ray(_state, _cutaway_z, origin, dir, _body_origin)
 	if not body.is_empty() and not _actor_visible(body["unit"] as Unit):
 		body = {}
-	## Ray vs the cutaway floor plane so roof tiles pick when that level is open.
-	var plane_y := float(_cutaway_z) * PresentationCoords.LEVEL_M
-	var t := (plane_y - origin.y) / dir.y
-	if t >= 0.0:
-		var hit := origin + dir * t
-		var xy := PresentationCoords.cell_on_ground(hit)
-		var cell := Vector3i(xy.x, xy.y, _cutaway_z)
-		if _state.map.has_cell(cell):
-			## A floor between the camera and the body (roof over a street unit) wins.
-			if not body.is_empty() and float(body["t"]) < t:
-				return (body["unit"] as Unit).cell
-			return cell
-		if not body.is_empty():
+	## Ray vs each open level's play plane, so roof tiles pick when that level is open and a
+	## swimmer's tile picks where it is drawn: on the water surface, not the street below it.
+	var step := _state.map.water_step
+	var water_z := _state.map.water_z
+	var hit := _Picking.cell_under_ray(
+		_state.map, _cutaway_z, origin, dir,
+		func(z: int) -> float: return PresentationCoords.play_y(z, step, water_z)
+	)
+	if not hit.is_empty():
+		## A floor between the camera and the body (roof over a street unit) wins.
+		if not body.is_empty() and float(body["t"]) < float(hit["t"]):
 			return (body["unit"] as Unit).cell
-		## Fall back to lower authored floors under the same footprint.
-		for z in range(_cutaway_z, -1, -1):
-			var c := Vector3i(xy.x, xy.y, z)
-			if _state.map.has_cell(c):
-				return c
-		return _INVALID
+		return hit["cell"]
 	if not body.is_empty():
 		return (body["unit"] as Unit).cell
 	return _INVALID
@@ -852,6 +847,25 @@ func _set_cutaway(level: int) -> void:
 	if _bowl:
 		_bowl.set_cutaway_z(_cutaway_z)
 	_redraw()
+
+
+## Where overlays for a cell sit: on the floor, or on the water surface where a body would float
+## (UI 3). Everything the player points at is drawn on the plane a click resolves on.
+func _ground(cell: Vector3i) -> Vector3:
+	return PresentationCoords.world_play(cell, _state.map.water_step, _state.map.water_z)
+
+
+## Where a body's origin goes: on the floor, or a draft below the surface while it floats. The
+## draft follows the pose the unit is drawn in: prone when swimming, standing when treading.
+func _body_origin(u: Unit) -> Vector3:
+	return PresentationCoords.unit_origin(
+		u.cell, _state.map.water_step, _state.map.water_z, _locomotion_clip(u) == "swim"
+	)
+
+
+## Anchor for a label or line on whoever stands in `cell`, when only the cell is known.
+func _unit_origin(cell: Vector3i) -> Vector3:
+	return PresentationCoords.unit_origin(cell, _state.map.water_step, _state.map.water_z)
 
 
 func _sync_water_from_map() -> void:
@@ -883,7 +897,7 @@ func _locomotion_clip(u: Unit) -> String:
 	var cell: Cell = _state.map.get_cell(u.cell)
 	if cell != null and cell.has_flag(Taxonomy.CellFlags.DECK):
 		return ""
-	if _state.map.water_step == Taxonomy.WaterStep.FLOODED:
+	if PresentationCoords.floats(u.cell, _state.map.water_step, _state.map.water_z):
 		return "swim"
 	return ""
 
@@ -928,7 +942,7 @@ func _friendly_heads() -> Array:
 			continue
 		if u.cell.z > _cutaway_z:
 			continue
-		var ground := PresentationCoords.world_ground(u.cell)
+		var ground := _body_origin(u)
 		for y in _WallFade.BODY_SAMPLE_Y_M:
 			heads.append(ground + Vector3(0.0, float(y), 0.0))
 	return heads

@@ -12,11 +12,13 @@ func _ready() -> void:
 	_ensure_body()
 
 
-func bind_unit(u: Unit, watching: bool) -> void:
+## `origin` is where the body stands: the floor, or below the surface while it swims. Omitted, it
+## stands on the floor.
+func bind_unit(u: Unit, watching: bool, origin: Vector3 = Vector3.INF) -> void:
 	unit_id = u.id
 	weapon = "machete" if u.weapon == Taxonomy.WeaponClass.MELEE else "pistol"
 	_ensure_body(PresentationCatalog.humanoid_for(u.faction, u.id))
-	position = PresentationCoords.world_ground(u.cell)
+	position = PresentationCoords.world_ground(u.cell) if origin == Vector3.INF else origin
 	rotation_degrees = Vector3(0.0, PresentationCoords.yaw_degrees(u.facing), 0.0)
 	visible = not u.extracted
 	if u.dead:

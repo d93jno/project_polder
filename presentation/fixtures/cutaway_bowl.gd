@@ -11,7 +11,9 @@ const ENEMY_SMOKE := Vector3i(2, 3, 0)
 const PLANK := Vector3i(5, 1, 0)
 
 
-static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED, water_z: int = 1) -> BowlMap:
+## `water_z` is the level whose floor the water stands on; the step sets how deep (UI 3). Level 0 puts
+## the street under it and leaves the roof at level 1 clear of the Flooded surface.
+static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED, water_z: int = 0) -> BowlMap:
 	var map := BowlMap.new()
 	map.water_step = step
 	map.water_z = water_z

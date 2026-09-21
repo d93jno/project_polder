@@ -23,11 +23,14 @@ func test_deck_flag_picks_roof_mesh() -> void:
 func test_cutaway_fixture_has_street_and_roof() -> void:
 	var map := Cutaway.map()
 	assert_eq(map.water_step, Taxonomy.WaterStep.FLOODED)
-	assert_eq(map.water_z, 1)
+	assert_eq(map.water_z, 0, "the water stands on the street")
 	assert_true(map.has_cell(Cutaway.STREET))
 	assert_true(map.has_cell(Cutaway.ROOF))
 	assert_eq(map.get_cell(Cutaway.ROOF).flags & Taxonomy.CellFlags.DECK, Taxonomy.CellFlags.DECK)
-	assert_eq(PresentationCoords.water_height_m(map.water_z), PresentationCoords.LEVEL_M)
+	var flooded := PresentationCoords.water_surface_m(Taxonomy.WaterStep.FLOODED, map.water_z)
+	assert_lt(flooded, PresentationCoords.LEVEL_M, "the roof stands clear of the Flooded surface")
+	assert_true(PresentationCoords.in_water(Cutaway.STREET, Taxonomy.WaterStep.FLOODED, map.water_z))
+	assert_false(PresentationCoords.in_water(Cutaway.ROOF, Taxonomy.WaterStep.FLOODED, map.water_z))
 
 
 func test_falling_fixture_is_no_hide() -> void:
@@ -72,24 +75,62 @@ func test_bowl_cutaway_hides_higher_floor_nodes() -> void:
 	assert_true(street_visible, "street stays visible")
 
 
-## The z-fight: a plane at exactly `water_z * LEVEL_M` is coplanar with the slab tops
-## (kit MANIFEST: slab top is local Y = 0), so the two fight per pixel and the flooded wave
-## turns it into shards. Headless cannot see the pixels; it can see the geometry that caused them.
-func test_water_surface_clears_slab_tops_by_more_than_the_wave() -> void:
-	var mat := load(PresentationCatalog.WATER_MAT) as ShaderMaterial
-	var flooded_wave_m := float(mat.get_shader_parameter("flood_wave_cm")) * 0.01
-	for step in [Taxonomy.WaterStep.FLOODED, Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.MUD]:
-		var lift := PresentationCoords.water_surface_m(step, 0) - PresentationCoords.water_height_m(0)
-		assert_gt(lift, 0.0, "%s plane sits above the slab tops" % Taxonomy.WaterStep.keys()[step])
-	var flooded := PresentationCoords.water_surface_m(Taxonomy.WaterStep.FLOODED, 0)
-	assert_gt(flooded, flooded_wave_m * 2.0, "Flooded clears the ±wave with margin, crests and troughs")
+## The depth classes are the rules' own (GDD 5.4): deep water hides a body, chest-deep does not.
+## The drawn surface has to say the same thing, so the numbers are checked against a body.
+func test_flooded_surface_is_over_a_head_and_falling_is_chest_deep() -> void:
+	var body_m := 1.7 ## the shared humanoid
+	var flooded: float = PresentationCoords.WATER_DEPTH_M[Taxonomy.WaterStep.FLOODED]
+	var falling: float = PresentationCoords.WATER_DEPTH_M[Taxonomy.WaterStep.FALLING]
+	assert_gt(flooded, body_m, "deep water covers a standing body: that is what hides it")
+	assert_gt(falling, body_m * 0.55, "chest-deep is above the waist")
+	assert_lt(falling, body_m * 0.85, "and below the shoulders: a body still shows, so no swim-hide")
 
 
 func test_water_surface_is_higher_the_wetter_the_step() -> void:
-	var y := func(s): return PresentationCoords.water_surface_m(s, 1)
+	var y := func(s): return PresentationCoords.water_surface_m(s, 0)
 	assert_gt(y.call(Taxonomy.WaterStep.FLOODED), y.call(Taxonomy.WaterStep.FALLING))
 	assert_gt(y.call(Taxonomy.WaterStep.FALLING), y.call(Taxonomy.WaterStep.MUD))
-	assert_gt(y.call(Taxonomy.WaterStep.MUD), PresentationCoords.water_height_m(1))
+	assert_gt(y.call(Taxonomy.WaterStep.MUD), PresentationCoords.water_height_m(0), "a film clears the slab")
+
+
+## Height is geometry: the rules apply a step's cost to every cell and never read water_z, so
+## "is this cell under the drawn water" is answered from the floor and the surface.
+func test_a_cell_is_in_water_when_its_floor_is_below_the_surface() -> void:
+	var street := Vector3i(3, 3, 0)
+	var first_floor := Vector3i(4, 5, 1) ## floor at 3 m, surface at 2 m: 1 m of freeboard
+	var flooded := Taxonomy.WaterStep.FLOODED
+	assert_true(PresentationCoords.in_water(street, flooded, 0))
+	assert_true(PresentationCoords.in_water(street, Taxonomy.WaterStep.FALLING, 0))
+	assert_false(PresentationCoords.in_water(first_floor, flooded, 0), "the first floor clears the flood")
+	assert_false(PresentationCoords.in_water(street, Taxonomy.WaterStep.MUD, 0), "mud is a film, not water")
+	assert_false(PresentationCoords.in_water(street, Taxonomy.WaterStep.DRY, 0))
+
+
+func test_only_flooded_bodies_float() -> void:
+	var street := Vector3i(3, 3, 0)
+	assert_true(PresentationCoords.floats(street, Taxonomy.WaterStep.FLOODED, 0), "swimming")
+	assert_false(PresentationCoords.floats(street, Taxonomy.WaterStep.FALLING, 0), "wading: feet on the bottom")
+	assert_false(PresentationCoords.floats(Vector3i(4, 5, 1), Taxonomy.WaterStep.FLOODED, 0), "upstairs is dry")
+
+
+func test_the_play_surface_is_the_water_for_floating_cells_and_the_floor_otherwise() -> void:
+	var flooded := Taxonomy.WaterStep.FLOODED
+	var surface := PresentationCoords.water_surface_m(flooded, 0)
+	assert_eq(PresentationCoords.play_y(0, flooded, 0), surface, "overlays and clicks use the surface")
+	assert_eq(PresentationCoords.play_y(1, flooded, 0), PresentationCoords.LEVEL_M, "a dry floor is itself")
+	assert_eq(PresentationCoords.play_y(0, Taxonomy.WaterStep.FALLING, 0), 0.0, "wading: the bottom")
+	## A treading (standing) body shows head and shoulders; a prone swimmer's spine rides the surface.
+	## The swim clip's bones measure 0.57 to 1.06 m above the unit origin (plan 3.6).
+	var tread := PresentationCoords.unit_origin(Vector3i(3, 3, 0), flooded, 0)
+	assert_almost_eq(tread.y, surface - PresentationCoords.TREAD_DRAFT_M + 0.02, 0.001)
+	assert_gt(PresentationCoords.TREAD_DRAFT_M, 1.0, "most of a standing body is under")
+	assert_lt(PresentationCoords.TREAD_DRAFT_M, 1.6, "and the head and shoulders are not")
+	var swimmer := PresentationCoords.unit_origin(Vector3i(3, 3, 0), flooded, 0, true)
+	assert_almost_eq(swimmer.y, surface - PresentationCoords.SWIM_DRAFT_M + 0.02, 0.001)
+	assert_gt(PresentationCoords.SWIM_DRAFT_M, 0.57, "the spine is not above the bones' lowest point")
+	assert_lt(PresentationCoords.SWIM_DRAFT_M, 1.06, "so the back and head show, the belly does not")
+	var waded := PresentationCoords.unit_origin(Vector3i(3, 3, 0), Taxonomy.WaterStep.FALLING, 0)
+	assert_eq(waded, PresentationCoords.world_ground(Vector3i(3, 3, 0)))
 
 
 func test_water_draws_first_and_writes_no_depth() -> void:
