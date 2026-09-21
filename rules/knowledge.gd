@@ -21,12 +21,15 @@ func duplicate_knowledge() -> Knowledge:
 
 
 ## Recompute Live from Vision for every active player unit. Own eyes only — earshot is a read.
+## After Live updates, try recovering sealed wipe intel (plan 04 §4.6).
 func peel(map: BowlMap, state: CombatState) -> void:
 	if map == null or state == null:
 		return
 	for unit in state.units_of_faction(Taxonomy.Faction.PLAYER):
 		if unit.is_active():
 			_peel_unit(map, state, unit)
+	if state.knowledge_store != null and not state.bowl_id.is_empty():
+		state.knowledge_store.try_recover(state)
 
 
 func _peel_unit(map: BowlMap, state: CombatState, unit: Unit) -> void:
@@ -39,6 +42,22 @@ func _peel_unit(map: BowlMap, state: CombatState, unit: Unit) -> void:
 	for cell in live.keys():
 		obs[cell] = {"sight": CellSight.LIVE, "last_seen_visit": visit_index}
 	_by_unit[unit.id] = obs
+
+
+## Write (or upgrade) one unit's observation. Never demotes Live → Known-quiet.
+func observe(unit_id: int, cell: Vector3i, sight: CellSight, last_seen_visit: int) -> void:
+	if sight == CellSight.UNKNOWN:
+		return
+	var obs: Dictionary = _by_unit.get(unit_id, {})
+	if obs.has(cell):
+		var cur: Dictionary = obs[cell]
+		var cur_sight: int = int(cur["sight"])
+		if cur_sight > int(sight):
+			return
+		if cur_sight == int(sight) and int(cur["last_seen_visit"]) >= last_seen_visit:
+			return
+	obs[cell] = {"sight": sight, "last_seen_visit": last_seen_visit}
+	_by_unit[unit_id] = obs
 
 
 ## Own observation only. Absence is Unknown.

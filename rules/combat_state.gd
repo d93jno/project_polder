@@ -20,6 +20,20 @@ var in_contact: bool = false
 var extract_cells: Array[Vector3i] = []
 ## Per-unit fog. Copied like units, never shared like the map (plan 04 §4.2).
 var knowledge: Knowledge = Knowledge.new()
+## Bowl id for the knowledge store (plan 04 §4.6). Empty until `KnowledgeStore.begin_fight`.
+var bowl_id: String = ""
+## Campaign store for this fight, if any. Shared across `duplicate_state` like the map.
+var knowledge_store: KnowledgeStore = null
+## Last cell where a player unit went down — wipe anchor (§7.10).
+var last_player_down_cell: Vector3i = Vector3i.ZERO
+var has_last_player_down: bool = false
+
+
+enum FightOutcome {
+	ONGOING,
+	WIPED, ## No player unit active and none extracted
+	EXTRACTED, ## No player unit active and at least one extracted
+}
 
 
 func add_unit(unit: Unit) -> void:
@@ -93,6 +107,10 @@ func duplicate_state() -> CombatState:
 	copy.in_contact = in_contact
 	copy.extract_cells = extract_cells.duplicate()
 	copy.knowledge = knowledge.duplicate_knowledge() if knowledge != null else Knowledge.new()
+	copy.bowl_id = bowl_id
+	copy.knowledge_store = knowledge_store
+	copy.last_player_down_cell = last_player_down_cell
+	copy.has_last_player_down = has_last_player_down
 	for unit in units.values():
 		copy.units[unit.id] = unit.duplicate_unit()
 	for watch in watches:
@@ -143,6 +161,7 @@ func apply_damage(target: Unit, damage: int) -> void:
 		target.dead = true
 		target.bleed_rounds_left = 0
 		cancel_watches_for(target.id)
+		_note_player_down(target)
 		return
 	target.hp = maxi(0, target.hp - damage)
 	if target.hp <= 0:
@@ -151,8 +170,16 @@ func apply_damage(target: Unit, damage: int) -> void:
 		target.pin = Unit.PinState.NONE
 		target.ap = 0
 		cancel_watches_for(target.id)
+		_note_player_down(target)
 	else:
 		apply_pin(target)
+
+
+func _note_player_down(unit: Unit) -> void:
+	if unit == null or unit.faction != Taxonomy.Faction.PLAYER:
+		return
+	last_player_down_cell = unit.cell
+	has_last_player_down = true
 
 
 func end_phase() -> CombatState:
@@ -200,6 +227,35 @@ func _tick_bleed() -> void:
 		unit.bleed_rounds_left -= 1
 		if unit.bleed_rounds_left <= 0:
 			unit.dead = true
+			_note_player_down(unit)
+
+
+## Smallest fight end the knowledge store needs (plan 04 §4.6). Objectives / campaign end later.
+func outcome() -> FightOutcome:
+	var any_active := false
+	var any_extracted := false
+	for unit in units_of_faction(Taxonomy.Faction.PLAYER):
+		if unit.extracted:
+			any_extracted = true
+		if unit.is_active():
+			any_active = true
+	if any_active:
+		return FightOutcome.ONGOING
+	if any_extracted:
+		return FightOutcome.EXTRACTED
+	return FightOutcome.WIPED
+
+
+## Anchor for a wipe seal: last player body to go down, else any fallen body (§7.10).
+func wipe_anchor() -> Vector3i:
+	if has_last_player_down:
+		return last_player_down_cell
+	for unit in units_of_faction(Taxonomy.Faction.PLAYER):
+		if unit.extracted:
+			continue
+		if not unit.is_active():
+			return unit.cell
+	return Vector3i.ZERO
 
 
 ## Friends: the same faction, or any two non-player, non-neutral factions. P0's sides are the player

@@ -65,7 +65,8 @@ var _confirm_target_id: int = -1
 func _ready() -> void:
 	_bowl_id = _parse_bowl_arg()
 	_state = _opening()
-	## Opening peel: the squad sees its start tiles. Unknown elsewhere draws nothing (plan 04 §4.4).
+	## Prior visits seed Known-quiet; opening peel makes the start Live (plan 04 §4.6 / §4.4).
+	KnowledgeStore.load_from().begin_fight(_state, _bowl_id)
 	_state.knowledge.peel(_state.map, _state)
 	_stamps = _stamps_for_bowl()
 	_player_ids = _ids_of(Taxonomy.Faction.PLAYER)
