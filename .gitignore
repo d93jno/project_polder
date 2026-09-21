@@ -15,3 +15,7 @@ export/
 # Mono / .NET (not used; ignore if created by mistake)
 .mono/
 data_*/
+
+# Python bytecode from the Blender build scripts (assets/**/_build_*.py)
+__pycache__/
+*.pyc
