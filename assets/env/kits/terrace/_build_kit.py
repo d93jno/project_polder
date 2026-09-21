@@ -1100,28 +1100,118 @@ def build_sluice(mats, out: Path) -> None:
     finish(out / "env_sluice_gauge.glb", [root])
 
 
+def cyl_along(name: str, radius: float, a0: float, a1: float, axis: str, mat=None,
+              segments: int = 12, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+    """Cylinder lying along Blender X or Y from a0 to a1. (x, y, z) place it on the other axes."""
+    obj = cyl(name, radius, -(a1 - a0) * 0.5, (a1 - a0) * 0.5, mat, segments=segments)
+    if axis == "y":
+        obj.rotation_euler = (math.radians(90.0), 0.0, 0.0)
+        obj.location = (x, (a0 + a1) * 0.5, z)
+    else:
+        obj.rotation_euler = (0.0, math.radians(90.0), 0.0)
+        obj.location = ((a0 + a1) * 0.5, y, z)
+    return obj
+
+
+# Extract dock: a floating dock on guide piles, 2 x 6 m, origin at footprint centre, long axis Blender Y.
+# Two nodes under one root (MANIFEST): `pier_deck` rides the water and `pier_piles` stay put. The
+# code reads the deck height from PresentationCoords.DOCK_DECK_TOP_M; a test measures this mesh
+# against it, so change them together.
+DOCK_DECK_TOP = 0.60
+PILE_X = 1.14
+PILE_YS = (-2.4, 0.0, 2.4)
+
+
 def build_pier(mats, out: Path) -> None:
-    # 2 x 6 m deck, origin at footprint centre. Deck at 0.32 m.
-    parts = []
-    parts.append(box("deck", -1.0, 1.0, -3.0, 3.0, 0.28, 0.38, mats["wood"]))
-    # longitudinal beams
+    top = DOCK_DECK_TOP
+    deck = []
+
+    # Boards: nine planks along the length, butt joints staggered, alternating weathering.
+    joints = (-1.5, 0.4, -0.6, 1.1, -1.1, 0.9, -0.2, 1.4, -0.9)
+    pitch = 2.0 / 9.0
+    plank_w = pitch - 0.022
+    for i, jy in enumerate(joints):
+        x0 = -1.0 + i * pitch
+        mat = mats["wood"] if i % 2 == 0 else mats["wood_pale"]
+        deck.append(box(f"plank{i}a", x0, x0 + plank_w, -3.0, jy - 0.011, top - 0.08, top, mat))
+        deck.append(box(f"plank{i}b", x0, x0 + plank_w, jy + 0.011, 3.0, top - 0.08, top, mat))
+
+    # Frame under the boards: two stringers and cross-bearers.
+    for x in (-0.85, 0.85):
+        deck.append(box("stringer", x - 0.07, x + 0.07, -3.0, 3.0, top - 0.24, top - 0.08, mats["wood_wet"]))
+    for j in range(7):
+        y = -2.9 + j * (5.8 / 6.0)
+        deck.append(box(f"bearer{j}", -1.0, 1.0, y - 0.06, y + 0.06, top - 0.20, top - 0.08, mats["wood_wet"]))
+
+    # Floats: oil drums lying under the stringers. Their tops meet the frame; their bottoms clear the
+    # ground, so a dry dock rests on them instead of sinking into the slab.
+    drum_r = 0.26
+    drum_z = top - 0.32
+    for si, x in enumerate((-0.62, 0.62)):
+        for di, (y0, y1) in enumerate(((-2.9, -1.5), (-1.4, 0.0), (0.1, 1.5), (1.6, 2.9))):
+            mat = (mats["iron_green"], mats["rust"], mats["iron"], mats["rust"])[(si + di) % 4]
+            deck.append(cyl_along(f"drum{si}{di}", drum_r, y0, y1, "y", mat, segments=12, x=x, z=drum_z))
+            for k in (0.25, 0.75):
+                ry = y0 + (y1 - y0) * k
+                deck.append(cyl_along(f"rib{si}{di}{k}", drum_r + 0.012, ry - 0.03, ry + 0.03, "y",
+                                      mats["iron_dark"], segments=12, x=x, z=drum_z))
+
+    # Fender kerb along both edges, and tyre fenders hung outside it.
+    for sx in (-1, 1):
+        deck.append(box("kerb", min(sx * 0.90, sx * 1.0), max(sx * 0.90, sx * 1.0), -3.0, 3.0, top, top + 0.09, mats["wood_pale"]))
+        for ty in (-1.9, 0.0, 1.9):
+            deck.append(cyl_along(f"tyre{sx}{ty}", 0.20, sx * 1.0, sx * 1.14, "x", mats["bitumen"],
+                                  segments=12, y=ty, z=top - 0.10))
+
+    # Pile guides: an iron ring around each pile, on an arm from the deck edge. The pile passes
+    # through it, so the deck slides up and down its piles.
+    for sx in (-1, 1):
+        for py in PILE_YS:
+            px = sx * PILE_X
+            lo, hi = 0.16, 0.20  # inner half-width just clears the 0.12 m pile, outer half-width
+            z0, z1 = top - 0.14, top + 0.22
+            for name, ax0, ax1, ay0, ay1 in (
+                ("gl", px - hi, px - lo, py - hi, py + hi),
+                ("gr", px + lo, px + hi, py - hi, py + hi),
+                ("gf", px - lo, px + lo, py - hi, py - lo),
+                ("gb", px - lo, px + lo, py + lo, py + hi),
+            ):
+                deck.append(box(f"{name}{sx}{py}", ax0, ax1, ay0, ay1, z0, z1, mats["iron_dark"]))
+            arm_x0, arm_x1 = (sx * 1.0, px - sx * hi)
+            deck.append(box(f"arm{sx}{py}", min(arm_x0, arm_x1), max(arm_x0, arm_x1), py - 0.05, py + 0.05,
+                            top - 0.10, top + 0.02, mats["iron_dark"]))
+
+    # Mooring: bollards and cleats at the water end (+Y), where a boat comes alongside.
+    for x in (-0.55, 0.55):
+        deck.append(cyl(f"bollard{x}", 0.08, top, top + 0.34, mats["iron"], segments=8, x=x, y=2.55))
+        deck.append(cyl(f"bollard_cap{x}", 0.115, top + 0.30, top + 0.36, mats["iron"], segments=8, x=x, y=2.55))
     for x in (-0.70, 0.70):
-        parts.append(box("beam", x - 0.08, x + 0.08, -3.0, 3.0, 0.12, 0.28, mats["wood_wet"]))
-    # posts into the water
-    i = 0
-    for y in (-2.5, -1.25, 0.0, 1.25, 2.5):
-        for x in (-0.72, 0.72):
-            parts.append(cyl(f"post{i}", 0.09, -1.40, 0.30, mats["wood_wet"], segments=8, x=x, y=y))
-            i += 1
-    # kerb / fender
-    parts.append(box("fender_l", -1.02, -0.90, -3.0, 3.0, 0.30, 0.50, mats["wood_pale"]))
-    parts.append(box("fender_r", 0.90, 1.02, -3.0, 3.0, 0.30, 0.50, mats["wood_pale"]))
-    # bollards
-    parts.append(cyl("b1", 0.08, 0.38, 0.72, mats["iron"], segments=8, x=-0.55, y=2.55))
-    parts.append(cyl("b2", 0.08, 0.38, 0.72, mats["iron"], segments=8, x=0.55, y=2.55))
-    # thin rail on the water end — not cover
-    parts.append(box("end_rail", -1.0, 1.0, 2.92, 2.98, 0.38, 1.05, mats["iron"]))
-    finish(out / "env_pier.glb", [combine("env_pier", parts)])
+        for y in (-1.2, 1.2):
+            deck.append(box(f"cleat{x}{y}", x - 0.09, x + 0.09, y - 0.03, y + 0.03, top, top + 0.06, mats["iron_dark"]))
+
+    # Open rail on the water end: two thin posts and two thin bars. Not cover, and it must not read
+    # as cover, so nothing solid stands between them.
+    for x in (-0.94, 0.94):
+        deck.append(cyl(f"rail_post{x}", 0.03, top, top + 0.67, mats["iron"], segments=6, x=x, y=2.94))
+    for h in (0.34, 0.66):
+        deck.append(cyl_along(f"rail_bar{h}", 0.022, -0.94, 0.94, "x", mats["iron"], segments=6, y=2.94, z=top + h))
+
+    # Piles: driven into the bed, standing over even a Flooded deck. Thin, so they do not read as cover.
+    piles = []
+    for sx in (-1, 1):
+        for py in PILE_YS:
+            px = sx * PILE_X
+            piles.append(cyl(f"pile{sx}{py}", 0.12, -1.40, 3.50, mats["wood_wet"], segments=10, x=px, y=py))
+            piles.append(cone(f"pile_cap{sx}{py}", 0.12, 0.07, 3.50, 3.62, mats["wood"], segments=10, x=px, y=py))
+            for bz in (-0.55, 1.05):
+                piles.append(cyl(f"pile_band{sx}{py}{bz}", 0.135, bz, bz + 0.07, mats["iron"], segments=10, x=px, y=py))
+
+    root = empty("env_pier")
+    deck_obj = combine("pier_deck", deck)
+    piles_obj = combine("pier_piles", piles)
+    parent(deck_obj, root)
+    parent(piles_obj, root)
+    finish(out / "env_pier.glb", [root])
 
 
 def build_furniture(mats, out: Path) -> None:

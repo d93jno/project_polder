@@ -62,10 +62,10 @@ func draw_stamps(
 			if not all_known:
 				continue
 		var pos := PresentationCatalog.stamp_world_origin(stamp)
-		if stamp.piece_id in PresentationCatalog.RIDES_WATER:
-			pos.y += PresentationCoords.dock_lift_m(step, water_z, stamp.origin.z)
 		var node_name := "%s_%s" % [stamp.piece_id, stamp.origin]
-		_instance_piece(stamp.piece_id, pos, stamp.yaw, stamp.origin.z, node_name)
+		var piece := _instance_piece(stamp.piece_id, pos, stamp.yaw, stamp.origin.z, node_name)
+		if piece != null and stamp.piece_id in PresentationCatalog.RIDES_WATER:
+			_lift_riding_node(piece, stamp, step, water_z)
 
 
 func set_cutaway_z(level: int) -> void:
@@ -90,9 +90,19 @@ func cover_tag_at(coord: Vector3i) -> int:
 	return PresentationCatalog.cover_of(piece_id)
 
 
+## Lift only the node that rides the water; the piles of a dock stay where they were driven.
+func _lift_riding_node(piece: Node3D, stamp: Stamp, step: Taxonomy.WaterStep, water_z: int) -> void:
+	var riding_name: String = PresentationCatalog.RIDES_WATER[stamp.piece_id]
+	var riding := piece.find_child(riding_name, true, false) as Node3D
+	if riding == null:
+		push_warning("bowl_draw: %s has no node %s to ride the water" % [stamp.piece_id, riding_name])
+		return
+	riding.position.y += PresentationCoords.dock_lift_m(step, water_z, stamp.origin.z)
+
+
 func _instance_piece(
 	piece_id: String, origin: Vector3, yaw: float, level_z: int, node_name: String
-) -> void:
+) -> Node3D:
 	var n: Node3D
 	if piece_id.is_empty():
 		n = _missing_marker(origin, "X_%s" % node_name)
@@ -112,6 +122,7 @@ func _instance_piece(
 	if not _nodes_by_level.has(level_z):
 		_nodes_by_level[level_z] = []
 	_nodes_by_level[level_z].append(n)
+	return n
 
 
 func _missing_marker(origin: Vector3, node_name: String) -> MeshInstance3D:

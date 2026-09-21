@@ -177,26 +177,113 @@ func test_dock_cells_come_from_the_stamps_that_ride_the_water() -> void:
 	assert_eq(cells.size(), 3, "1 x 3 cells and nothing else rides")
 
 
-func test_the_pier_mesh_is_lifted_with_the_water() -> void:
+func test_the_pier_deck_is_lifted_with_the_water_and_the_piles_are_not() -> void:
 	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
 	var BowlDraw = load("res://presentation/bowl_draw.gd")
-	var ys := {}
+	var deck_y := {}
+	var piles_y := {}
 	for step in [Taxonomy.WaterStep.DRY, Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.FLOODED]:
-		var map := _terrace_map(step)
 		var bowl = BowlDraw.new()
 		add_child_autofree(bowl)
-		bowl.draw_map(map, TerraceStamps.stamps())
+		bowl.draw_map(_terrace_map(step), TerraceStamps.stamps())
 		for n in bowl.get_children():
 			if n.has_meta("polder_piece") and str(n.get_meta("polder_piece")) == "env_pier":
-				ys[step] = (n as Node3D).position.y
-	assert_gt(ys[Taxonomy.WaterStep.FLOODED], ys[Taxonomy.WaterStep.FALLING])
-	assert_gt(ys[Taxonomy.WaterStep.FALLING], ys[Taxonomy.WaterStep.DRY])
+				deck_y[step] = (n.find_child("pier_deck", true, false) as Node3D).position.y
+				piles_y[step] = (n.find_child("pier_piles", true, false) as Node3D).position.y
+	assert_gt(deck_y[Taxonomy.WaterStep.FLOODED], deck_y[Taxonomy.WaterStep.FALLING])
+	assert_gt(deck_y[Taxonomy.WaterStep.FALLING], deck_y[Taxonomy.WaterStep.DRY])
 	assert_almost_eq(
-		ys[Taxonomy.WaterStep.FLOODED] - ys[Taxonomy.WaterStep.DRY],
+		deck_y[Taxonomy.WaterStep.FLOODED] - deck_y[Taxonomy.WaterStep.DRY],
 		PresentationCoords.dock_lift_m(Taxonomy.WaterStep.FLOODED, 0), 0.001
 	)
+	for step in piles_y.keys():
+		assert_eq(piles_y[step], 0.0, "the piles were driven into the bed and do not move")
 
 
 func _terrace_map(step: Taxonomy.WaterStep) -> BowlMap:
 	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
 	return FloodedTerrace.map(step)
+
+
+## The pier art contract (assets/env/kits/terrace/MANIFEST.md): one glb, two named nodes. `pier_deck`
+## rides the water and `pier_piles` stay where they were driven. The code's deck height is measured
+## from the mesh here, so art and constant cannot drift apart the way the old 0.38 m dock did.
+func _pier() -> Node3D:
+	var packed := PresentationCatalog.scene_for_piece("env_pier")
+	var pier := packed.instantiate() as Node3D
+	add_child_autofree(pier)
+	return pier
+
+
+## The mesh nodes at or under `root`. A glb node with no children is itself the mesh.
+func _meshes(root: Node) -> Array:
+	var out: Array = root.find_children("*", "MeshInstance3D", true, false)
+	if root is MeshInstance3D:
+		out.append(root)
+	return out
+
+
+func _mesh_bounds(root: Node) -> AABB:
+	var box := AABB()
+	var first := true
+	for mi in _meshes(root):
+		var m := mi as MeshInstance3D
+		var local: AABB = m.get_aabb()
+		var b: AABB = m.global_transform * local if m.is_inside_tree() else local
+		box = b if first else box.merge(b)
+		first = false
+	return box
+
+
+## Y of the largest upward-facing surface in the mesh: the boards you walk on.
+func _walking_surface_y(root: Node) -> float:
+	var areas := {}
+	for mi in _meshes(root):
+		var m := mi as MeshInstance3D
+		for s in m.mesh.get_surface_count():
+			var arr: Array = m.mesh.surface_get_arrays(s)
+			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+			if idx.is_empty():
+				for i in v.size():
+					idx.append(i)
+			for i in range(0, idx.size(), 3):
+				var a: Vector3 = m.global_transform * v[idx[i]] if m.is_inside_tree() else v[idx[i]]
+				var b: Vector3 = m.global_transform * v[idx[i + 1]] if m.is_inside_tree() else v[idx[i + 1]]
+				var c: Vector3 = m.global_transform * v[idx[i + 2]] if m.is_inside_tree() else v[idx[i + 2]]
+				var n: Vector3 = (b - a).cross(c - a)
+				## Godot front faces wind clockwise, so this cross product points into the mesh:
+				## a top face has n.y < 0.
+				if n.length() < 0.0002 or absf(n.normalized().y) < 0.95 or n.y > 0.0:
+					continue
+				var key := snappedf((a.y + b.y + c.y) / 3.0, 0.02)
+				areas[key] = float(areas.get(key, 0.0)) + n.length() * 0.5
+	var best_y := 0.0
+	var best_area := 0.0
+	for k in areas.keys():
+		if float(areas[k]) > best_area:
+			best_area = float(areas[k])
+			best_y = float(k)
+	return best_y
+
+
+func test_the_pier_has_a_deck_that_rides_and_piles_that_stay() -> void:
+	var pier := _pier()
+	for node_name in PresentationCatalog.RIDES_WATER.values():
+		assert_not_null(pier.find_child(node_name, true, false), "the riding node %s exists" % node_name)
+	assert_not_null(pier.find_child("pier_piles", true, false), "the piles are a separate node")
+
+
+func test_the_deck_height_in_code_is_the_deck_height_in_the_mesh() -> void:
+	var deck := _pier().find_child("pier_deck", true, false)
+	assert_almost_eq(_walking_surface_y(deck), PresentationCoords.DOCK_DECK_TOP_M, 0.03, "boards are where the code says")
+	assert_gte(_mesh_bounds(deck).position.y, -0.01, "the floats do not sink into the ground when the dock is dry")
+
+
+func test_the_piles_run_from_below_the_bed_to_above_a_flooded_deck() -> void:
+	var piles := _pier().find_child("pier_piles", true, false)
+	var bounds := _mesh_bounds(piles)
+	assert_lt(bounds.position.y, -1.0, "driven into the bed")
+	var flooded_deck_top := PresentationCoords.dock_deck_y(0, Taxonomy.WaterStep.FLOODED, 0)
+	assert_gt(bounds.end.y, flooded_deck_top + 0.8, "a Flooded deck still has piles standing over it")
+	assert_lt(bounds.size.x, 2.9, "the pile row stays close to its 2 m footprint")

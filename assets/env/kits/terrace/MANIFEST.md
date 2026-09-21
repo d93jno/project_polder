@@ -47,7 +47,7 @@ Material is the only cover (GDD §5.4). Line preview names the class. Rails that
 | `env_hatch` | none | Flat lid, not a blocker. |
 | `env_pump_house` | masonry | `pump_house` mesh. |
 | `env_sluice_gauge` | masonry | Abutments. Gate is metal but is the moving leaf, not a cover prop. |
-| `env_pier` | crate | Wet wood deck. |
+| `env_pier` | crate | Planked deck on drum floats. The piles and rail are thin on purpose: they must not read as cover. |
 | `env_furn_lamp` | none | Pole. |
 | `env_furn_bench` | none | Seat 0.42 m. |
 | `env_furn_bollard` | none | Ø 0.22 m, 0.92 m. |
@@ -106,7 +106,7 @@ Shells have no interior floors. Cutaway is a visibility toggle on the floor node
 | --- | --- | --- |
 | `env_pump_house.glb` | `env_pump_house` / `pump_house` / `dressing_damaged` | Hide `dressing_damaged` when the pump is kept. Show for damaged / dead. Upkeep (kept / thin / failing) is a material pass, not extra meshes. |
 | `env_sluice_gauge.glb` | `env_sluice_gauge` / `sluice_frame` / **`sluice_gate`** | Animate `sluice_gate` **local +Y** (Godot) to open. Closed = 0. Full open ≈ **2.2 m**. Blank cabinet, no meter. |
-| `env_pier.glb` | single | Extract dock. Posts drop to Y = −1.4 m. |
+| `env_pier.glb` | `env_pier` / **`pier_deck`** / `pier_piles` | Extract dock: a floating dock on guide piles. Raise `pier_deck` **local +Y** to ride the water; `pier_piles` never move. Deck top **0.60 m** over the origin (`PresentationCoords.DOCK_DECK_TOP_M`; a test measures the mesh against it), oil-drum floats under it clear the ground when dry. Piles run from −1.4 m to 3.5 m, so they stand over a Flooded deck. Open rail on the +Y (boat) end. |
 
 ### Street furniture
 

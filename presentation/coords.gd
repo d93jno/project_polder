@@ -73,10 +73,9 @@ static func play_y(level_z: int, step: Taxonomy.WaterStep, water_z: int) -> floa
 
 
 ## The extract dock is a floating dock on guide piles, so it rides the water. `env_pier`'s deck top is
-## 0.38 m above its origin (measured; the posts drop to -1.4 m): built for water near street level,
-## it would sit 1.6 m under a Flooded surface. Its deck stands a freeboard clear of the water, and
-## as built when there is none.
-const DOCK_DECK_TOP_M := 0.38
+## 0.60 m above its origin, on oil-drum floats (a test measures the mesh against this). Its `pier_deck`
+## node stands a freeboard clear of the water, and as built when there is none; its piles stay put.
+const DOCK_DECK_TOP_M := 0.60
 const DOCK_FREEBOARD_M := 0.30
 
 

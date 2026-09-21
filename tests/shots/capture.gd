@@ -492,9 +492,10 @@ func _probe_dock_above_water(img: Image) -> void:
 		push_error("shots: the dock is out of frame at %s" % screen)
 		_exit_code = 1
 		return
-	var lum := _sample(img, screen).get_luminance()
+	## Brightest pixel in a small patch: the deck is planks with joints, so one pixel can land in a gap.
+	var lum := _sample_rect_max_luminance(img, Rect2(screen - Vector2(6.0, 6.0), Vector2(12.0, 12.0)))
 	print("shots: dock probe deck luminance %.3f at %s" % [lum, screen])
-	if lum < 0.40:
+	if lum < 0.50:
 		push_error("shots: the dock deck reads dark (%.3f): it is under the water" % lum)
 		_exit_code = 1
 

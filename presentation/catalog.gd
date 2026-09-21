@@ -76,8 +76,9 @@ const FOOTPRINTS := {
 }
 
 
-## Kit pieces that ride the water on guide piles (see PresentationCoords.DOCK_*).
-const RIDES_WATER := ["env_pier"]
+## Kit pieces that ride the water on guide piles (see PresentationCoords.DOCK_*), and the named node in
+## each glb that rides. The rest of the piece (its piles) stays where it was driven. MANIFEST.md.
+const RIDES_WATER := {"env_pier": "pier_deck"}
 
 
 ## Cells under a piece that rides the water, as a set. Bodies on them stand on the deck.
