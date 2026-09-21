@@ -137,7 +137,7 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 
 - The same squad, same cells, at Flooded vs Falling: a swimmer with no attackers reads Hidden vs No hide (exposure backstop, UI §3).
 - The roof is exposed to the levee rifle across the canal and not exposed from inside the house.
-- Street to roof costs exactly `swim + vertical surcharge` per level; whether one unit reaches the roof in one phase is asserted, not assumed.
+- Street to roof costs a swim for the wet cell, then the dry cost plus the vertical surcharge per level, because the climbs land above the water (GDD 5.8, slice 3.7). Whether one unit reaches the roof in one phase is asserted, not assumed: it does, for the whole pool.
 - Same map at Dry and Mud: path costs and exposure words change, geometry does not.
 - One authored contact plays out to a stated result, as 1.6 does.
 
@@ -191,7 +191,22 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 
 **What landed.** As above. **The dock.** `env_pier` was built for water near street level (deck top 0.38 m over its origin, posts to -1.4 m), so a 2.0 m Flooded surface buried the extract place. It is now a floating dock on guide piles: `PresentationCatalog.RIDES_WATER` pieces are lifted to stay `DOCK_FREEBOARD_M` clear of the surface (as built when dry), bodies on them stand on the deck and never swim, and picking casts the deck plane. Presentation only; no rule or fixture changed. The mesh is now a real floating dock (`env_pier.glb`: `pier_deck` rides, `pier_piles` stay; planked deck on oil-drum floats, guide piles with iron collars, bollards and an open rail), rebuilt with `_build_kit.py`'s `build_pier` alone. `terrace_dock` shot: the deck must read pale against the water (0.71 fixed, 0.37 submerged).
 
-Open: the rules still price every cell as the step's water (`Movement` ignores `water_z`), so a unit on the dock or a roof in Flooded reads `hidden` while standing in plain sight, and a roof costs swim; a diegetic freeboard or waterline read is the UI §2 height read the user will invent.
+Open: a diegetic freeboard or waterline read is the UI §2 height read the user will invent. (The rules gap this slice exposed, every cell priced as the step's water, is closed in 3.7.)
+
+### 3.7 — Water stands at a level (GDD 1.16, §5.8)
+
+**Why.** `Movement`, exposure and break priced the step's water on every cell and never read `water_z`. Slice 3.6 drew the dock and the roofs above the water, and made the gap visible: a unit standing on the dock or a roof in Flooded read `hidden` in plain sight, and a roof cost a swim.
+
+**Ships.**
+
+- `BowlMap.is_wet(coord)`: a cell is wet when `coord.z <= water_z` and it is not a `DECK`. `BowlMap.step_at(coord)` is the step for a wet cell and Dry above it.
+- Three sites read the step through `step_at`: `Movement.move_cost` (the cell being entered), the hide read in `exposure.gd`, and the Dry clause of break (the unit's own cell).
+- The terrace's dock cells carry the `DECK` flag, so the rules and the drawing agree that the dock is dry.
+- `tests/invariants/test_water_agrees_with_drawing.gd`: what the rules call wet is exactly what `PresentationCoords.in_water` draws as water, and every dock cell is a deck.
+
+**Consequences, asserted.** Street to roof is a swim, then two dry climbs: 6 AP, the whole pool. A roof over a Flooded street has no hide unless it has shelter, and a roof reads the same at every step. The Dry clause of break applies to an unadapted CQB unit on a roof under a long Watch (*working default*, GDD §10).
+
+**What landed.** As above. Terrace and overlay tests that hard-coded the old swim-everywhere costs now assert the new ones.
 
 ---
 

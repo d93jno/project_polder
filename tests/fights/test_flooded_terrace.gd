@@ -60,7 +60,7 @@ func test_roof_exposed_to_levee_rifle_interior_not() -> void:
 	assert_eq(s.attackers_of(s.map, inside).size(), 0, "masonry volume hides the ground floor")
 
 
-func test_street_to_roof_costs_swim_plus_surcharge_per_level() -> void:
+func test_street_to_roof_is_a_swim_then_dry_climbs() -> void:
 	var s := FloodedTerrace.opening(Taxonomy.WaterStep.FLOODED)
 	s.units.erase(P4) ## destination must be empty
 	var u: Unit = s.get_unit(P1)
@@ -68,10 +68,14 @@ func test_street_to_roof_costs_swim_plus_surcharge_per_level() -> void:
 	var path := Movement.path(s.map, s, u, FloodedTerrace.ROOF_A)
 	assert_true(path.reachable)
 	var swim := RulesConstants.MOVE_COST_SWIM
+	var dry := RulesConstants.MOVE_COST_DRY
 	var surcharge := RulesConstants.MOVE_COST_VERTICAL_SURCHARGE
-	## (4,4,0)→(4,5,0) swim; then two vertical steps at swim+surcharge each.
-	assert_eq(path.total_cost, swim + 2 * (swim + surcharge))
-	assert_gt(path.total_cost, RulesConstants.AP_POOL, "roof is not a one-phase swim from the street")
+	## (4,4,0)→(4,5,0) is wet, so a swim; the two vertical steps land on dry ground above the water
+	## (GDD 5.8), so each is the dry cost plus the surcharge, not another swim.
+	assert_eq(path.total_cost, swim + 2 * (dry + surcharge))
+	## Asserted, not assumed: the roof is reachable in one phase, but for the whole pool. Whoever
+	## climbs has nothing left to shoot or Watch with.
+	assert_eq(path.total_cost, RulesConstants.AP_POOL, "one phase, all of it")
 
 
 func test_dry_and_mud_change_cost_not_geometry() -> void:
@@ -97,7 +101,7 @@ func test_dry_and_mud_change_cost_not_geometry() -> void:
 	assert_eq(p_f.cells, p_d.cells)
 	assert_eq(p_f.cells, p_m.cells)
 	assert_eq(p_d.total_cost, RulesConstants.MOVE_COST_DRY + 2 * (RulesConstants.MOVE_COST_DRY + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE))
-	assert_eq(p_m.total_cost, RulesConstants.MOVE_COST_MUD + 2 * (RulesConstants.MOVE_COST_MUD + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE))
+	assert_eq(p_m.total_cost, RulesConstants.MOVE_COST_MUD + 2 * (RulesConstants.MOVE_COST_DRY + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE), "mud is on the ground; the climb is above it")
 	assert_ne(p_f.total_cost, p_d.total_cost)
 
 

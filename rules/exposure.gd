@@ -28,9 +28,10 @@ static func exposure(map: BowlMap, state: CombatState, unit: Unit) -> Exposure:
 	return result
 
 
-## Falling, or open Dry (no shelter / interior). UI §4.2 / GDD §5.8.
+## Falling, or open Dry (no shelter / interior). Dry ground above the water reads as Dry: there is
+## no dive up there (GDD §5.8). UI §4.2.
 static func _no_hide_at(map: BowlMap, cell: Vector3i) -> bool:
-	match map.water_step:
+	match map.step_at(cell):
 		Taxonomy.WaterStep.FALLING:
 			return true
 		Taxonomy.WaterStep.DRY:

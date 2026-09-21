@@ -468,3 +468,33 @@ func test_check_does_not_mutate_anything() -> void:
 		if (prop["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE) != 0:
 			assert_eq(b.get(prop["name"]), before.get(prop["name"]), "check changed '%s'" % prop["name"])
 	assert_false(b.broken, "check reports; only resolve lands a break")
+
+
+## GDD 5.8 (working default): a roof over a Flooded street is dry ground, so the Dry clause of break
+## applies there. The same unit swimming in the street below is on Flooded water and does not.
+func _roof_scene(level: int) -> CombatState:
+	var map := _map(Taxonomy.WaterStep.FLOODED)
+	map.water_z = 0
+	for x in range(0, 5):
+		map.set_cell(Vector3i(x, 0, level), Cell.new(Taxonomy.CoverMaterial.AIR))
+	var watcher := _u(1, Vector3i(0, 0, level), PLAYER, RIFLE)
+	var drifter := _u(10, Vector3i(3, 0, level), DRIFTER, PISTOL)
+	var state := _fight(map, [watcher, drifter])
+	state.add_watch(LiveWatch.new(1, Vector3i(1, 0, 0)))
+	return state
+
+
+func test_the_dry_clause_applies_on_a_roof_over_flooded_water() -> void:
+	var state := _roof_scene(1)
+	var d := state.get_unit(10)
+	assert_true(BreakRule.under_long_cone(state.map, state, d), "precondition: the cone covers it")
+	assert_false(state.map.is_wet(d.cell), "precondition: it stands above the water")
+	assert_eq(_check(state, d), BreakRule.Result.BREAKS)
+
+
+func test_the_dry_clause_does_not_apply_to_a_swimmer_in_the_street() -> void:
+	var state := _roof_scene(0)
+	var d := state.get_unit(10)
+	assert_true(BreakRule.under_long_cone(state.map, state, d), "precondition: the cone covers it")
+	assert_true(state.map.is_wet(d.cell), "precondition: it is in the water")
+	assert_eq(_check(state, d), BreakRule.Result.SAFE)

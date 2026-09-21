@@ -93,3 +93,40 @@ func test_levee_two_surfaces_not_yet_supported() -> void:
 		"water_steps" in names,
 		"TODO(levee): no plural water_steps field"
 	)
+
+
+## GDD 5.8: water stands at a level. A cell is wet when its floor is at or below it and it is not a
+## deck. Everything above is dry ground, whatever the step.
+func test_a_cell_is_wet_at_or_below_the_water_level() -> void:
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.FLOODED
+	map.water_z = 1
+	for z in range(0, 3):
+		map.set_cell(Vector3i(0, 0, z), Cell.new(Taxonomy.CoverMaterial.AIR))
+	assert_true(map.is_wet(Vector3i(0, 0, 0)))
+	assert_true(map.is_wet(Vector3i(0, 0, 1)), "the level itself is wet")
+	assert_false(map.is_wet(Vector3i(0, 0, 2)), "above the water is dry ground")
+
+
+func test_a_deck_is_dry_at_any_level() -> void:
+	## A roof deck, and the deck of a floating dock that rides the water on its piles.
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.FLOODED
+	map.water_z = 0
+	map.set_cell(Vector3i(1, 0, 0), Cell.new(Taxonomy.CoverMaterial.CRATE, Taxonomy.CellFlags.DECK))
+	map.set_cell(Vector3i(2, 0, 0), Cell.new(Taxonomy.CoverMaterial.CRATE))
+	assert_false(map.is_wet(Vector3i(1, 0, 0)), "the dock's deck stands above the water")
+	assert_true(map.is_wet(Vector3i(2, 0, 0)), "the same cell without the deck flag is in it")
+
+
+func test_the_step_only_governs_wet_cells() -> void:
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.FLOODED
+	map.water_z = 0
+	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	map.set_cell(Vector3i(0, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR))
+	assert_eq(map.step_at(Vector3i(0, 0, 0)), Taxonomy.WaterStep.FLOODED)
+	assert_eq(map.step_at(Vector3i(0, 0, 1)), Taxonomy.WaterStep.DRY, "a roof is the same roof at every step")
+	map.water_step = Taxonomy.WaterStep.MUD
+	assert_eq(map.step_at(Vector3i(0, 0, 0)), Taxonomy.WaterStep.MUD)
+	assert_eq(map.step_at(Vector3i(0, 0, 1)), Taxonomy.WaterStep.DRY)

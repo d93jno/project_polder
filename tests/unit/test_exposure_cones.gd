@@ -299,3 +299,35 @@ func test_cone_stack_filter_still_skips_spent_watches() -> void:
 	var c := _crossfire()
 	(c[1] as CombatState).spend_watch(1)
 	assert_eq(Cones.cone_stack(c[0], c[1], c[2], Taxonomy.Faction.PLAYER).count, 0)
+
+
+## GDD 5.8: above the water is dry ground. There is no dive there, so hiding is as on Dry: only
+## shelter or an interior hides a unit.
+func test_a_roof_over_a_flooded_street_has_no_hide_unless_sheltered() -> void:
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.FLOODED
+	map.water_z = 0
+	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	map.set_cell(Vector3i(0, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
+	map.set_cell(Vector3i(1, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.SHELTER))
+	var swimmer := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER)
+	var on_roof := Unit.new(2, Vector3i(0, 0, 1), Taxonomy.Faction.PLAYER)
+	var under_cover := Unit.new(3, Vector3i(1, 0, 1), Taxonomy.Faction.PLAYER)
+	var state := _state_with([swimmer, on_roof, under_cover])
+	assert_eq(ExposureQuery.exposure(map, state, swimmer).state, Exposure.State.HIDDEN, "the swimmer can dive")
+	assert_eq(ExposureQuery.exposure(map, state, on_roof).state, Exposure.State.NO_HIDE, "an open roof is open")
+	assert_eq(ExposureQuery.exposure(map, state, under_cover).state, Exposure.State.HIDDEN, "shelter hides, as on Dry")
+
+
+func test_a_roof_over_falling_water_reads_the_same_as_over_flooded() -> void:
+	## The step changes nothing above the water.
+	for step in [Taxonomy.WaterStep.FLOODED, Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.MUD]:
+		var map := BowlMap.new()
+		map.water_step = step
+		map.water_z = 0
+		map.set_cell(Vector3i(0, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
+		var on_roof := Unit.new(1, Vector3i(0, 0, 1), Taxonomy.Faction.PLAYER)
+		assert_eq(
+			ExposureQuery.exposure(map, _state_with([on_roof]), on_roof).state, Exposure.State.NO_HIDE,
+			"open roof at %s" % Taxonomy.WaterStep.keys()[step]
+		)

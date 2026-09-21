@@ -38,9 +38,10 @@ static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> BowlMa
 	for x in range(0, 16):
 		for y in range(0, 10):
 			map.set_cell(Vector3i(x, y, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
-	## Pier extract (crate cover matches env_pier).
+	## Pier extract (crate cover matches env_pier). A floating dock rides the water on its guide
+	## piles, so its deck is dry at every step (GDD 5.8): the DECK flag, not the level, says so.
 	for x in range(1, 4):
-		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.CRATE))
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.CRATE, Taxonomy.CellFlags.DECK))
 	## Far-bank levee flanks — masonry cover with a sight corridor down the canal so the
 	## crest rifle can see the roof decks (plan 3.3).
 	for x in range(0, 16):

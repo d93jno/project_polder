@@ -10,7 +10,7 @@ static func move_cost(
 	from_cell: Vector3i = Vector3i(0, 0, -999999),
 ) -> int:
 	## Cost to *enter* cell. Pass from_cell to apply climb/dive surcharge.
-	var cost := RulesConstants.step_move_cost(map.water_step)
+	var cost := RulesConstants.step_move_cost(map.step_at(cell))
 	if from_cell.z != -999999 and from_cell.z != cell.z:
 		cost += RulesConstants.MOVE_COST_VERTICAL_SURCHARGE
 	return cost

@@ -28,7 +28,7 @@ static func check(map: BowlMap, state: CombatState, unit: Unit) -> Result:
 			return Result.BREAKS ## Kit, training and terrain waived (GDD §8.5)
 	if (
 		not unit.adapted
-		and map.water_step == Taxonomy.WaterStep.DRY
+		and map.step_at(unit.cell) == Taxonomy.WaterStep.DRY
 		and has_cqb_kit(unit)
 		and under_long_cone(map, state, unit)
 	):

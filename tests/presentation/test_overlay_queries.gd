@@ -235,5 +235,6 @@ func test_terrace_climb_path_matches_movement() -> void:
 	assert_eq(
 		path.total_cost,
 		RulesConstants.MOVE_COST_SWIM
-		+ 2 * (RulesConstants.MOVE_COST_SWIM + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE)
+		+ 2 * (RulesConstants.MOVE_COST_DRY + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE),
+		"a swim to the stair, then two dry climbs above the water (GDD 5.8)"
 	)

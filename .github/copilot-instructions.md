@@ -109,8 +109,10 @@ Single source for Claude Code (`CLAUDE.md`), `AGENTS.md` tools and Copilot. Edit
 - **Water depth is drawn, not looked up.** The plane sits at `PresentationCoords.water_surface_m`
   (never `water_height_m`: coplanar with the slabs it z-fights). In deep water bodies float, so
   anything the player points at uses `world_play` / `play_y`, bodies use `unit_origin`, and clicks
-  use `Picking.cell_under_ray`. Do not use `world_ground` for those. `Movement` never reads
-  `water_z`; `PresentationCoords.in_water` is the only "is this cell under water" test. Pieces in
+  use `Picking.cell_under_ray`. Do not use `world_ground` for those. The rules decide what is wet:
+  `BowlMap.is_wet` / `step_at` (GDD 5.8), and step cost, hiding and break's Dry clause read the step
+  through `step_at`, never `map.water_step`. `PresentationCoords.in_water` must agree with it; an
+  invariant test checks. Pieces in
   `PresentationCatalog.RIDES_WATER` (the pier) ride the surface; bodies on them stand on the deck.
 - **Fixtures and query helpers are preloaded, not `class_name`d**
   (`rules/fixtures/scripted_fight.gd`, `presentation/overlay_queries.gd`), so

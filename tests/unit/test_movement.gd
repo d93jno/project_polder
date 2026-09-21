@@ -326,3 +326,27 @@ func test_pinning_zeroes_ap_so_break_must_pass_a_budget() -> void:
 	assert_eq(pinned.ap, 0, "the state machine forfeits the AP")
 	assert_eq(Movement.reachable(map, state, pinned).size(), 1, "so the default sees no reach")
 	assert_gt(Movement.reachable(map, state, pinned, RulesConstants.AP_POOL).size(), 1)
+
+
+func test_dry_ground_above_the_water_costs_the_dry_cost() -> void:
+	## GDD 5.8: the step's cost applies to wet cells. A roof over a Flooded street is not swum.
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.FLOODED
+	map.water_z = 0
+	var unit := Unit.new()
+	var street := Vector3i(0, 0, 0)
+	var roof := Vector3i(0, 0, 1)
+	assert_eq(Movement.move_cost(map, street, unit), RulesConstants.MOVE_COST_SWIM, "the street is wet")
+	assert_eq(
+		Movement.move_cost(map, roof, unit, street),
+		RulesConstants.MOVE_COST_DRY + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE,
+		"climbing out pays the dry cost and the surcharge, not a swim"
+	)
+
+
+func test_a_docks_deck_costs_the_dry_cost() -> void:
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.FLOODED
+	map.water_z = 0
+	map.set_cell(Vector3i(1, 0, 0), Cell.new(Taxonomy.CoverMaterial.CRATE, Taxonomy.CellFlags.DECK))
+	assert_eq(Movement.move_cost(map, Vector3i(1, 0, 0), Unit.new()), RulesConstants.MOVE_COST_DRY)

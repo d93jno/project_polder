@@ -50,8 +50,9 @@ static func water_surface_m(step: Taxonomy.WaterStep, water_z: int) -> float:
 	return water_height_m(water_z) + float(WATER_DEPTH_M.get(step, 0.0))
 
 
-## Whether the drawn water covers this cell's floor. Geometry, not a rule: `Movement` prices the
-## step on every cell and never reads `water_z`, so this is the only place "under water" is decided.
+## Whether the drawn water covers this cell's floor. It must agree with `BowlMap.is_wet`, which is the
+## rule (GDD 5.8); tests/invariants/test_water_agrees_with_drawing.gd checks. Decks are the exception: the
+## picture puts a dock's deck on its own plane, so this geometry test does not consult the deck flag.
 static func in_water(cell: Vector3i, step: Taxonomy.WaterStep, water_z: int) -> bool:
 	if step != Taxonomy.WaterStep.FLOODED and step != Taxonomy.WaterStep.FALLING:
 		return false
