@@ -100,7 +100,7 @@ Because combat is deterministic, whether a body can be shot is a fact. Facts are
 | Exposed | At least one enemy has a clean line | On the unit, with the count and where from |
 | No hide | Standing where hiding is not available — Falling, open Dry | On the unit, in words |
 
-**Where from is what this unit can locate.** The count is every enemy with a clean line, seen or not. The *from* marks are the ones this unit can locate: those it sees itself, and those a teammate within earshot sees (GDD §3.1). A shooter only a distant teammate can see is counted and not located: *seen by 2, from 1*. The gap is the hidden watchers, and the interface says so in words.
+**Where from is what this unit can locate.** The count is every enemy with a clean line, seen or not. The *from* marks are the ones this unit can locate: those it sees itself, and those a teammate within earshot sees (GDD §3.1). Locate is by sight and knowledge, not the unit's weapon line — a plank does not hide a shooter the squad can see over. A shooter only a distant teammate can see is counted and not located: *seen by 2, from 1*. The gap is the hidden watchers, and the interface says so in words.
 
 **Per tile.** The move path carries the same three states tile by tile, so a player can see the step where cover ends before taking it. This is the read that makes diving (GDD §5.9) a decision rather than a hope, and it is how a player learns that Falling took the dive away without losing a unit to find out (section 15).
 

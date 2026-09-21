@@ -1,6 +1,9 @@
 class_name ExposureQuery
 extends Object
 ## Exposure is LOS run backwards (UI §17 / plan §1.3).
+## Count is every gun with a clean weapon line. Sources are what this unit can
+## locate: Live in its merged knowledge (own sight + earshot), not a second
+## weapon LOS — a plank does not hide a shooter you can see over (plan 04 §4.3).
 
 
 static func exposure(map: BowlMap, state: CombatState, unit: Unit) -> Exposure:
@@ -9,9 +12,10 @@ static func exposure(map: BowlMap, state: CombatState, unit: Unit) -> Exposure:
 	result.count = attackers.size()
 
 	for hostile in attackers:
-		## Locate the source only when this unit can see that hostile's body
-		## (mirrors cone apex: volume/count without giving away a hidden tile).
-		if Los.line_of_sight(map, unit.cell, hostile.cell, unit.weapon).clean:
+		if (
+			state.knowledge != null
+			and state.knowledge.merged_sight(state, unit, hostile.cell) == Knowledge.CellSight.LIVE
+		):
 			result.sources.append(hostile.cell)
 
 	if result.count > 0:

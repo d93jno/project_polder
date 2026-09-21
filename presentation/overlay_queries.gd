@@ -1,6 +1,9 @@
 extends RefCounted
 ## Pure overlay reads for the fight view (plan 2.3–2.4). The view may draw these
 ## fields only — never a parallel LOS / path / cone of its own.
+## Fog filters here, not in the view (plan 04 §4.3): hostiles and shot previews
+## only for Live squad cells; cone apex from squad Live; exposure sources from
+## per-unit merged knowledge inside ExposureQuery.
 ## Preload this script (no class_name) so headless tests do not need a global-class refresh.
 
 var exposure: Exposure = Exposure.new()
@@ -12,6 +15,8 @@ var hover_hostile: bool = false
 var hover_cover: bool = false
 ## One entry per live (unspent) Watch the view may draw.
 var watches: Array = [] ## Dictionary
+## Hostile bodies on cells that are Live in the squad's picture.
+var hostiles: Array = [] ## Unit
 
 ## Shot / line preview (UI §4.1 / §4.3).
 var shot_cost: int = 0
@@ -32,6 +37,7 @@ static func compute(
 	if unit == null or not unit.is_active():
 		return q
 	q.exposure = ExposureQuery.exposure(map, state, unit)
+	q.hostiles = _squad_live_hostiles(state)
 	## Stack the hovered coordinate even if the sparse map has no cell there (open air).
 	q.stack = Cones.cone_stack(map, state, hover)
 	q.stack_label = format_stack(q.stack)
@@ -44,6 +50,7 @@ static func compute(
 		and CombatState.is_hostile(unit.faction, occupant.faction)
 		and not occupant.extracted
 		and not occupant.dead
+		and _is_squad_live(state, occupant.cell)
 	):
 		q.hover_hostile = true
 		q.los = Los.line_of_sight(map, unit.cell, occupant.cell, unit.weapon)
@@ -69,7 +76,8 @@ static func compute(
 		if watcher == null or not watcher.is_active():
 			continue
 		var cells: Array[Vector3i] = Cones.cone(map, watcher.cell, live.facing, watcher.weapon)
-		var apex := Cones.apex_known(map, state, watcher.cell, Taxonomy.Faction.PLAYER)
+		## Apex from fog: Live in the squad picture, not a parallel Vision call.
+		var apex := _is_squad_live(state, watcher.cell)
 		var friendly := watcher.faction == Taxonomy.Faction.PLAYER
 		var full_volume := true
 		if friendly:
@@ -159,3 +167,23 @@ static func _unit_at(state: CombatState, cell: Vector3i) -> Unit:
 		if u.cell == cell and not u.extracted and not u.dead:
 			return u
 	return null
+
+
+static func _is_squad_live(state: CombatState, cell: Vector3i) -> bool:
+	if state.knowledge == null:
+		return false
+	return state.knowledge.squad_sight(state, cell) == Knowledge.CellSight.LIVE
+
+
+static func _squad_live_hostiles(state: CombatState) -> Array:
+	var out: Array = []
+	for u in state.all_units():
+		if u.dead or u.extracted:
+			continue
+		if u.faction == Taxonomy.Faction.PLAYER:
+			continue
+		if not CombatState.is_hostile(Taxonomy.Faction.PLAYER, u.faction):
+			continue
+		if _is_squad_live(state, u.cell):
+			out.append(u)
+	return out

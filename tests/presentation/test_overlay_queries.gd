@@ -167,6 +167,7 @@ func test_shot_outcome_pins_and_blocker() -> void:
 	var state := CombatState.new()
 	state.add_unit(player)
 	state.add_unit(enemy)
+	state.knowledge.peel(map, state)
 	var clean = Queries.compute(map, state, 1, enemy.cell)
 	assert_true(clean.hover_hostile)
 	assert_eq(clean.shot_outcome, "pins")
@@ -175,7 +176,9 @@ func test_shot_outcome_pins_and_blocker() -> void:
 	assert_false(clean.kills_bleeder)
 
 	map.set_cell(Vector3i(2, 0, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
+	## Knowledge still Live from the open peel — fog offers the body; the weapon line names the wall.
 	var blocked = Queries.compute(map, state, 1, enemy.cell)
+	assert_true(blocked.hover_hostile, "still offered while Live in knowledge")
 	assert_true(blocked.shot_outcome.begins_with("blocked:"))
 	assert_true(blocked.shot_outcome.contains("MASONRY") or blocked.shot_outcome.contains("masonry"))
 
@@ -191,6 +194,7 @@ func test_shot_outcome_kills_bleeder_and_unaffordable() -> void:
 	var state := CombatState.new()
 	state.add_unit(player)
 	state.add_unit(enemy)
+	state.knowledge.peel(map, state)
 	var q = Queries.compute(map, state, 1, enemy.cell)
 	assert_eq(q.shot_outcome, "kills a bleeder")
 	assert_true(q.kills_bleeder)
@@ -208,6 +212,7 @@ func test_shot_outcome_drops_to_bleeding() -> void:
 	var state := CombatState.new()
 	state.add_unit(player)
 	state.add_unit(enemy)
+	state.knowledge.peel(map, state)
 	var q = Queries.compute(map, state, 1, enemy.cell)
 	assert_eq(q.shot_outcome, "drops to Bleeding Out")
 

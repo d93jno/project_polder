@@ -24,9 +24,14 @@ func test_hidden_when_no_hostile_line() -> void:
 
 func test_exposed_count_and_sources() -> void:
 	var map := BowlMap.new()
+	for x in range(0, 5):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
 	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.RIFLE)
 	var enemy := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.DRIFTER, Taxonomy.WeaponClass.PISTOL)
-	var exp := ExposureQuery.exposure(map, _state_with([player, enemy]), player)
+	var state := _state_with([player, enemy])
+	state.map = map
+	state.knowledge.peel(map, state)
+	var exp := ExposureQuery.exposure(map, state, player)
 	assert_eq(exp.state, Exposure.State.EXPOSED)
 	assert_eq(exp.count, 1)
 	assert_eq(exp.sources.size(), 1)
@@ -34,15 +39,48 @@ func test_exposed_count_and_sources() -> void:
 
 
 func test_hidden_watcher_gap_count_exceeds_sources() -> void:
-	## Hostile rifle punches plank; player pistol cannot locate them through it.
+	## Earshot gap (plan 04 §4.3): scout peels the shooter Live; near locates; far does not.
 	var map := BowlMap.new()
+	for x in range(0, 11):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	map.set_cell(Vector3i(4, 0, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
+	var near := Unit.new(1, Vector3i(2, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var scout := Unit.new(2, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var far := Unit.new(3, Vector3i(8, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
+	var enemy := Unit.new(10, Vector3i(1, 0, 0), Taxonomy.Faction.VANGUARD, Taxonomy.WeaponClass.RIFLE)
+	var state := _state_with([near, scout, far, enemy])
+	state.map = map
+	state.knowledge.peel(map, state)
+	assert_eq(state.knowledge.own_sight(2, enemy.cell), Knowledge.CellSight.LIVE)
+	assert_eq(state.knowledge.own_sight(3, enemy.cell), Knowledge.CellSight.UNKNOWN)
+	assert_true(Comms.shares(state, near, scout))
+	assert_false(Comms.shares(state, far, scout))
+	## Near is under the rifle and locates via own/earshot Live.
+	var exp_near := ExposureQuery.exposure(map, state, near)
+	assert_eq(exp_near.count, 1)
+	assert_eq(exp_near.sources.size(), 1)
+	## Far is not under that gun (wall); merged knowledge still lacks the scout's peel.
+	var exp_far := ExposureQuery.exposure(map, state, far)
+	assert_eq(exp_far.count, 0)
+	assert_eq(state.knowledge.merged_sight(state, far, enemy.cell), Knowledge.CellSight.UNKNOWN)
+	assert_eq(state.knowledge.merged_sight(state, near, enemy.cell), Knowledge.CellSight.LIVE)
+
+
+func test_plank_no_longer_hides_a_located_source() -> void:
+	## The 4.1 plank shift: eyes see over soft cover, so locate follows sight after peel.
+	var map := BowlMap.new()
+	for x in range(0, 5):
+		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
 	map.set_cell(Vector3i(2, 0, 0), Cell.new(Taxonomy.CoverMaterial.PLANK))
 	var player := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER, Taxonomy.WeaponClass.PISTOL)
 	var enemy := Unit.new(2, Vector3i(4, 0, 0), Taxonomy.Faction.VANGUARD, Taxonomy.WeaponClass.RIFLE)
-	var exp := ExposureQuery.exposure(map, _state_with([player, enemy]), player)
-	assert_eq(exp.count, 1, "rifle hostile has a clean line")
-	assert_eq(exp.sources.size(), 0, "pistol cannot locate through plank")
-	assert_eq(exp.state, Exposure.State.EXPOSED)
+	var state := _state_with([player, enemy])
+	state.map = map
+	state.knowledge.peel(map, state)
+	var exp := ExposureQuery.exposure(map, state, player)
+	assert_eq(exp.count, 1)
+	assert_eq(exp.sources.size(), 1, "plank does not hide a shooter the squad can see over")
+	assert_eq(exp.sources[0], enemy.cell)
 
 
 func test_no_hide_on_falling() -> void:
