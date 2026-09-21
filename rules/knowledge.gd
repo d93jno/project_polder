@@ -121,6 +121,33 @@ func known_cells(state: CombatState) -> Dictionary:
 	return out
 
 
+## Visit stamp for the squad's best observation of `cell`, or -1 if Unknown.
+func squad_last_seen_visit(state: CombatState, cell: Vector3i) -> int:
+	var best_sight := CellSight.UNKNOWN
+	var best_visit := -1
+	if state == null:
+		return best_visit
+	for unit in state.units_of_faction(Taxonomy.Faction.PLAYER):
+		var rec := _record_or_empty(unit.id, cell)
+		var sight: CellSight = rec["sight"] as CellSight
+		var visit: int = int(rec["last_seen_visit"])
+		if sight > best_sight or (sight == best_sight and visit > best_visit):
+			best_sight = sight
+			best_visit = visit
+	return best_visit
+
+
+## Shader float for Known-quiet (0..1). Live and Unknown return 0 — fog_view draws neither.
+## Same-visit freeze still ages: visits_since 0 → 1/STALE_FULL_AFTER_VISITS (plan 04 §4.4 / §7.5).
+func staleness_of(state: CombatState, cell: Vector3i) -> float:
+	if squad_sight(state, cell) != CellSight.KNOWN_QUIET:
+		return 0.0
+	var last := squad_last_seen_visit(state, cell)
+	var since := maxi(0, visit_index - last)
+	var denom := float(maxi(RulesConstants.STALE_FULL_AFTER_VISITS, 1))
+	return clampf(float(since + 1) / denom, 0.0, 1.0)
+
+
 func to_dict() -> Dictionary:
 	var units_out: Dictionary = {}
 	for unit_id in _by_unit.keys():

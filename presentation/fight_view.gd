@@ -8,6 +8,7 @@ const _ConeView := preload("res://presentation/watch_cone_view.gd")
 const _Select := preload("res://presentation/selection_ring.gd")
 const _Hud := preload("res://presentation/hud.gd")
 const _Water := preload("res://presentation/water_plane.gd")
+const _FogView := preload("res://presentation/fog_view.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
 const _Queries := preload("res://presentation/overlay_queries.gd")
 const _Picking := preload("res://presentation/picking.gd")
@@ -46,6 +47,7 @@ var _camera: Camera3D
 var _hud
 var _bowl
 var _water
+var _fog
 var _units_root: Node3D
 var _cones_root: Node3D
 var _preview_root: Node3D
@@ -63,6 +65,8 @@ var _confirm_target_id: int = -1
 func _ready() -> void:
 	_bowl_id = _parse_bowl_arg()
 	_state = _opening()
+	## Opening peel: the squad sees its start tiles. Unknown elsewhere draws nothing (plan 04 §4.4).
+	_state.knowledge.peel(_state.map, _state)
 	_stamps = _stamps_for_bowl()
 	_player_ids = _ids_of(Taxonomy.Faction.PLAYER)
 	_selected_id = _player_ids[0] if not _player_ids.is_empty() else 1
@@ -152,7 +156,7 @@ func _build_world() -> void:
 	_bowl = _BowlDraw.new()
 	_bowl.name = "Bowl"
 	add_child(_bowl)
-	_bowl.draw_map(_state.map, _stamps)
+	_draw_bowl()
 	_max_z = _map_max_z(_state.map)
 	_cutaway_z = _max_z
 	_bowl.set_cutaway_z(_cutaway_z)
@@ -162,6 +166,10 @@ func _build_world() -> void:
 	add_child(_water)
 	_water.fit_map(_state.map)
 	_sync_water_from_map()
+
+	_fog = _FogView.new()
+	_fog.name = "Fog"
+	add_child(_fog)
 
 	var ridge := (load("res://assets/env/hero/env_ridge_farfield.glb") as PackedScene).instantiate()
 	ridge.name = "Ridge"
@@ -259,6 +267,8 @@ func _add_environment() -> void:
 
 
 func _redraw() -> void:
+	_draw_bowl()
+	_draw_fog()
 	_refresh_queries()
 	_draw_units()
 	_draw_cones()
@@ -274,6 +284,23 @@ func _redraw() -> void:
 		_select_ring.position = PresentationCoords.world_ground(sel.cell) + Vector3(0, 0.08, 0)
 
 
+func _draw_bowl() -> void:
+	if _bowl == null:
+		return
+	## Known-quiet ∪ Live only — Unknown draws nothing (plan 04 §4.4).
+	var known := _state.knowledge.known_cells(_state)
+	_bowl.draw_map(_state.map, _stamps, known)
+	_bowl.set_cutaway_z(_cutaway_z)
+
+
+func _draw_fog() -> void:
+	if _fog == null:
+		return
+	if _water != null:
+		_fog.reduced_motion = _water.reduced_motion
+	_fog.redraw(_state.map, _state)
+
+
 func _refresh_queries() -> void:
 	_queries = _Queries.compute(_state.map, _state, _selected_id, _hover)
 
@@ -282,6 +309,8 @@ func _draw_units() -> void:
 	for c in _units_root.get_children():
 		c.queue_free()
 	for u in _state.all_units():
+		if not _actor_visible(u):
+			continue
 		var view := _UnitView.new()
 		view.name = "U%d" % u.id
 		_units_root.add_child(view)
@@ -294,6 +323,18 @@ func _draw_units() -> void:
 		view.visible = view.visible and u.cell.z <= _cutaway_z
 		if view.visible and not u.extracted and not u.dead:
 			_spawn_hit_pips(view, u)
+
+
+## Squad always drawn. Other actors only on Live cells — reveal is not arrival (UI §6).
+func _actor_visible(u: Unit) -> bool:
+	if u.extracted:
+		return false
+	if u.faction == Taxonomy.Faction.PLAYER:
+		return true
+	return (
+		_state.knowledge != null
+		and _state.knowledge.squad_sight(_state, u.cell) == Knowledge.CellSight.LIVE
+	)
 
 
 func _draw_cones() -> void:
@@ -756,7 +797,7 @@ func _spawn_preview_label(origin: Vector3, text: String, pixel: float) -> void:
 
 func _unit_at(cell: Vector3i) -> Unit:
 	for u in _state.all_units():
-		if u.cell == cell and not u.extracted and not u.dead:
+		if u.cell == cell and not u.extracted and not u.dead and _actor_visible(u):
 			return u
 	return null
 
@@ -783,6 +824,8 @@ func _pick_cell() -> Vector3i:
 	## A body is a standing volume, not a point on the floor: pick it first, or a click on an
 	## enemy's torso lands on the tile behind their feet (a move instead of a shot).
 	var body := _Picking.body_under_ray(_state, _cutaway_z, origin, dir)
+	if not body.is_empty() and not _actor_visible(body["unit"] as Unit):
+		body = {}
 	## Ray vs the cutaway floor plane so roof tiles pick when that level is open.
 	var plane_y := float(_cutaway_z) * PresentationCoords.LEVEL_M
 	var t := (plane_y - origin.y) / dir.y

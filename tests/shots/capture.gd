@@ -105,6 +105,12 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway":
 			return _setup_terrace()
+		"terrace_fog_unknown":
+			return _setup_terrace_fog_unknown()
+		"terrace_fog_peeled":
+			return _setup_terrace_fog_peeled()
+		"street_fog_known_quiet":
+			return _setup_street_fog_known_quiet()
 		"adhoc":
 			return _setup_adhoc()
 		_:
@@ -205,6 +211,54 @@ func _setup_terrace() -> bool:
 	_fight._sync_water_from_map()
 	_fight._hover = Vector3i(4, 5, 2)
 	_fight._selected_id = 4 ## roof body
+	_fight._redraw()
+	return true
+
+
+func _setup_terrace_fog_unknown() -> bool:
+	## Opening peel only: far rooms stay Unknown (draw nothing). Needs --bowl=terrace.
+	if str(_fight.get("_bowl_id")) != "terrace":
+		push_error("shots: terrace_fog_unknown needs --bowl=terrace")
+		_exit_code = 1
+		return false
+	_fight._hover = Vector3i(2, 3, 0)
+	_fight._selected_id = 1
+	_fight._redraw()
+	return true
+
+
+func _setup_terrace_fog_peeled() -> bool:
+	## Peel a line into the authored interior clan so an occupant appears from vision, not arrival.
+	if str(_fight.get("_bowl_id")) != "terrace":
+		push_error("shots: terrace_fog_peeled needs --bowl=terrace")
+		_exit_code = 1
+		return false
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	var seer: Unit = _fight._state.get_unit(FloodedTerrace.P1)
+	var clan: Unit = _fight._state.get_unit(FloodedTerrace.ROOF_CLAN)
+	if seer == null or clan == null:
+		push_error("shots: missing seer or roof clan")
+		_exit_code = 1
+		return false
+	seer.cell = clan.cell
+	_fight._state.knowledge.peel(_fight._state.map, _fight._state)
+	_fight._selected_id = FloodedTerrace.P1
+	_fight._hover = clan.cell
+	_fight._cutaway_z = _fight._max_z
+	_fight._redraw()
+	return true
+
+
+func _setup_street_fog_known_quiet() -> bool:
+	## Wall mid-street, squad east of it: west freezes Known-quiet with the ageing veil.
+	var map: BowlMap = _fight._state.map
+	for y in range(0, 6):
+		map.set_cell(Vector3i(8, y, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
+	var piet: Unit = _fight._state.get_unit(1)
+	piet.cell = Vector3i(12, 3, 0)
+	_fight._state.knowledge.peel(map, _fight._state)
+	_fight._selected_id = 1
+	_fight._hover = Vector3i(12, 3, 0)
 	_fight._redraw()
 	return true
 

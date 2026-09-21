@@ -2,6 +2,7 @@ extends Node3D
 ## Instances kit meshes for every BowlMap cell via PresentationCatalog.
 ## Multi-cell kit pieces go through stamps (plan 3.2); single-cell keep piece_for_cell.
 ## The map is the source of truth; the catalog is the only mesh table.
+## Optional `known` filter (plan 04 §4.4): Unknown cells draw nothing — not a black quad.
 
 ## Cell → piece id last drawn (empty string = magenta marker).
 var pieces: Dictionary = {}
@@ -11,10 +12,11 @@ var cutaway_z: int = 99
 var _nodes_by_level: Dictionary = {} ## int → Array[Node3D]
 
 
-func draw_map(map: BowlMap, stamps: Array = []) -> void:
+func draw_map(map: BowlMap, stamps: Array = [], known: Dictionary = {}) -> void:
 	_clear()
 	pieces.clear()
 	_nodes_by_level.clear()
+	var filter := not known.is_empty()
 	var claimed: Dictionary = {}
 	for s in stamps:
 		for cell in PresentationCatalog.stamp_cells(s as Stamp):
@@ -22,6 +24,8 @@ func draw_map(map: BowlMap, stamps: Array = []) -> void:
 	var max_z := 0
 	for coord in map.cells.keys():
 		max_z = maxi(max_z, coord.z)
+		if filter and not known.has(coord):
+			continue
 		if claimed.has(coord):
 			var stamp: Stamp = claimed[coord]
 			pieces[coord] = stamp.piece_id
@@ -31,17 +35,27 @@ func draw_map(map: BowlMap, stamps: Array = []) -> void:
 		var yaw: float = choice.get("yaw", 0.0)
 		pieces[coord] = piece_id
 		_instance_piece(piece_id, PresentationCoords.world(coord), yaw, coord.z, "%s_%s" % [piece_id, coord])
-	draw_stamps(stamps)
+	draw_stamps(stamps, known)
 	cutaway_z = max_z
 	apply_cutaway()
 
 
 ## Instance each stamp once at its footprint centre. Safe to call after draw_map's cell pass.
-func draw_stamps(stamps: Array) -> void:
+## With a known filter, the stamp draws only when every footprint cell is known.
+func draw_stamps(stamps: Array, known: Dictionary = {}) -> void:
+	var filter := not known.is_empty()
 	for s in stamps:
 		var stamp: Stamp = s
 		if stamp.piece_id.is_empty():
 			continue
+		if filter:
+			var all_known := true
+			for cell in PresentationCatalog.stamp_cells(stamp):
+				if not known.has(cell):
+					all_known = false
+					break
+			if not all_known:
+				continue
 		var pos := PresentationCatalog.stamp_world_origin(stamp)
 		var node_name := "%s_%s" % [stamp.piece_id, stamp.origin]
 		_instance_piece(stamp.piece_id, pos, stamp.yaw, stamp.origin.z, node_name)

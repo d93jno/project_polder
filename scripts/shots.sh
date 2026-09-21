@@ -53,7 +53,7 @@ if [[ $# -gt 0 ]]; then
   exit $?
 fi
 
-SETUPS=(street_watch street_ap_spent street_yaw180 terrace_flooded terrace_falling terrace_roof_cutaway)
+SETUPS=(street_watch street_ap_spent street_yaw180 terrace_flooded terrace_falling terrace_roof_cutaway terrace_fog_unknown terrace_fog_peeled street_fog_known_quiet)
 rc=0
 
 for setup in "${SETUPS[@]}"; do

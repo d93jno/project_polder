@@ -11,12 +11,15 @@ const P3 := 3 ## medic
 const P4 := 4 ## starts on the roof
 const D_RIFLE := 10 ## levee crest Watch down the canal
 const D_PISTOL := 11 ## upstairs window (INTERIOR)
+## Authored interior occupant — seated at load; fog decides whether they are drawn (§7.6).
+const ROOF_CLAN := 20
 
 ## House A origin (stair + ladder column). House B beside it.
 const HOUSE_A := Vector3i(4, 5, 0)
 const HOUSE_B := Vector3i(6, 5, 0)
 const ROOF_A := Vector3i(4, 5, 2)
 const ROOF_B := Vector3i(7, 5, 2) ## shanty deck cell on house B
+const CLAN_CELL := Vector3i(7, 5, 0) ## authored occupant inside house B
 const STAIR := Vector3i(4, 5, 0)
 const LADDER := Vector3i(4, 5, 1)
 const INSIDE_A := Vector3i(4, 5, 0) ## stair-column ground room
@@ -74,6 +77,21 @@ static func _house_volume(map: BowlMap, origin: Vector3i) -> void:
 	else:
 		map.set_cell(Vector3i(origin.x, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
 		map.set_cell(Vector3i(origin.x + 1, origin.y, 2), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
+		## Ground interior of house B: authored occupant, unseen until a line in.
+		map.set_cell(
+			Vector3i(origin.x + 1, origin.y, 0),
+			Cell.new(Taxonomy.CoverMaterial.MASONRY, room, ROOF_CLAN)
+		)
+
+
+static func occupant_roster() -> Dictionary:
+	## id → { faction, weapon }. Smallest roster that seats authored Cell.occupant ids.
+	return {
+		ROOF_CLAN: {
+			"faction": Taxonomy.Faction.NEUTRAL,
+			"weapon": Taxonomy.WeaponClass.PISTOL,
+		},
+	}
 
 
 static func opening(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> CombatState:
@@ -94,4 +112,5 @@ static func opening(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> Co
 	state.add_unit(rifle)
 	state.add_watch(LiveWatch.new(D_RIFLE, Vector3i(0, -1, 0)))
 	state.add_unit(Unit.new(D_PISTOL, UPSTAIRS_B, DRIFTER, Taxonomy.WeaponClass.PISTOL))
+	Occupants.seat(state, occupant_roster())
 	return state
