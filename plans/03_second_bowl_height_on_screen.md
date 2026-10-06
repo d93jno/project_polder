@@ -1,6 +1,6 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.9 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.5 larger terrace, and the §7.2 yaw check.
+**Status:** 3.0–3.9 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.5 larger terrace.
 **Tracks:** GDD v1.17, UI/UX v0.17, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
@@ -296,7 +296,7 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 ### 7.2 — Wall fade: how much, and what
 
-**Decided:** keep the working default, still to be checked against a real second yaw before locking in UI §2. Working default: 25 % opacity, only pieces on the camera → friendly segment. Alternatives: fully hidden (fails UI §14's non-colour channel) or fade the whole run (hides more than it needs to). Check against a real second yaw before locking; record in UI §2.
+**Decided and checked:** keep the working default. Checked on the terrace at yaw 90, 180 and 270 (Flooded, default cutaway): every friendly stays visible and no tall piece covers one, so 25 % holds and nothing needed to change. The terrace's houses are cut away at that default, so the street's quay at yaw 180 (`street_yaw180`) remains the live guard for the fade itself. Working default: 25 % opacity, only pieces on the camera → friendly segment. Alternatives: fully hidden (fails UI §14's non-colour channel) or fade the whole run (hides more than it needs to). Check against a real second yaw before locking; record in UI §2.
 
 ### 7.3 — Is the ridge visible from a terrace bowl at the locked pitch? (**answered: no; fix: peek reveals it**, UI 0.16)
 
