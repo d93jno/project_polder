@@ -1,6 +1,6 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.7 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: §7.1, 7.2, 7.3, 7.5.
+**Status:** 3.0–3.7 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: §7.2, 7.3, 7.5; §7.1 decided, rule not yet built.
 **Tracks:** GDD v1.16, UI/UX v0.15, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
@@ -255,12 +255,13 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 ## 7. Decisions still needed
 
-### 7.1 — What makes a vertical step legal? (raise to GDD; does not block 3.3)
+### 7.1 — What makes a vertical step legal? (**decided: yes, connectors are a rule**; GDD and slice still to do)
 
 `Movement._neighbors` is a plain 6-neighbour flood, and `is_walkable` only checks material. So any two vertically adjacent placed cells are a legal climb for `swim + surcharge`, whatever the art between them. The kit has `env_stair`, `env_ladder`, `env_hatch`, and `humanoid` has a `climb` clip, but no rule says a climb needs one. A path preview can therefore be honest to the rules and still walk a unit through a ceiling.
 
 **Working default:** authoring lint (3.2 rule 4) — bowls may only stack walkable cells over a connector. No rule change.
-**Raise:** if the GDD wants connectors to be a rule (a `LINK` cell flag or similar), that is a Phase-1-style slice with tests, not a view change.
+**Decided:** yes. A vertical climb needs a connector (stair, ladder, hatch), and that is a rule, not just authoring lint. Still to do, in order: GDD wording (a `LINK` cell flag or similar), then a Phase-1-style slice with `Movement` and tests, then the 3.2 lint rule 4 becomes a check of the same rule. Until it lands the working default above stays in force.
+**Was:** if the GDD wants connectors to be a rule (a `LINK` cell flag or similar), that is a Phase-1-style slice with tests, not a view change.
 
 ### 7.2 — Wall fade: how much, and what
 
