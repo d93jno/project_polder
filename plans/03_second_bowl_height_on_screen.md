@@ -1,7 +1,7 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.6 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look
-**Tracks:** GDD v1.10, UI/UX v0.7, assets inventory §16 (P0 pack)
+**Status:** 3.0–3.7 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: §7.1, 7.2, 7.3, 7.5.
+**Tracks:** GDD v1.16, UI/UX v0.15, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
 **Goal:** a second authored bowl that is not a flat street — a Flooded terrace with houses, floors, roofs and a legal way up — that is asserted headlessly and playable on screen exactly as the first is; walls fade so the camera never hides a friendly; and on-screen breakage fails a command instead of being noticed by eye.
@@ -181,7 +181,7 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 3
 
 **Ships.**
 
-- `PresentationCoords.WATER_DEPTH_M`: Flooded 2.0 m (over a 1.7 m head: deep water hides a body), Falling 1.2 m (chest: it does not), Mud a film. `water_z` is now the level whose floor the water stands on; the step sets how deep. `in_water` is geometry (a floor below the surface), because `Movement` prices the step on every cell and never reads `water_z`.
+- `PresentationCoords.WATER_DEPTH_M`: Flooded 2.0 m (over a 1.7 m head: deep water hides a body), Falling 1.2 m (chest: it does not), Mud a film. `water_z` is now the level whose floor the water stands on; the step sets how deep. `in_water` is geometry (a floor below the surface). At 3.6 `Movement` still priced the step on every cell and never read `water_z`; 3.7 closed that, and `in_water` must now agree with `BowlMap.is_wet`.
 - Opacity per step in `water.gdshader`: Flooded near-opaque, Falling translucent, so whether the bottom shows carries the difference.
 - A **play plane**: bodies in deep water float on the surface (prone swim pose, spine at the surface; standing pose treads with head and shoulders out), and overlays and clicks use that surface. `world_play`, `play_y`, `unit_origin`, and `Picking.cell_under_ray`, which casts each open level at its own plane. The old pick reused the top plane's x/y for lower floors, which shifted a street click by the cutaway height (reproduced: aimed at (3,3,0) with every level open, it picked (0,3,0)).
 - Swim clip only where the water actually is (an upstairs floor no longer swims).
@@ -203,6 +203,8 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 - Three sites read the step through `step_at`: `Movement.move_cost` (the cell being entered), the hide read in `exposure.gd`, and the Dry clause of break (the unit's own cell).
 - The terrace's dock cells carry the `DECK` flag, so the rules and the drawing agree that the dock is dry.
 - `tests/invariants/test_water_agrees_with_drawing.gd`: what the rules call wet is exactly what `PresentationCoords.in_water` draws as water, and every dock cell is a deck.
+
+**Done when.** The invariant test is green, and the terrace and overlay tests assert the new costs: street to roof is a swim then two dry climbs, and a roof over a Flooded street has no hide unless it has shelter.
 
 **Consequences, asserted.** Street to roof is a swim, then two dry climbs: 6 AP, the whole pool. A roof over a Flooded street has no hide unless it has shelter, and a roof reads the same at every step. The Dry clause of break applies to an unadapted CQB unit on a roof under a long Watch (*working default*, GDD §10).
 
@@ -246,6 +248,8 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 **3.3 before 3.4.** Prove the bowl headless, then draw it. If a number is wrong, the mesh is not the place to find out.
 
 **3.5 last,** except the exposure de-duplication, which may land any time.
+
+**3.6 and 3.7 followed the on-screen review.** 3.6 drew the water at its real depth and made the rules gap visible (every cell priced as the step's water); 3.7 closed it in the rules (GDD 1.16) and added the invariant that rules and drawing agree on what is wet.
 
 ---
 
