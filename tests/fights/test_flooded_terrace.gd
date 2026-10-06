@@ -19,6 +19,17 @@ func _do(state: CombatState, cmd: Command) -> CombatState:
 	return cmd.apply(state)
 
 
+func test_terrace_footprint_is_20_by_14_and_every_ground_cell_is_placed() -> void:
+	var map := FloodedTerrace.map()
+	for x in FloodedTerrace.WIDTH:
+		for y in FloodedTerrace.DEPTH:
+			assert_true(map.has_cell(Vector3i(x, y, 0)), "ground cell (%d, %d)" % [x, y])
+	assert_eq(FloodedTerrace.WIDTH, 20)
+	assert_eq(FloodedTerrace.DEPTH, 14)
+	assert_false(map.has_cell(Vector3i(FloodedTerrace.WIDTH, 0, 0)))
+	assert_false(map.has_cell(Vector3i(0, FloodedTerrace.DEPTH, 0)))
+
+
 func test_terrace_passes_authoring_lint() -> void:
 	var failures := BowlAuthoring.lint(
 		FloodedTerrace.map(), TerraceStamps.stamps(), TerraceStamps.swim_columns()

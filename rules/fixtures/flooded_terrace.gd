@@ -27,6 +27,8 @@ const UPSTAIRS_B := Vector3i(6, 5, 1)
 const CANAL := Vector3i(3, 3, 0)
 const CREST := Vector3i(8, 9, 0)
 const PIER_ORIGIN := Vector3i(1, 0, 0)
+const WIDTH := 20 ## cells along x (was 16)
+const DEPTH := 14 ## cells along y (was 10)
 
 
 static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> BowlMap:
@@ -34,9 +36,10 @@ static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> BowlMa
 	map.water_step = step
 	## Street-level plane; Dry hides it in the view. Geometry is identical at every step.
 	map.water_z = 0
-	## 16×10 footprint: near pier, canal street, terrace houses, levee crest.
-	for x in range(0, 16):
-		for y in range(0, 10):
+	## 20×14 footprint (plan 3 §7.5): near pier, canal street, terrace houses, levee crest, and
+	## open bank east and north of them for flanking.
+	for x in range(0, WIDTH):
+		for y in range(0, DEPTH):
 			map.set_cell(Vector3i(x, y, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
 	## Pier extract (crate cover matches env_pier). A floating dock rides the water on its guide
 	## piles, so its deck is dry at every step (GDD 5.8): the DECK flag, not the level, says so.
@@ -44,7 +47,7 @@ static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> BowlMa
 		map.set_cell(Vector3i(x, 0, 0), Cell.new(Taxonomy.CoverMaterial.CRATE, Taxonomy.CellFlags.DECK))
 	## Far-bank levee flanks — masonry cover with a sight corridor down the canal so the
 	## crest rifle can see the roof decks (plan 3.3).
-	for x in range(0, 16):
+	for x in range(0, WIDTH):
 		if x >= 4 and x <= 11:
 			continue
 		map.set_cell(Vector3i(x, 8, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))

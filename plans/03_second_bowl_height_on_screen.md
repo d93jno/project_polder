@@ -1,6 +1,6 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.9 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.5 larger terrace.
+**Status:** 3.0–3.10 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. All of §7 decided and built.
 **Tracks:** GDD v1.17, UI/UX v0.17, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
@@ -241,6 +241,14 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 **What landed.** As above. A 12 m lift puts the ridge in the upper half of the frame; 24 m looks at empty sky, hence the 16 m cap.
 
+### 3.10 — A larger terrace (decision 7.5)
+
+**Ships.** `FloodedTerrace.WIDTH` (20) and `DEPTH` (14), replacing the hard-coded 16×10. The ground, the levee flanks along y = 8 and everything keyed off the map's extent (ridge placement) follow. Houses, dock, units and the crest keep their cells, so every existing fight test and shot stands; the new ground is open bank east and north for flanking.
+
+**Done when.** The suite is green, `test_terrace_footprint_is_20_by_14_and_every_ground_cell_is_placed` holds, and the terrace renders framed at all three zooms.
+
+**What landed.** As above. The ground is plain open cells: new authored content (more houses, cover, a second Watch) is not part of this slice and would be its own.
+
 ---
 
 ## 4. Explicitly out of scope
@@ -312,7 +320,7 @@ GDD §3.1: squad mode has "no AP coin, no End Turn, no Watch". `WatchCommand.val
 
 ### 7.5 — Terrace scale
 
-**Decided:** larger, about 20×14 cells (was ~16×10), accepting more art and more cones on screen; revisit if cone soup (UI §4.4) shows. Previous working default ~16×10 cells. Larger is more art and more cones on screen (UI §4.4 cone soup); smaller does not exercise three levels. Revisit after 3.3 shows how the numbers play.
+**Decided and built (3.10):** larger, 20×14 cells (was 16×10), accepting more art and more cones on screen; revisit if cone soup (UI §4.4) shows. Previous working default ~16×10 cells. Larger is more art and more cones on screen (UI §4.4 cone soup); smaller does not exercise three levels. Revisit after 3.3 shows how the numbers play.
 
 ---
 
