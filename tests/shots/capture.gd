@@ -106,7 +106,7 @@ func _apply_setup() -> bool:
 			return _setup_street_watch()
 		"street_yaw180":
 			return _setup_street_yaw180()
-		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway":
+		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek":
 			return _setup_terrace()
 		"terrace_water_bare", "terrace_falling_bare", "terrace_dock":
 			return _setup_terrace_water_bare()
@@ -211,6 +211,12 @@ func _setup_terrace() -> bool:
 	match _setup:
 		"terrace_flooded", "terrace_water_bare", "terrace_dock":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
+		"terrace_ridge_peek":
+			## Plan 3 §7.3: the ridge is out of frame at rest; a vertical peek reveals it.
+			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
+			_fight.get_node("CameraRig").set_process(false)
+			_fight.get_node("CameraRig").set("peek_lift_m", 12.0)
+			_fight.get_node("CameraRig").apply_pose()
 		"terrace_falling", "terrace_falling_bare":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
 		"terrace_roof_cutaway":
@@ -323,6 +329,8 @@ func _capture_and_probe() -> void:
 			_probe_falling_shows_bottom(img)
 		"terrace_dock":
 			_probe_dock_above_water(img)
+		"terrace_ridge_peek":
+			_probe_ridge_in_frame(img)
 		_:
 			pass
 
@@ -471,6 +479,16 @@ func _probe_falling_shows_bottom(img: Image) -> void:
 		_exit_code = 1
 	elif stats.spread < FALLING_BOTTOM_MIN_SPREAD:
 		push_error("shots: Falling water is a flat sheet, not water over a street: spread %.3f" % stats.spread)
+		_exit_code = 1
+
+
+## Guards plan 3 §7.3: the vertical peek must bring the ridge into frame. At rest that screen
+## position is dark water; with the ridge it is pale stone.
+func _probe_ridge_in_frame(img: Image) -> void:
+	var px := img.get_pixel(640, 250)
+	print("shots: ridge probe (640,250) lightness %.2f" % px.v)
+	if px.v < 0.55:
+		push_error("shots: ridge not in frame after the peek (lightness %.2f)" % px.v)
 		_exit_code = 1
 
 

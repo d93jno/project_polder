@@ -37,6 +37,28 @@ func test_snap_yaw_wraps_and_clears_peek() -> void:
 	rig.free()
 
 
+func test_snap_yaw_clears_the_vertical_peek() -> void:
+	var rig = Rig.new()
+	rig.ensure_camera()
+	rig.peek_lift_m = 10.0
+	rig.snap_yaw(1)
+	assert_eq(rig.peek_lift_m, 0.0)
+	rig.free()
+
+
+func test_peek_lift_tilts_the_view_up_without_moving_the_eye() -> void:
+	var rig = Rig.new()
+	rig.ensure_camera()
+	rig.apply_pose()
+	var rest_eye: Vector3 = rig.camera.transform.origin
+	var rest_fwd: Vector3 = -rig.camera.transform.basis.z
+	rig.peek_lift_m = 12.0
+	rig.apply_pose()
+	assert_almost_eq(rig.camera.transform.origin, rest_eye, Vector3.ONE * 0.001)
+	assert_gt((-rig.camera.transform.basis.z).y, rest_fwd.y, "the camera looks higher")
+	rig.free()
+
+
 func test_zoom_clamps_to_three_levels() -> void:
 	var rig = Rig.new()
 	rig.ensure_camera()

@@ -1,7 +1,7 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.8 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.3 peek look point, the §7.5 larger terrace, and the §7.2 yaw check.
-**Tracks:** GDD v1.17, UI/UX v0.16, assets inventory §16 (P0 pack)
+**Status:** 3.0–3.9 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.5 larger terrace, and the §7.2 yaw check.
+**Tracks:** GDD v1.17, UI/UX v0.17, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
 **Goal:** a second authored bowl that is not a flat street — a Flooded terrace with houses, floors, roofs and a legal way up — that is asserted headlessly and playable on screen exactly as the first is; walls fade so the camera never hides a friendly; and on-screen breakage fails a command instead of being noticed by eye.
@@ -226,6 +226,21 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 **What landed.** As above. Water does not replace a connector: swimming up between levels needs a link too.
 
+### 3.9 — Vertical peek reveals the ridge (decision 7.3)
+
+**Why.** At the locked pitch the ridge is out of frame on the terrace at rest, so UI §2's orientation read was not true there.
+
+**Ships.**
+
+- `PresentationCameraRig.peek_lift_m` (0 to 16 m): while peeking, mouse drag up raises the aim point and the eye stays put, so the camera tilts up. It springs back with the yaw peek, and `snap_yaw` and `reset_to_locked_policy` clear it.
+- UI §2 records the vertical peek (UI 0.17).
+- `tests/presentation/test_camera_rig.gd`: the lift tilts the view without moving the eye, and a yaw snap clears it.
+- Shot `terrace_ridge_peek` (lift 12 m) with a probe that the ridge, pale stone, is at (640,250), where the rest frame is dark water.
+
+**Done when.** The suite is green and `terrace_ridge_peek` shows the ridge.
+
+**What landed.** As above. A 12 m lift puts the ridge in the upper half of the frame; 24 m looks at empty sky, hence the 16 m cap.
+
 ---
 
 ## 4. Explicitly out of scope
@@ -287,7 +302,7 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 UI §2 says the ridge orients the player and is "visible from terrace bowls". At pitch 40.7° / FOV 25° / three zoom levels, the fight street shows only a thin sliver of it at the top edge. If the terrace at rest shows none either, that is a real finding for UI §18 (options: per-bowl look point or zoom, peek reveals it, or accept it is a peek/zoom-out read). It is not a reason to add a compass or move the ridge onto the tiles.
 
-**Answer: no.** The ridge is not visible from the terrace bowl at the locked pitch. UI §2's "visible from terrace bowls" is therefore wrong as written. **Chosen:** hold-to-peek raises the look point and reveals the ridge. UI §2, §7 and §18 are corrected (UI 0.16). Still to do: build the peek's raised look point for terrace bowls and add a shot that confirms the ridge shows. No compass, and the ridge does not move onto the tiles.
+**Answer: no.** The ridge is not visible from the terrace bowl at the locked pitch. UI §2's "visible from terrace bowls" is therefore wrong as written. **Chosen:** hold-to-peek raises the look point and reveals the ridge. UI §2, §7 and §18 are corrected (UI 0.16), and it is built in 3.9. No compass, and the ridge does not move onto the tiles.
 
 ### 7.4 — Watch before contact vs GDD §3.1 (found in review; **resolved after the phase**)
 

@@ -12,6 +12,11 @@ const YAW_STEP_DEG := 90.0
 const PEEK_MAX_DEG := 35.0
 const PEEK_SPRING_DEG_PER_SEC := 120.0
 const PEEK_MOUSE_SENS := 0.18
+## Vertical peek (plan 3 §7.3): drag up while peeking and the camera tilts up from where it stands,
+## so the ridge on the horizon comes into frame. It is a look-point raise, not a move.
+const PEEK_LIFT_MAX_M := 16.0
+const PEEK_LIFT_SPRING_M_PER_SEC := 40.0
+const PEEK_LIFT_MOUSE_SENS := 0.06
 ## Mid distance matches the P0 rest arm length (~42.2 m).
 const ZOOM_DISTANCES := [30.0, 42.2, 58.0]
 const DEFAULT_LOOK := Vector3(8.0, 3.0, 2.0)
@@ -29,6 +34,7 @@ var yaw_index: int = REST_YAW_INDEX
 var zoom_index: int = REST_ZOOM_INDEX
 var orthographic: bool = LOCKED_ORTHOGRAPHIC
 var peek_deg: float = 0.0
+var peek_lift_m: float = 0.0
 
 var camera: Camera3D
 
@@ -46,9 +52,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _peek_held or _alt_held:
 		return
-	if is_zero_approx(peek_deg):
+	if is_zero_approx(peek_deg) and is_zero_approx(peek_lift_m):
 		return
 	peek_deg = move_toward(peek_deg, 0.0, PEEK_SPRING_DEG_PER_SEC * delta)
+	peek_lift_m = move_toward(peek_lift_m, 0.0, PEEK_LIFT_SPRING_M_PER_SEC * delta)
 	apply_pose()
 
 
@@ -96,6 +103,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			peek_deg = clampf(
 				peek_deg + motion.relative.x * PEEK_MOUSE_SENS, -PEEK_MAX_DEG, PEEK_MAX_DEG
 			)
+			peek_lift_m = clampf(
+				peek_lift_m - motion.relative.y * PEEK_LIFT_MOUSE_SENS, 0.0, PEEK_LIFT_MAX_M
+			)
 			apply_pose()
 			get_viewport().set_input_as_handled()
 
@@ -123,6 +133,7 @@ func focus(point: Vector3) -> void:
 func snap_yaw(direction: int) -> void:
 	yaw_index = posmod(yaw_index + direction, 4)
 	peek_deg = 0.0
+	peek_lift_m = 0.0
 	apply_pose()
 
 
@@ -140,6 +151,7 @@ func toggle_projection() -> void:
 func reset_to_locked_policy() -> void:
 	orthographic = LOCKED_ORTHOGRAPHIC
 	peek_deg = 0.0
+	peek_lift_m = 0.0
 	apply_pose()
 
 
@@ -166,11 +178,12 @@ func apply_pose() -> void:
 	var offset := eye_offset(dist, PITCH_DEG, yaw_degrees())
 	var eye := look_at_point + offset
 	## look_at() needs the tree; builders pack offline.
+	var aim := look_at_point + Vector3.UP * peek_lift_m
 	if camera.is_inside_tree():
 		camera.position = eye
-		camera.look_at(look_at_point)
+		camera.look_at(aim)
 	else:
-		camera.transform = Transform3D(Basis.IDENTITY, eye).looking_at(look_at_point, Vector3.UP)
+		camera.transform = Transform3D(Basis.IDENTITY, eye).looking_at(aim, Vector3.UP)
 	if orthographic:
 		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 		camera.size = dist * tan(deg_to_rad(FOV_DEG * 0.5))
