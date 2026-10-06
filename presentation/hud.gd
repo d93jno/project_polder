@@ -82,6 +82,25 @@ func set_phase_yours(yours: bool) -> void:
 	_phase.texture = load(PresentationCatalog.UI_THEME + file) as Texture2D
 
 
+## Top-right icon that shows whose phase it is; a left click asks to end the phase.
+func _make_phase_button() -> TextureRect:
+	_phase = _icon(PresentationCatalog.UI_THEME + "ui_phase_yours.png")
+	_phase.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_phase.offset_left = -80
+	_phase.offset_top = 16
+	_phase.offset_right = -16
+	_phase.offset_bottom = 80
+	_phase.custom_minimum_size = Vector2(64, 64)
+	_phase.mouse_filter = Control.MOUSE_FILTER_STOP
+	_phase.gui_input.connect(_on_phase_input)
+	return _phase
+
+
+func _on_phase_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		end_phase_pressed.emit()
+
+
 func set_height_read(text: String) -> void:
 	_height.text = text
 	_height.visible = not text.is_empty()
@@ -142,19 +161,7 @@ func _build() -> void:
 	status.add_child(_pin)
 	status.add_child(_watch)
 
-	_phase = _icon(PresentationCatalog.UI_THEME + "ui_phase_yours.png")
-	_phase.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_phase.offset_left = -80
-	_phase.offset_top = 16
-	_phase.offset_right = -16
-	_phase.offset_bottom = 80
-	_phase.custom_minimum_size = Vector2(64, 64)
-	_phase.mouse_filter = Control.MOUSE_FILTER_STOP
-	_phase.gui_input.connect(func(ev: InputEvent) -> void:
-		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-			end_phase_pressed.emit()
-	)
-	root.add_child(_phase)
+	root.add_child(_make_phase_button())
 
 	_note = Label.new()
 	_note.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)

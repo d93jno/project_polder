@@ -7,6 +7,8 @@ const _UnitView := preload("res://presentation/unit_view.gd")
 const _ConeView := preload("res://presentation/watch_cone_view.gd")
 const _Select := preload("res://presentation/selection_ring.gd")
 const _Hud := preload("res://presentation/hud.gd")
+## Safety cap on shots in one enemy phase so a bad state cannot loop forever.
+const MAX_ENEMY_SHOTS := 16
 const _Water := preload("res://presentation/water_plane.gd")
 const _FogView := preload("res://presentation/fog_view.gd")
 const _CameraRig := preload("res://presentation/camera_rig.gd")
@@ -572,32 +574,32 @@ func _end_phase() -> void:
 		_hud.set_note("no End Turn until contact")
 		return
 	_state = _state.end_phase()
-	if _state.active_side == CombatState.PhaseSide.ENEMY:
-		_run_enemy_phase()
+	_run_enemy_phase()
 	_redraw()
 
 
+## Placeholder enemy turn: take legal shots one at a time, then hand the phase back.
 func _run_enemy_phase() -> void:
-	var guard := 16
-	while _state.active_side == CombatState.PhaseSide.ENEMY and guard > 0:
-		guard -= 1
-		var shot := false
-		for enemy in _state.units_on_side(CombatState.PhaseSide.ENEMY):
-			if not enemy.is_active():
-				continue
-			for player in _state.units_of_faction(Taxonomy.Faction.PLAYER):
-				if not player.is_active() and not player.bleeding:
-					continue
-				var cmd := ShootCommand.new(enemy.id, player.id)
-				if cmd.validate(_state).ok:
-					_state = cmd.apply(_state)
-					shot = true
-					break
-			if shot:
-				break
-		if not shot:
-			_state = _state.end_phase()
+	for _i in MAX_ENEMY_SHOTS:
+		var shot := _first_legal_enemy_shot()
+		if shot == null:
 			break
+		_state = shot.apply(_state)
+	_state = _state.end_phase()
+
+
+## The first valid enemy-on-player shot in unit order, or null when none is left.
+func _first_legal_enemy_shot() -> ShootCommand:
+	for enemy in _state.units_on_side(CombatState.PhaseSide.ENEMY):
+		if not enemy.is_active():
+			continue
+		for player in _state.units_of_faction(Taxonomy.Faction.PLAYER):
+			if not player.is_active() and not player.bleeding:
+				continue
+			var cmd := ShootCommand.new(enemy.id, player.id)
+			if cmd.validate(_state).ok:
+				return cmd
+	return null
 
 
 func _cycle_selected() -> void:
