@@ -13,6 +13,7 @@ var _exposure: TextureRect
 var _pin: TextureRect
 var _watch: TextureRect
 var _phase: TextureRect
+var _phase_caption: Label
 var _names: Array[Label] = []
 var _slots: Array[Control] = []
 var _height: Label
@@ -80,6 +81,8 @@ func set_watch_spent(spent: bool) -> void:
 func set_phase_yours(yours: bool) -> void:
 	var file := "ui_phase_yours.png" if yours else "ui_phase_theirs.png"
 	_phase.texture = load(PresentationCatalog.UI_THEME + file) as Texture2D
+	_phase_caption.text = "END\nPHASE" if yours else "ENEMY\nPHASE"
+	_phase.tooltip_text = "End your phase" if yours else "Enemy phase in progress"
 
 
 func set_height_read(text: String) -> void:
@@ -154,7 +157,16 @@ func _build() -> void:
 		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			end_phase_pressed.emit()
 	)
+	_phase_caption = Label.new()
+	_phase_caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_phase_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_phase_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_phase_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_phase_caption.add_theme_font_size_override("font_size", 13)
+	_outline(_phase_caption)
+	_phase.add_child(_phase_caption)
 	root.add_child(_phase)
+	set_phase_yours(true)
 
 	_note = Label.new()
 	_note.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
