@@ -34,6 +34,20 @@ func is_wet(coord: Vector3i) -> bool:
 	return cell == null or not cell.has_flag(Taxonomy.CellFlags.DECK)
 
 
+## GDD 5.3: a vertical step needs a connector. It is legal between two vertically adjacent cells
+## when either carries the LINK flag; a step on the same level needs no link.
+func can_step(from_cell: Vector3i, to_cell: Vector3i) -> bool:
+	if from_cell.z == to_cell.z:
+		return true
+	if from_cell.x != to_cell.x or from_cell.y != to_cell.y:
+		return false
+	for coord in [from_cell, to_cell]:
+		var cell: Cell = get_cell(coord)
+		if cell != null and cell.has_flag(Taxonomy.CellFlags.LINK):
+			return true
+	return false
+
+
 ## The step that governs this cell. The step's move cost, its hiding and the Dry clause of break
 ## are read through here, so they apply to wet cells alone; dry ground is Dry (GDD 5.8).
 func step_at(coord: Vector3i) -> Taxonomy.WaterStep:

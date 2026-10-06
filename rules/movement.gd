@@ -79,7 +79,7 @@ static func cost_to_nearest(
 		frontier.append(t)
 	while not frontier.is_empty():
 		var settled: Vector3i = _pop_min(frontier, dist)
-		for t in _neighbors(settled):
+		for t in _neighbors(map, settled):
 			if not is_free(map, state, t, unit) and t != unit.cell:
 				continue
 			var cost: int = (dist[settled] as int) + move_cost(map, settled, unit, t)
@@ -108,7 +108,7 @@ static func _flood(
 		var current: Vector3i = _pop_min(frontier, cost_so_far)
 		if stop_at != null and current == stop_at:
 			break
-		for next_cell in _neighbors(current):
+		for next_cell in _neighbors(map, current):
 			if not is_free(map, state, next_cell, unit):
 				continue
 			var step := move_cost(map, next_cell, unit, current)
@@ -219,7 +219,15 @@ static func _watches_crossed(
 	return crossings
 
 
-static func _neighbors(cell: Vector3i) -> Array[Vector3i]:
+static func _neighbors(map: BowlMap, cell: Vector3i) -> Array[Vector3i]:
+	var out: Array[Vector3i] = []
+	for n in _six_neighbors(cell):
+		if map.can_step(cell, n):
+			out.append(n)
+	return out
+
+
+static func _six_neighbors(cell: Vector3i) -> Array[Vector3i]:
 	return [
 		cell + Vector3i(1, 0, 0),
 		cell + Vector3i(-1, 0, 0),

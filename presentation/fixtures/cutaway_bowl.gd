@@ -23,6 +23,9 @@ static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED, water_z: 
 	## One roof deck above the street — cutaway and roof pick target.
 	map.set_cell(ROOF, Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
 	map.set_cell(Vector3i(4, 1, 1), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
+	## The two ladders (stamps below) link street to roof (GDD 5.3).
+	for ladder in [Vector3i(3, 1, 0), Vector3i(4, 1, 0)]:
+		map.get_cell(ladder).flags |= Taxonomy.CellFlags.LINK
 	## Plank between street and rifle (soft cover / long word).
 	map.set_cell(PLANK, Cell.new(Taxonomy.CoverMaterial.PLANK))
 	## Smoke hides a watcher apex (unresolved cone).

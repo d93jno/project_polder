@@ -49,6 +49,7 @@ class CellFlags:
 	const DECK := 1 << 1
 	const SWIMMABLE := 1 << 2
 	const INTERIOR := 1 << 3
+	const LINK := 1 << 4 ## Lower cell of a stair, ladder or hatch: the only legal vertical step (GDD 5.3)
 
 
 ## Bit flags for Unit.scars. Permanent, known penalties (GDD §8.5) — never a chance roll.

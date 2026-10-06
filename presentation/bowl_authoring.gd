@@ -21,6 +21,7 @@ static func lint(
 	failures.append_array(_no_orphan_cells(map, stamps))
 	failures.append_array(_no_overlaps(stamps))
 	failures.append_array(_no_invisible_climb(map, stamps, swim_columns))
+	failures.append_array(_links_match_connectors(map, stamps))
 	return failures
 
 
@@ -139,6 +140,25 @@ static func _no_invisible_climb(
 		out.append(
 			"invisible climb: walkable %s ↔ %s with no stair/ladder/hatch" % [coord, above]
 		)
+	return out
+
+
+## GDD 5.3: the LINK flag is the rule, the connector stamp is the picture. Each must say the same.
+static func _links_match_connectors(map: BowlMap, stamps: Array) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var linked: Dictionary = _connector_links(stamps)
+	for key in linked.keys():
+		var p: PackedStringArray = (key as String).split(",")
+		var lower := Vector3i(int(p[0]), int(p[1]), int(p[2]))
+		if not map.has_cell(lower):
+			continue
+		if not map.can_step(lower, lower + Vector3i(0, 0, 1)):
+			out.append("connector drawn but not linked: no LINK flag at %s or above it" % lower)
+	for coord_any in map.cells.keys():
+		var coord: Vector3i = coord_any
+		var cell: Cell = map.get_cell(coord)
+		if cell.has_flag(Taxonomy.CellFlags.LINK) and not linked.has("%d,%d,%d" % [coord.x, coord.y, coord.z]):
+			out.append("LINK flag with no stair/ladder/hatch drawn at %s" % coord)
 	return out
 
 

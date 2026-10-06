@@ -1,7 +1,7 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.7 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.1 connector rule, the §7.3 peek look point, the §7.5 larger terrace, and the §7.2 yaw check.
-**Tracks:** GDD v1.16, UI/UX v0.16, assets inventory §16 (P0 pack)
+**Status:** 3.0–3.8 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: all of §7 decided; to build: the §7.3 peek look point, the §7.5 larger terrace, and the §7.2 yaw check.
+**Tracks:** GDD v1.17, UI/UX v0.16, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
 **Goal:** a second authored bowl that is not a flat street — a Flooded terrace with houses, floors, roofs and a legal way up — that is asserted headlessly and playable on screen exactly as the first is; walls fade so the camera never hides a friendly; and on-screen breakage fails a command instead of being noticed by eye.
@@ -31,7 +31,7 @@
 | Truth | **Cells are data; stamps are the draw table** | A multi-cell kit piece (house, deck, stair) is a `Stamp` over cells. It never adds a rule. A lint test proves stamps and cells agree. |
 | Wall fade | **Presentation only, geometry math, no physics** | Same posture as mouse picking (Phase 2 §1): input/view only, never consulted by `rules/`. It never changes LOS, cover tags or the hover text. |
 | What may fade | **Only for friendlies** | UI §2: the camera never hides a unit the player controls. A fade must never be the way a hostile becomes visible; fog will own that later. |
-| Vertical moves | **No rule change in this phase** | `Movement` allows a step between any two vertically adjacent placed cells. Authoring lint enforces "connectors only"; whether the rule needs a link flag is a GDD question (§7.1). |
+| Vertical moves | **No rule change in this phase (superseded by 3.8)** | `Movement` allows a step between any two vertically adjacent placed cells. Authoring lint enforces "connectors only"; whether the rule needs a link flag is a GDD question (§7.1). |
 | Entry point | `make run BOWL=terrace` | Default stays the scripted street. Passes `-- --bowl=terrace`. No in-game bowl picker. |
 | Render smoke | **`make shots`**, real renderer, not part of `make test` | Needs a GPU and a display. Fails on shader/script errors and a few pixel probes. Not golden-image diffs (driver-fragile). |
 | Fixture ownership | **One opening, two consumers** (as 2.6) | `rules/fixtures/flooded_terrace.gd` is loaded by the headless fight *and* the view. The view forks nothing. |
@@ -210,6 +210,22 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 **What landed.** As above. Terrace and overlay tests that hard-coded the old swim-everywhere costs now assert the new ones.
 
+### 3.8 — Connectors are a rule (GDD 1.17, §5.3; decision 7.1)
+
+**Why.** `Movement` flooded to all six neighbours, so a path preview could walk a unit through a ceiling; only authoring lint stood in the way.
+
+**Ships.**
+
+- `Taxonomy.CellFlags.LINK`, on the lower cell of each stair, ladder or hatch rise.
+- `BowlMap.can_step(from, to)`: a step on the same level is free; a vertical step needs the same column and a LINK on either cell. `Movement._neighbors` reads it, so `path`, `reachable` and `cost_to_nearest` agree.
+- The terrace's house A (stair then ladder) and the cutaway bowl's two ladders carry the flag.
+- Lint: a drawn connector must have its LINK, and a LINK must have a drawn connector.
+- `tests/unit/test_movement.gd` (no link, no climb; a link opens no sideways step) and `tests/presentation/test_bowl_authoring.gd`.
+
+**Done when.** The suite is green and a link-less vertical step is unreachable.
+
+**What landed.** As above. Water does not replace a connector: swimming up between levels needs a link too.
+
 ---
 
 ## 4. Explicitly out of scope
@@ -260,7 +276,7 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 `Movement._neighbors` is a plain 6-neighbour flood, and `is_walkable` only checks material. So any two vertically adjacent placed cells are a legal climb for `swim + surcharge`, whatever the art between them. The kit has `env_stair`, `env_ladder`, `env_hatch`, and `humanoid` has a `climb` clip, but no rule says a climb needs one. A path preview can therefore be honest to the rules and still walk a unit through a ceiling.
 
 **Working default:** authoring lint (3.2 rule 4) — bowls may only stack walkable cells over a connector. No rule change.
-**Decided:** yes. A vertical climb needs a connector (stair, ladder, hatch), and that is a rule, not just authoring lint. Still to do, in order: GDD wording (a `LINK` cell flag: a vertical step is legal only between two cells where one carries it), then a Phase-1-style slice with `Movement` and tests, then the 3.2 lint rule 4 becomes a check of the same rule. Until it lands the working default above stays in force.
+**Decided and built in 3.8:** a vertical climb needs a connector (stair, ladder, hatch), as the `LINK` cell flag (GDD 1.17, §5.3).
 **Was:** if the GDD wants connectors to be a rule (a `LINK` cell flag or similar), that is a Phase-1-style slice with tests, not a view change.
 
 ### 7.2 — Wall fade: how much, and what

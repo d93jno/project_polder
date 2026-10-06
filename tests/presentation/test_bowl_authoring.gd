@@ -25,6 +25,20 @@ func test_cutaway_passes_lint() -> void:
 	assert_eq(failures, PackedStringArray(), "\n".join(failures))
 
 
+func test_a_drawn_connector_without_a_link_fails_lint() -> void:
+	var map := CutawayBowl.map()
+	map.get_cell(Vector3i(3, 1, 0)).flags &= ~Taxonomy.CellFlags.LINK
+	var failures := BowlAuthoring.lint(map, CutawayBowl.stamps())
+	assert_true("\n".join(failures).contains("connector drawn but not linked"))
+
+
+func test_a_link_without_a_connector_fails_lint() -> void:
+	var map := CutawayBowl.map()
+	map.get_cell(Vector3i(0, 0, 0)).flags |= Taxonomy.CellFlags.LINK
+	var failures := BowlAuthoring.lint(map, CutawayBowl.stamps())
+	assert_true("\n".join(failures).contains("LINK flag with no"))
+
+
 func test_cutaway_without_ladders_fails_invisible_climb() -> void:
 	## The expected first failure before the fixture gained connector stamps.
 	var stamps: Array = [Stamp.new("env_roof_deck_a", CutawayBowl.ROOF, 0.0)]

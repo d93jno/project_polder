@@ -48,7 +48,7 @@ func test_climb_and_dive_add_vertical_surcharge() -> void:
 func test_path_climb_is_reachable() -> void:
 	var map := BowlMap.new()
 	map.water_step = Taxonomy.WaterStep.DRY
-	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.LINK))
 	map.set_cell(Vector3i(0, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
 	var unit := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER)
 	var state := CombatState.new()
@@ -57,6 +57,29 @@ func test_path_climb_is_reachable() -> void:
 	assert_true(path.reachable)
 	assert_eq(path.cells, [Vector3i(0, 0, 0), Vector3i(0, 0, 1)] as Array[Vector3i])
 	assert_eq(path.cost_per_cell[1], RulesConstants.MOVE_COST_DRY + RulesConstants.MOVE_COST_VERTICAL_SURCHARGE)
+
+
+func test_a_climb_needs_a_connector() -> void:
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.DRY
+	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR))
+	map.set_cell(Vector3i(0, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
+	var unit := Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER)
+	var state := CombatState.new()
+	state.add_unit(unit)
+	assert_false(Movement.path(map, state, unit, Vector3i(0, 0, 1)).reachable, "no link, no climb")
+	assert_does_not_have(Movement.reachable(map, state, unit), Vector3i(0, 0, 1))
+	map.get_cell(Vector3i(0, 0, 1)).flags |= Taxonomy.CellFlags.LINK
+	assert_true(Movement.path(map, state, unit, Vector3i(0, 0, 1)).reachable, "a link on either cell is enough")
+
+
+func test_a_link_does_not_open_a_sideways_step() -> void:
+	var map := BowlMap.new()
+	map.water_step = Taxonomy.WaterStep.DRY
+	map.set_cell(Vector3i(0, 0, 0), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.LINK))
+	map.set_cell(Vector3i(1, 0, 1), Cell.new(Taxonomy.CoverMaterial.AIR))
+	assert_false(map.can_step(Vector3i(0, 0, 0), Vector3i(1, 0, 1)))
+	assert_true(map.can_step(Vector3i(0, 0, 0), Vector3i(0, 0, 1)))
 
 
 func test_shot_reserve_moves_when_ap_changes() -> void:

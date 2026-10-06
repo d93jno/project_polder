@@ -72,7 +72,9 @@ static func _house_volume(map: BowlMap, origin: Vector3i) -> void:
 			else:
 				map.set_cell(ground, Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
 	if is_a:
-		map.set_cell(Vector3i(origin.x, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
+		## The stair (z 0 to 1) and the ladder (z 1 to 2) each link up from their lower cell.
+		map.get_cell(Vector3i(origin.x, origin.y, 0)).flags |= Taxonomy.CellFlags.LINK
+		map.set_cell(Vector3i(origin.x, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room | Taxonomy.CellFlags.LINK))
 		map.set_cell(Vector3i(origin.x + 1, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
 		map.set_cell(Vector3i(origin.x, origin.y, 2), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
 	else:
