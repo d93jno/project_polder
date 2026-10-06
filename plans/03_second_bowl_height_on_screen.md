@@ -1,6 +1,6 @@
 # Phase 3 — The second bowl: height, walls, water through a house
 
-**Status:** 3.0–3.7 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: §7.2, 7.3, 7.5; §7.1 decided, rule not yet built.
+**Status:** 3.0–3.7 completed — Flooded terrace headless + on screen; wall fade; stamps/lint; render smoke; exposure split; water depth look; water stands at a level. Open: §7.2, 7.5; §7.3 answered (no), UI fix pending; §7.1 decided, rule not yet built.
 **Tracks:** GDD v1.16, UI/UX v0.15, assets inventory §16 (P0 pack)
 **Depends on:** Phase 2 complete (`plans/02_debug_view_rules_on_screen.md`, 2.0–2.6); its §7.1–7.2 camera lock is in force.
 **Naming:** "Phase 3" here is the third *implementation plan*. It is unrelated to the GDD's "Phase 3: The Compound" (§3.2), which is a base phase.
@@ -267,9 +267,11 @@ Open: a diegetic freeboard or waterline read is the UI §2 height read the user 
 
 Working default: 25 % opacity, only pieces on the camera → friendly segment. Alternatives: fully hidden (fails UI §14's non-colour channel) or fade the whole run (hides more than it needs to). Check against a real second yaw before locking; record in UI §2.
 
-### 7.3 — Is the ridge visible from a terrace bowl at the locked pitch?
+### 7.3 — Is the ridge visible from a terrace bowl at the locked pitch? (**answered: no**; UI §18 follow-up open)
 
 UI §2 says the ridge orients the player and is "visible from terrace bowls". At pitch 40.7° / FOV 25° / three zoom levels, the fight street shows only a thin sliver of it at the top edge. If the terrace at rest shows none either, that is a real finding for UI §18 (options: per-bowl look point or zoom, peek reveals it, or accept it is a peek/zoom-out read). It is not a reason to add a compass or move the ridge onto the tiles.
+
+**Answer: no.** The ridge is not visible from the terrace bowl at the locked pitch. UI §2's "visible from terrace bowls" is therefore wrong as written. Still to do: pick one of the options above for UI §18 (per-bowl look point or zoom, a peek that reveals it, or accept it as a peek/zoom-out read) and correct the UI §2 wording, bumping its version line. No compass, and the ridge does not move onto the tiles.
 
 ### 7.4 — Watch before contact vs GDD §3.1 (found in review; **resolved after the phase**)
 
