@@ -125,3 +125,16 @@ func test_the_undo_history_never_writes_to_the_map_or_a_state_it_holds() -> void
 	assert_eq(held.get_unit(1).cell, Vector3i(0, 0, 0))
 	assert_eq(state.get_unit(1).cell, Vector3i(0, 0, 0), "recording changed nothing")
 	assert_true(_map_matches(map, snap), "the shared map is untouched")
+
+
+func test_a_machine_command_leaves_the_state_it_was_applied_to_alone() -> void:
+	var map := _corridor(4)
+	var state := _fight(map)
+	state.in_contact = true
+	state.active_side = CombatState.PhaseSide.PLAYER
+	state.add_machine(Machine.new(Vector3i(1, 0, 0), Machine.Kind.PUMP, false))
+	var snap := _snapshot(map)
+	var next := MachineCommand.new(1, Vector3i(1, 0, 0)).apply(state)
+	assert_true(next.machine_at(Vector3i(1, 0, 0)).on)
+	assert_false(state.machine_at(Vector3i(1, 0, 0)).on, "the parent's machine did not move")
+	assert_true(_map_matches(map, snap), "and the shared map is untouched")

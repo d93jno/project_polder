@@ -6,7 +6,6 @@ enum Kind {
 	GENERIC,
 	TRAUMA_KIT,
 	KNOCK, ## Knock a shelter: contact if a hostile is in it, a meeting or a quiet night if not
-	MACHINE, ## Start a machine: contact if a Live hostile stands on its tile
 }
 
 var unit_id: int
@@ -66,8 +65,6 @@ func _starts_contact(state: CombatState) -> bool:
 	match kind:
 		Kind.KNOCK:
 			return Contact.knock_starts_contact(state, unit, target_cell)
-		Kind.MACHINE:
-			return Contact.machine_starts_contact(state.map, state, unit, target_cell)
 		_:
 			return false
 

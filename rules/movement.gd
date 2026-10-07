@@ -79,7 +79,7 @@ static func cost_to_nearest(
 		frontier.append(t)
 	while not frontier.is_empty():
 		var settled: Vector3i = _pop_min(frontier, dist)
-		for t in _neighbors(map, settled):
+		for t in _neighbors(map, state, settled):
 			if not is_free(map, state, t, unit) and t != unit.cell:
 				continue
 			var cost: int = (dist[settled] as int) + move_cost(map, settled, unit, t)
@@ -108,7 +108,7 @@ static func _flood(
 		var current: Vector3i = _pop_min(frontier, cost_so_far)
 		if stop_at != null and current == stop_at:
 			break
-		for next_cell in _neighbors(map, current):
+		for next_cell in _neighbors(map, state, current):
 			if not is_free(map, state, next_cell, unit):
 				continue
 			var step := move_cost(map, next_cell, unit, current)
@@ -219,10 +219,25 @@ static func _watches_crossed(
 	return crossings
 
 
-static func _neighbors(map: BowlMap, cell: Vector3i) -> Array[Vector3i]:
+## GDD 5.3: a vertical step needs a connector. A hatch at the lower cell decides alone: open lets the
+## climb through even with no LINK flag, closed stops it even with one. Otherwise the map's LINK flag
+## decides, so there is no second flag to drift (plan 06 §6.0).
+static func can_step(map: BowlMap, state: CombatState, from_cell: Vector3i, to_cell: Vector3i) -> bool:
+	if from_cell.z == to_cell.z:
+		return true
+	if from_cell.x != to_cell.x or from_cell.y != to_cell.y:
+		return false
+	var lower := from_cell if from_cell.z < to_cell.z else to_cell
+	var hatch: Machine = state.machine_at(lower)
+	if hatch != null and hatch.kind == Machine.Kind.HATCH:
+		return hatch.on
+	return map.can_step(from_cell, to_cell)
+
+
+static func _neighbors(map: BowlMap, state: CombatState, cell: Vector3i) -> Array[Vector3i]:
 	var out: Array[Vector3i] = []
 	for n in _six_neighbors(cell):
-		if map.can_step(cell, n):
+		if can_step(map, state, cell, n):
 			out.append(n)
 	return out
 

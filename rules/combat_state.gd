@@ -27,6 +27,8 @@ var knowledge_store: KnowledgeStore = null
 ## Last cell where a player unit went down — wipe anchor (§7.10).
 var last_player_down_cell: Vector3i = Vector3i.ZERO
 var has_last_player_down: bool = false
+## Machines on the bowl, by cell (plan 06). Their state is fight state: copied with the rest, never shared.
+var machines: Dictionary = {} ## Vector3i -> Machine
 
 
 enum FightOutcome {
@@ -113,10 +115,20 @@ func duplicate_state() -> CombatState:
 	copy.has_last_player_down = has_last_player_down
 	for unit in units.values():
 		copy.units[unit.id] = unit.duplicate_unit()
+	for machine in machines.values():
+		copy.machines[machine.cell] = machine.duplicate_machine()
 	for watch in watches:
 		var w: LiveWatch = watch
 		copy.watches.append(LiveWatch.new(w.unit_id, w.facing, w.spent))
 	return copy
+
+
+func add_machine(machine: Machine) -> void:
+	machines[machine.cell] = machine
+
+
+func machine_at(cell: Vector3i) -> Machine:
+	return machines.get(cell)
 
 
 func spend_watch(unit_id: int) -> void:

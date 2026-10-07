@@ -163,18 +163,25 @@ func test_the_player_firing_starts_contact() -> void:
 	assert_false(state.in_contact)
 
 
+func _with_pump(state: CombatState, cell: Vector3i) -> CombatState:
+	state.add_machine(Machine.new(cell, Machine.Kind.PUMP))
+	return state
+
+
 func test_starting_a_machine_on_a_tile_with_a_live_hostile_is_contact() -> void:
 	var map := _map()
-	var state := _walk(map, [_u(1, Vector3i(0, 0, 0), PLAYER), _u(10, Vector3i(4, 0, 0), DRIFTER)])
-	var start := InteractCommand.new(1, Vector3i(4, 0, 0), InteractCommand.Kind.MACHINE)
+	var state := _walk(map, [_u(1, Vector3i(3, 0, 0), PLAYER), _u(10, Vector3i(4, 0, 0), DRIFTER)])
+	_with_pump(state, Vector3i(4, 0, 0))
+	var start := MachineCommand.new(1, Vector3i(4, 0, 0))
 	assert_true(Contact.is_live(map, state, state.get_unit(10)), "precondition: the squad can see it")
 	assert_true(start.apply(state).in_contact)
 
 
 func test_starting_a_machine_nobody_is_standing_at_is_not() -> void:
 	var map := _map()
-	var state := _walk(map, [_u(1, Vector3i(0, 0, 0), PLAYER), _u(10, Vector3i(8, 4, 0), DRIFTER)])
-	assert_false(InteractCommand.new(1, Vector3i(4, 0, 0), InteractCommand.Kind.MACHINE).apply(state).in_contact)
+	var state := _walk(map, [_u(1, Vector3i(3, 0, 0), PLAYER), _u(10, Vector3i(8, 4, 0), DRIFTER)])
+	_with_pump(state, Vector3i(4, 0, 0))
+	assert_false(MachineCommand.new(1, Vector3i(4, 0, 0)).apply(state).in_contact)
 
 
 func test_a_hostile_the_squad_cannot_see_does_not_make_a_machine_contested() -> void:
@@ -182,7 +189,7 @@ func test_a_hostile_the_squad_cannot_see_does_not_make_a_machine_contested() -> 
 	map.set_cell(Vector3i(2, 0, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
 	var state := _walk(map, [_u(1, Vector3i(0, 0, 0), PLAYER), _u(10, Vector3i(4, 0, 0), DRIFTER)])
 	assert_false(Contact.is_live(map, state, state.get_unit(10)), "precondition: walled off")
-	assert_false(InteractCommand.new(1, Vector3i(4, 0, 0), InteractCommand.Kind.MACHINE).apply(state).in_contact)
+	assert_false(Contact.machine_starts_contact(map, state, state.get_unit(1), Vector3i(4, 0, 0)))
 
 
 ## --- Walking ---
