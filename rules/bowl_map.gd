@@ -54,6 +54,17 @@ func step_at(coord: Vector3i) -> Taxonomy.WaterStep:
 	return water_step if is_wet(coord) else Taxonomy.WaterStep.DRY
 
 
+## A map that shares this one's cells and owns its own water (plan 06 §6.1, §7.1). The cells stay
+## read-only and shared; only `water_step` and `water_z` differ. This is how a command changes the
+## water mid-fight without writing a map another state is still reading.
+func with_water(step: Taxonomy.WaterStep, z: int) -> BowlMap:
+	var copy := BowlMap.new()
+	copy.cells = cells ## the same dictionary on purpose: cells are never written during a fight
+	copy.water_step = step
+	copy.water_z = z
+	return copy
+
+
 func remove_cell(coord: Vector3i) -> void:
 	cells.erase(coord)
 

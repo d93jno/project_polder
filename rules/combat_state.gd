@@ -123,6 +123,12 @@ func duplicate_state() -> CombatState:
 	return copy
 
 
+## Change the water this state reads (plan 06 §6.1). Call it only on a state you own, such as the
+## `next` a command is building: it swaps in a new map and never touches the one other states share.
+func redirect_water(step: Taxonomy.WaterStep, z: int) -> void:
+	map = map.with_water(step, z)
+
+
 func add_machine(machine: Machine) -> void:
 	machines[machine.cell] = machine
 

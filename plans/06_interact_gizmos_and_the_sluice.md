@@ -1,6 +1,6 @@
 # Phase 6 — Interact gizmos and the sluice: machines you can start, and water you can point
 
-**Status:** 6.0 completed; 6.1–6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
+**Status:** 6.0–6.1 completed; 6.2–6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §3.1 (contact), §5.3 (AP), §5.6 (objectives: start / hold / stop the machine), §6.4 (redirection), §6.5 (the first-contact sluice); UI/UX v0.19 §3 (mid-fight water), §4.4 (reaction preview), §5 (confirm tier).
 **Depends on:** Phase 5 (`plans/05_commit_and_undo.md`) — a sluice is a Confirmed-tier action, and it goes through the one confirm prompt and the undo history. Phase 4 — "is it Live?" for the knock, the hatch and the machine comes from fog. Phase 3 — the terrace is the bowl the machines are authored on.
 **Goal:** the three things the terrace has been waiting for. A machine is data on a bowl with a state a command can change; interacting with one prices itself, names the Watches it would trigger and whether a Live hostile contests it before the player commits; and opening the sluice changes the water the whole rules layer reads, with a preview that shows exactly which cells change and what of the squad's stands in them.
@@ -69,6 +69,8 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint from 6
 **Ships.** The mechanism of §7.1: `BowlMap.with_water(step, z)` returns a map that shares the cell store and owns its own water, and `CombatState` swaps `map` for it when a redirection lands. No `Movement`, `Exposure` or `BreakRule` call site changes, because they already read water through `map.step_at`.
 
 **Done when.** After a redirection, the new state's `map.step_at` differs and the old state's map is untouched; `Movement` prices the new step on the new state and the old one on the old; `tests/invariants/test_water_agrees_with_drawing.gd` still passes for both; the F debug toggle is the only writer of a shared map (a test greps for it).
+
+**What landed.** `BowlMap.with_water(step, z)` (a new map sharing the same `cells` dictionary and owning its two water fields) and `CombatState.redirect_water(step, z)`, which swaps `map` for it on a state the caller owns. No rule changed: `Movement`, exposure and break already read water through `map.step_at`. `tests/invariants/test_redirection.gd` asserts that the cell store is shared and the water is not, that a redirected state leaves its parent's map and `step_at` alone, that `Movement` prices each state's own step, that a roof stays dry, that the picture (`PresentationCoords.in_water`) still agrees with `is_wet` after a redirection, that two redirections branch independently, and that only `fight_view.gd`'s F toggle assigns `map.water_step` or `map.water_z` anywhere in `rules/` (fixtures excepted) or `presentation/`. Nothing calls `redirect_water` yet; the sluice does in 6.2.
 
 ### 6.2 — The sluice
 
