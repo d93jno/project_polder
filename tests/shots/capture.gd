@@ -106,6 +106,8 @@ func _apply_setup() -> bool:
 			return _setup_street_watch()
 		"street_yaw180":
 			return _setup_street_yaw180()
+		"street_undo_shown", "street_undo_hidden":
+			return _setup_street_undo()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek":
 			return _setup_terrace()
 		"terrace_water_bare", "terrace_falling_bare", "terrace_dock":
@@ -171,6 +173,18 @@ func _setup_street_watch() -> bool:
 	_fight._draw_preview()
 	_fight._draw_overlay_labels()
 	_fight._sync_hud()
+	return true
+
+
+## Plan 05 §5.2, through the real command path. A step along ground the opening already peeled
+## reveals nothing, so it can be taken back (`street_undo_shown`). A walk toward the hostiles peels
+## fog and enters their lines, so it stands and nothing can be undone (`street_undo_hidden`).
+func _setup_street_undo() -> bool:
+	_fight._selected_id = 1
+	var home: Vector3i = _fight._state.get_unit(1).cell
+	var step := Vector3i(0, -1, 0) if _setup == "street_undo_shown" else Vector3i(2, 0, 0)
+	_fight._try(FreeMoveCommand.new(1, home + step))
+	_fight._redraw()
 	return true
 
 
@@ -323,6 +337,10 @@ func _capture_and_probe() -> void:
 			_probe_spent_ap_darker(img)
 		"street_yaw180":
 			_probe_quay_faded()
+		"street_undo_shown":
+			_probe_undo(img, true)
+		"street_undo_hidden":
+			_probe_undo(img, false)
 		"terrace_water_bare":
 			_probe_water_not_zfighting(img)
 		"terrace_falling_bare":
@@ -383,6 +401,25 @@ func _probe_spent_ap_darker(img: Image) -> void:
 		_exit_code = 1
 		return
 	print("shots: AP probe ok lit=%s spent=%s" % [lit_l, spent_l])
+
+
+## Plan 05 §5.2: the Undo control is present exactly when the history can act, and that is the
+## history's answer, not the view's own guess. When shown, its pixels must differ from the scene.
+func _probe_undo(img: Image, expect_shown: bool) -> void:
+	var can: bool = _fight._history.can_undo()
+	var shown: bool = _fight._hud.undo_visible()
+	print("shots: undo probe can_undo=%s visible=%s" % [can, shown])
+	if can != expect_shown or shown != expect_shown:
+		push_error("shots: undo control state wrong (can_undo=%s visible=%s, expected %s)" % [can, shown, expect_shown])
+		_exit_code = 1
+		return
+	if expect_shown:
+		var px := img.get_pixel(img.get_width() - 48, 104)
+		var bg := img.get_pixel(img.get_width() - 120, 104)
+		print("shots: undo button pixel lum %.2f vs scene %.2f" % [px.get_luminance(), bg.get_luminance()])
+		if absf(px.get_luminance() - bg.get_luminance()) < 0.04:
+			push_error("shots: undo control is not drawn where the HUD puts it")
+			_exit_code = 1
 
 
 ## Plan 3.1 — yaw 180 must fade the tall quay; hover cover word stays masonry.

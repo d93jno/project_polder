@@ -3,6 +3,7 @@ extends CanvasLayer
 
 signal slot_pressed(index: int)
 signal end_phase_pressed
+signal undo_pressed
 
 const _KEY := preload("res://presentation/mint_key.gdshader")
 
@@ -14,6 +15,7 @@ var _pin: TextureRect
 var _watch: TextureRect
 var _phase: TextureRect
 var _phase_caption: Label
+var _undo: Button
 var _names: Array[Label] = []
 var _slots: Array[Control] = []
 var _height: Label
@@ -83,6 +85,16 @@ func set_phase_yours(yours: bool) -> void:
 	_phase.texture = load(PresentationCatalog.UI_THEME + file) as Texture2D
 	_phase_caption.text = "END\nPHASE" if yours else "ENEMY\nPHASE"
 	_phase.tooltip_text = "End your phase" if yours else "Enemy phase in progress"
+
+
+## The control exists only while it can act, so its presence is the signal (UI §14: not colour).
+func set_undo_available(available: bool) -> void:
+	if _undo != null:
+		_undo.visible = available
+
+
+func undo_visible() -> bool:
+	return _undo != null and _undo.visible
 
 
 func set_height_read(text: String) -> void:
@@ -157,6 +169,19 @@ func _build() -> void:
 		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			end_phase_pressed.emit()
 	)
+	_undo = Button.new()
+	_undo.text = "UNDO"
+	_undo.tooltip_text = "Take back the last move (U). Only a move that revealed nothing can be undone."
+	_undo.focus_mode = Control.FOCUS_NONE
+	_undo.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_undo.offset_left = -80
+	_undo.offset_right = -16
+	_undo.offset_top = 88
+	_undo.offset_bottom = 120
+	_undo.visible = false
+	_undo.pressed.connect(func() -> void: undo_pressed.emit())
+	root.add_child(_undo)
+
 	_phase_caption = Label.new()
 	_phase_caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_phase_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

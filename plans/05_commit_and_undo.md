@@ -1,7 +1,7 @@
 # Phase 5 — Commit and undo: what stands, and what the player can take back
 
-**Status:** 5.0–5.1 completed; 5.2–5.4 not built. Slices 5.0–5.4 below; §7 decisions locked.
-**Tracks:** GDD v1.17 §3.1 (free movement until contact), §5.3 (AP), §5.5 (MEDEVAC, bleeders), §8.2 (Ironman); UI/UX v0.17 §5 (what commits), §3 (mid-fight water).
+**Status:** completed — 5.0–5.4 shipped. Slices 5.0–5.4 below; §7 decisions locked.
+**Tracks:** GDD v1.18 §3.1 (free movement until contact), §5.3 (AP), §5.5 (MEDEVAC, bleeders), §8.2 (Ironman); UI/UX v0.19 §5 (what commits), §3 (mid-fight water).
 **Depends on:** Phase 4 (`plans/04_fog_what_the_squad_knows.md`), specifically 4.5: `RevealResult` and `Command.apply_outcome` are the fact this plan spends.
 **Goal:** the four tiers of UI §5 (free, reversible, committed, confirmed) exist in code, not only in prose. A move that revealed nothing can be taken back; one that revealed anything stands; the ugly irreversible actions ask once and state their cost. The interface never implies a tier it does not enforce.
 
@@ -77,17 +77,23 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint when t
 
 **Done when.** On the scripted street a walk then Undo restores unit position, AP and the drawn overlays; a walk that peels fog shows no Undo; a `make shots` setup captures the control present and absent.
 
+**What landed.** `fight_view` keeps one `CommandHistory`; `_try` runs `apply_outcome` and records it, `_end_phase` clears it, `_undo` restores the held state. The HUD has an `UNDO` button under End Phase, visible only while `can_undo()`, and U or Ctrl+Z. Shots `street_undo_shown` (a step over ground the opening already peeled) and `street_undo_hidden` (a walk toward the hostiles, which peels and enters their lines) probe that the control tracks the history and is drawn where the HUD puts it.
+
 ### 5.3 — One confirm
 
 **Ships.** `ConfirmPrompt`: an action registers a label and a cost line; the first click arms it and states the cost, the second commits, Esc cancels. The bleeder shot moves onto it, and the registration is where First Gauge, a sluice opening and dispatch attach later.
 
 **Done when.** The bleeder shot behaves exactly as today through the new path (existing test stays green); arming then moving the hover cancels; the prompt text names the cost and never a probability (UI §1).
 
+**What landed.** `presentation/confirm_prompt.gd` (preloaded, not `class_name`d): `press` arms or commits, `cancel`, `hover_moved`, and `text_for`, which says what it does and its AP cost. `fight_view._try` asks `cmd.needs_confirm(state)` and routes through it, so the hand-built `_confirm_target_id` and its branch in `_click_cell` are gone; clicking a hostile just tries the shot. `tests/presentation/test_confirm_prompt.gd`. The hover line still says "CONFIRM kills a bleeder" while armed.
+
 ### 5.4 — Housekeeping
 
 **Ships.** UI §5 and §18 ticked for what is built, and the committed row naming Watch set (7.4); the Trauma Kit registered as a confirm action pending the MEDEVAC slice.
 
 **Done when.** `make test` green, docs match the code, and nothing in `fight_view` decides a tier.
+
+**What landed.** UI 0.19: §5 describes the Undo control and the confirm, the committed row names any act and setting a Watch, the §18 undo and confirm items are ticked, and the architecture note says undo holds the previous state. The Trauma Kit confirms through `InteractCommand.needs_confirm` (5.0); nothing in the view triggers a Trauma Kit yet, so the registration is asserted in `test_commit_policy.gd` and `test_confirm_prompt.gd` rather than on screen. `fight_view` decides no tier: it asks `needs_confirm` and `CommandHistory.record`.
 
 ---
 

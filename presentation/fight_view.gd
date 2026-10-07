@@ -59,7 +59,10 @@ var _max_z: int = 0
 var _queries
 var _labels_root: Node3D
 var _wall_fade
-var _confirm_target_id: int = -1
+const ConfirmPrompt := preload("res://presentation/confirm_prompt.gd")
+
+var _confirm = ConfirmPrompt.new()
+var _history := CommandHistory.new()
 
 
 func _ready() -> void:
@@ -75,7 +78,7 @@ func _ready() -> void:
 	_build_world()
 	_redraw()
 	_hud.set_note(
-		"click walk until contact · shoot · Q Watch · Space phase · Tab select · F water step · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
+		"click walk until contact · shoot · U undo · Q Watch · Space phase · Tab select · F water step · Esc cancel · [ ] yaw · wheel zoom · MMB peek"
 	)
 
 
@@ -113,9 +116,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				## Four-step water cycle on the shared BowlMap (plan 3.4 / UI §3).
 				_cycle_water_step()
 				get_viewport().set_input_as_handled()
+			KEY_U:
+				_undo()
+				get_viewport().set_input_as_handled()
+			KEY_Z:
+				if event.ctrl_pressed or event.meta_pressed:
+					_undo()
+					get_viewport().set_input_as_handled()
 			KEY_ESCAPE:
-				if _confirm_target_id != -1:
-					_confirm_target_id = -1
+				if _confirm.is_armed():
+					_confirm.cancel()
 					_hud.set_note("")
 					_redraw()
 					get_viewport().set_input_as_handled()
@@ -125,6 +135,10 @@ func _process(dt: float) -> void:
 	var cell := _pick_cell()
 	if cell != _hover and cell != _INVALID:
 		_hover = cell
+		if _confirm.is_armed():
+			_confirm.hover_moved(cell)
+			if not _confirm.is_armed():
+				_hud.set_note("")
 		_refresh_queries()
 		_draw_cones()
 		_draw_preview()
@@ -204,6 +218,7 @@ func _build_world() -> void:
 	add_child(_hud)
 	_hud.slot_pressed.connect(_on_slot)
 	_hud.end_phase_pressed.connect(_end_phase)
+	_hud.undo_pressed.connect(_undo)
 
 	_wall_fade = _WallFade.new()
 	_wall_fade.name = "WallFade"
@@ -521,7 +536,7 @@ func _spawn_hit_pips(parent: Node3D, u: Unit) -> void:
 func _click_cell(cell: Vector3i) -> void:
 	var occupant := _unit_at(cell)
 	if occupant != null and occupant.faction == Taxonomy.Faction.PLAYER:
-		_confirm_target_id = -1
+		_confirm.cancel()
 		_selected_id = occupant.id
 		_redraw()
 		return
@@ -529,20 +544,9 @@ func _click_cell(cell: Vector3i) -> void:
 	if actor == null:
 		return
 	if occupant != null and CombatState.is_hostile(actor.faction, occupant.faction):
-		var los := Los.line_of_sight(_state.map, actor.cell, occupant.cell, actor.weapon)
-		if los.clean and occupant.bleeding:
-			if _confirm_target_id == occupant.id:
-				_confirm_target_id = -1
-				_try(ShootCommand.new(actor.id, occupant.id))
-			else:
-				_confirm_target_id = occupant.id
-				_hud.set_note("confirm: kills a bleeder — click again · Esc cancels")
-				_redraw()
-			return
-		_confirm_target_id = -1
 		_try(ShootCommand.new(actor.id, occupant.id))
 		return
-	_confirm_target_id = -1
+	_confirm.cancel()
 	if _state.in_contact:
 		_try(MoveCommand.new(actor.id, cell))
 	else:
@@ -562,7 +566,27 @@ func _try(cmd: Command) -> void:
 	if not check.ok:
 		_hud.set_note(check.reason)
 		return
-	_state = cmd.apply(_state)
+	if cmd.needs_confirm(_state) and not _confirm.press(cmd, _hover):
+		_hud.set_note(ConfirmPrompt.text_for(cmd, _state))
+		_redraw()
+		return
+	_confirm.cancel()
+	var before := _state
+	var outcome := cmd.apply_outcome(before)
+	_history.record(cmd, before, outcome)
+	_state = outcome.state
+	_hud.set_note("")
+	_redraw()
+
+
+## Take back the last reversible move (UI §5). The rules say what is reversible, not this.
+func _undo() -> void:
+	var previous := _history.undo()
+	if previous == null:
+		_hud.set_note("nothing to undo: a move that revealed something stands")
+		return
+	_confirm.cancel()
+	_state = previous
 	_hud.set_note("")
 	_redraw()
 
@@ -571,6 +595,8 @@ func _end_phase() -> void:
 	if not _state.in_contact:
 		_hud.set_note("no End Turn until contact")
 		return
+	_history.clear()
+	_confirm.cancel()
 	_state = _state.end_phase()
 	if _state.active_side == CombatState.PhaseSide.ENEMY:
 		_run_enemy_phase()
@@ -623,6 +649,7 @@ func _sync_hud() -> void:
 	if _queries == null:
 		_refresh_queries()
 	_hud.set_selected(_player_ids.find(_selected_id))
+	_hud.set_undo_available(_history.can_undo())
 	_hud.set_ap(u.ap, RulesConstants.AP_POOL)
 	_hud.set_hits(u.hp, RulesConstants.HP_PIPS)
 	_hud.set_bleed_rounds(u.bleed_rounds_left if u.bleeding else 0)
@@ -661,7 +688,7 @@ func _sync_hud() -> void:
 		hover_txt += "  cost %d" % _queries.shot_cost
 		if not _queries.shot_affordable:
 			hover_txt += "  unaffordable"
-	if _confirm_target_id != -1:
+	if _confirm.is_armed():
 		hover_txt += "  CONFIRM kills a bleeder"
 	var step_name := str(Taxonomy.WaterStep.keys()[_state.map.water_step])
 	## Exposure word lives on the body (plan 3.5); HUD carries count and sources.
