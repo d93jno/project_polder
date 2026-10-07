@@ -62,6 +62,8 @@ var _wall_fade
 const ConfirmPrompt := preload("res://presentation/confirm_prompt.gd")
 
 var _confirm = ConfirmPrompt.new()
+var _water_old ## the previous water, drawn only while a change plays (plan 06 6.4)
+var _water_tween: Tween
 var _history := CommandHistory.new()
 
 
@@ -581,6 +583,8 @@ func _try(cmd: Command) -> void:
 	var outcome := cmd.apply_outcome(before)
 	_history.record(cmd, before, outcome)
 	_state = outcome.state
+	if before.map != _state.map and cmd is MachineCommand:
+		_play_water_change(before.map, cmd.machine_cell)
 	_hud.set_note("")
 	_redraw()
 
@@ -592,7 +596,9 @@ func _undo() -> void:
 		_hud.set_note("nothing to undo: a move that revealed something stands")
 		return
 	_confirm.cancel()
+	_finish_water_change()
 	_state = previous
+	_sync_water_from_map()
 	_hud.set_note("")
 	_redraw()
 
@@ -930,6 +936,63 @@ func _sync_water_from_map() -> void:
 	_water.water_height_m = PresentationCoords.water_surface_m(_state.map.water_step, _state.map.water_z)
 	## Dry is the slabs. A ground plane at y=0 z-fights them and paints the void.
 	_water.visible = _state.map.water_step != Taxonomy.WaterStep.DRY
+
+
+## The rules change the water at once; the picture plays it tile by tile, outward from the machine
+## that did it (UI 3: never a fade). Two planes draw the old and the new water, each keeping one side
+## of a square front. Reduced motion draws the end state at once.
+func _play_water_change(old_map: BowlMap, origin: Vector3i) -> void:
+	_finish_water_change()
+	_sync_water_from_map()
+	if _water == null or _water.reduced_motion:
+		return
+	if old_map.water_step == _state.map.water_step and old_map.water_z == _state.map.water_z:
+		return
+	_water_old = _Water.new()
+	_water_old.name = "WaterOld"
+	add_child(_water_old)
+	_water_old.fit_map(_state.map)
+	_water_old.water_step = int(old_map.water_step)
+	_water_old.water_height_m = PresentationCoords.water_surface_m(old_map.water_step, old_map.water_z)
+	_water_old.visible = old_map.water_step != Taxonomy.WaterStep.DRY
+	var from_m := Vector2(origin.x, origin.y) * PresentationCoords.CELL_M
+	var reach := _farthest_ring_m(from_m)
+	var rings := reach / PresentationCoords.CELL_M
+	_seek_water_change(from_m, -1.0)
+	_water_tween = create_tween()
+	_water_tween.tween_method(
+		func(radius: float) -> void: _seek_water_change(from_m, radius),
+		-1.0, reach + PresentationCoords.CELL_M, clampf(rings * 0.09, 0.5, 2.0)
+	)
+	_water_tween.tween_callback(_finish_water_change)
+
+
+## Put the front at `radius_m` (world metres, whole tiles). Also how a screenshot freezes mid-change.
+func _seek_water_change(origin_m: Vector2, radius_m: float) -> void:
+	if _water == null or _water_old == null:
+		return
+	_water.set_sweep(origin_m, radius_m, true)
+	_water_old.set_sweep(origin_m, radius_m, false)
+
+
+func _finish_water_change() -> void:
+	if _water_tween != null:
+		_water_tween.kill()
+		_water_tween = null
+	if _water_old != null:
+		_water_old.queue_free()
+		_water_old = null
+	if _water != null:
+		_water.clear_sweep()
+
+
+## Distance, in metres along the larger axis, from `origin_m` to the farthest cell of the bowl.
+func _farthest_ring_m(origin_m: Vector2) -> float:
+	var far := 0.0
+	for coord in _state.map.cells.keys():
+		var d := (Vector2(coord.x, coord.y) * PresentationCoords.CELL_M - origin_m).abs()
+		far = maxf(far, maxf(d.x, d.y))
+	return far
 
 
 func _cycle_water_step() -> void:

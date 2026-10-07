@@ -63,6 +63,24 @@ func fit_map(map: BowlMap, pad_m: float = 1.0) -> void:
 	position.z = (float(min_y + max_y) * 0.5) * cell
 
 
+## Keep only one side of a square front spreading from `origin_m` (world x, z), by whole tiles.
+## The old and the new plane take opposite sides, so the change plays tile by tile (plan 06 6.4).
+func set_sweep(origin_m: Vector2, radius_m: float, keep_inside: bool) -> void:
+	var mat := material_override as ShaderMaterial
+	if mat == null:
+		return
+	mat.set_shader_parameter("sweep_origin", origin_m)
+	mat.set_shader_parameter("sweep_radius", radius_m)
+	mat.set_shader_parameter("sweep_keep_inside", keep_inside)
+	mat.set_shader_parameter("sweep_cell", PresentationCoords.CELL_M)
+
+
+func clear_sweep() -> void:
+	var mat := material_override as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("sweep_radius", -1.0)
+
+
 func _apply() -> void:
 	var mat := material_override as ShaderMaterial
 	if mat == null:

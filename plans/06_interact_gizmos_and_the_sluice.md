@@ -1,6 +1,6 @@
 # Phase 6 — Interact gizmos and the sluice: machines you can start, and water you can point
 
-**Status:** 6.0–6.3 completed; 6.4–6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
+**Status:** 6.0–6.4 completed; 6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §3.1 (contact), §5.3 (AP), §5.6 (objectives: start / hold / stop the machine), §6.4 (redirection), §6.5 (the first-contact sluice); UI/UX v0.19 §3 (mid-fight water), §4.4 (reaction preview), §5 (confirm tier).
 **Depends on:** Phase 5 (`plans/05_commit_and_undo.md`) — a sluice is a Confirmed-tier action, and it goes through the one confirm prompt and the undo history. Phase 4 — "is it Live?" for the knock, the hatch and the machine comes from fog. Phase 3 — the terrace is the bowl the machines are authored on.
 **Goal:** the three things the terrace has been waiting for. A machine is data on a bowl with a state a command can change; interacting with one prices itself, names the Watches it would trigger and whether a Live hostile contests it before the player commits; and opening the sluice changes the water the whole rules layer reads, with a preview that shows exactly which cells change and what of the squad's stands in them.
@@ -93,6 +93,8 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint from 6
 **Ships.** The water plane's redirection plays tile by tile (UI §3), never a fade. This is presentation: the rule is instant, and the view eases each cell's water from its old step to the new one, ordered from the sluice outward. Reduced motion collapses it to the end state. It is the first real test of the water plane.
 
 **Done when.** A shot mid-change shows some cells at the old step and some at the new; the plane never z-fights the slabs during it (the existing `terrace_water_bare` probe still holds); reduced motion draws the end state at once.
+
+**What landed.** `water.gdshader` gains a sweep: `sweep_origin`, `sweep_radius` (negative is off), `sweep_keep_inside` and `sweep_cell`. The fragment discards on the wrong side of a square front quantised to whole tiles (`floor(max(|dx|,|dz|) / cell + 0.5) * cell`), so it moves in rings. `WaterPlane.set_sweep` / `clear_sweep` set it. `fight_view._play_water_change(old_map, origin)` runs after a command that swapped the map: it syncs the new water, adds a second `WaterOld` plane at the old step and height, and tweens one radius from just inside the origin to the bowl's far corner (about 0.09 s a ring, clamped to 0.5 to 2 s) with the new plane keeping the inside and the old plane the outside; `_finish_water_change` frees the old plane. Reduced motion, or a change that moves nothing, skips it. `_undo` finishes any change and re-syncs. `_seek_water_change` is the one place the front is set, and how a shot freezes it. Shot `terrace_water_sweep` opens the sluice through the real arm-then-confirm path, freezes the front four tiles out and probes that the near street reads as Flooded (0.32) and the far street as Falling (0.61); the other water probes still pass. `tests/presentation/test_water_sweep.gd`. UI 0.21. The rules are instant and the bodies and overlays jump to the new play plane while the water sweeps, which is as the plan says; easing the bodies is not built.
 
 ### 6.5 — Author it on the terrace
 

@@ -113,6 +113,8 @@ func _apply_setup() -> bool:
 			return _setup_terrace()
 		"terrace_water_bare", "terrace_falling_bare", "terrace_dock":
 			return _setup_terrace_water_bare()
+		"terrace_water_sweep":
+			return _setup_terrace_water_sweep()
 		"terrace_fog_unknown":
 			return _setup_terrace_fog_unknown()
 		"terrace_fog_peeled":
@@ -226,6 +228,9 @@ func _setup_terrace() -> bool:
 	match _setup:
 		"terrace_flooded", "terrace_water_bare", "terrace_dock":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
+		"terrace_water_sweep":
+			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
+			_fight._state.add_machine(Machine.new(Vector3i(3, 3, 0), Machine.Kind.SLUICE))
 		"terrace_interact_sluice":
 			## Plan 06 §6.3: hover a sluice next to the rifleman, with the bowl falling so it can rise.
 			## No sluice is authored on the terrace until 6.5, so the shot adds one to the state.
@@ -258,6 +263,32 @@ func _setup_terrace_water_bare() -> bool:
 	## Flooded water with nothing drawn on it, so the water probe reads only the water.
 	if not _setup_terrace():
 		return false
+	for overlay in ["Cones", "OverlayLabels", "Preview", "Units", "Selection"]:
+		var node: Node3D = _fight.get_node_or_null(overlay)
+		if node != null:
+			node.visible = false
+	return true
+
+
+## Plan 06 §6.4: open the sluice through the real command path (arm, then confirm), then freeze the
+## tile-by-tile change with the front four tiles out, so the near street is the new water and the
+## far street is still the old. Overlays are hidden so the probe reads only the water.
+func _setup_terrace_water_sweep() -> bool:
+	if not _setup_terrace_water_bare():
+		return false
+	var sluice := Vector3i(3, 3, 0)
+	_fight.set_process(false)
+	_fight._selected_id = 1
+	_fight._hover = sluice
+	var open := MachineCommand.new(1, sluice)
+	_fight._try(open) ## arms the confirm
+	_fight._try(MachineCommand.new(1, sluice)) ## commits it
+	if _fight._water_old == null:
+		push_error("shots: the sluice did not start a water change")
+		_exit_code = 1
+		return false
+	_fight._water_tween.kill()
+	_fight._seek_water_change(Vector2(sluice.x, sluice.y) * PresentationCoords.CELL_M, 8.0)
 	for overlay in ["Cones", "OverlayLabels", "Preview", "Units", "Selection"]:
 		var node: Node3D = _fight.get_node_or_null(overlay)
 		if node != null:
@@ -360,6 +391,8 @@ func _capture_and_probe() -> void:
 			_probe_dock_above_water(img)
 		"terrace_ridge_peek":
 			_probe_ridge_in_frame(img)
+		"terrace_water_sweep":
+			_probe_water_sweep(img)
 		"terrace_interact_sluice":
 			_probe_interact_label()
 		_:
@@ -530,6 +563,31 @@ func _probe_falling_shows_bottom(img: Image) -> void:
 	elif stats.spread < FALLING_BOTTOM_MIN_SPREAD:
 		push_error("shots: Falling water is a flat sheet, not water over a street: spread %.3f" % stats.spread)
 		_exit_code = 1
+
+
+## Plan 06 §6.4, mid-change: tiles the front has passed show the new water (Flooded: dark and nearly
+## opaque), tiles it has not reached show the old (Falling: the pale street shows through). Both are
+## on screen at once, so the change is a front moving across tiles and not a fade.
+func _probe_water_sweep(img: Image) -> void:
+	var near := _patch_luminance(img, Vector3i(5, 4, 0))
+	var far := _patch_luminance(img, Vector3i(14, 4, 0))
+	print("shots: sweep probe near (new, flooded) %.2f, far (old, falling) %.2f" % [near, far])
+	if far - near < 0.12:
+		push_error("shots: the change is not visibly in progress: near %.2f vs far %.2f" % [near, far])
+		_exit_code = 1
+
+
+func _patch_luminance(img: Image, cell: Vector3i) -> float:
+	var p: Vector2 = _fight._camera.unproject_position(_fight._ground(cell))
+	var total := 0.0
+	var n := 0
+	for dx in range(-3, 4):
+		for dy in range(-3, 4):
+			var x := clampi(int(p.x) + dx, 0, img.get_width() - 1)
+			var y := clampi(int(p.y) + dy, 0, img.get_height() - 1)
+			total += img.get_pixel(x, y).get_luminance()
+			n += 1
+	return total / float(n)
 
 
 ## Plan 06 §6.3: hovering a machine draws what using it does, as words in the world.

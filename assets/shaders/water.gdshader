@@ -35,6 +35,15 @@ uniform float flood_speed : hint_range(0.0, 4.0, 0.01) = 1.0;
 uniform float falling_speed : hint_range(0.0, 4.0, 0.01) = 0.28;
 uniform float flood_wave_cm : hint_range(0.0, 12.0, 0.1) = 4.0;
 
+group_uniforms Sweep;
+// A redirection plays tile by tile (plan 06 6.4, UI 3). Two planes draw the old and the new water and
+// each keeps one side of a square front that spreads from the sluice, one tile ring at a time.
+// Negative radius is off. The front is quantised to whole tiles so it reads as steps, not a wipe.
+uniform vec2 sweep_origin = vec2(0.0);
+uniform float sweep_radius = -1.0;
+uniform bool sweep_keep_inside = true;
+uniform float sweep_cell = 2.0;
+
 varying vec2 v_world_xz;
 
 void vertex() {
@@ -67,6 +76,14 @@ vec3 polder_sample_step(int s, vec2 uv) {
 }
 
 void fragment() {
+	if (sweep_radius >= 0.0) {
+		vec2 d = abs(v_world_xz - sweep_origin);
+		float ring = floor(max(d.x, d.y) / sweep_cell + 0.5) * sweep_cell;
+		bool inside = ring <= sweep_radius;
+		if (inside != sweep_keep_inside) {
+			discard;
+		}
+	}
 	float speed = 0.0;
 	if (step == WATER_FLOODED) {
 		speed = flood_speed;
