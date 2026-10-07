@@ -1,6 +1,6 @@
 # Phase 5 — Commit and undo: what stands, and what the player can take back
 
-**Status:** 5.0 completed; 5.1–5.4 not built. Slices 5.0–5.4 below; §7 decisions locked.
+**Status:** 5.0–5.1 completed; 5.2–5.4 not built. Slices 5.0–5.4 below; §7 decisions locked.
 **Tracks:** GDD v1.17 §3.1 (free movement until contact), §5.3 (AP), §5.5 (MEDEVAC, bleeders), §8.2 (Ironman); UI/UX v0.17 §5 (what commits), §3 (mid-fight water).
 **Depends on:** Phase 4 (`plans/04_fog_what_the_squad_knows.md`), specifically 4.5: `RevealResult` and `Command.apply_outcome` are the fact this plan spends.
 **Goal:** the four tiers of UI §5 (free, reversible, committed, confirmed) exist in code, not only in prose. A move that revealed nothing can be taken back; one that revealed anything stands; the ugly irreversible actions ask once and state their cost. The interface never implies a tier it does not enforce.
@@ -65,9 +65,11 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint when t
 
 ### 5.1 — The history
 
-**Ships.** `CommandHistory`: `push(state_before, outcome)`, `can_undo()`, `undo() -> CombatState`. A committed push clears the stack, so what remains is only ever unrevealing moves in a row.
+**Ships.** `CommandHistory`: `record(command, state_before, outcome) -> Tier`, `can_undo()`, `depth()`, `undo() -> CombatState`, `clear()`. A record that is not reversible clears the stack, so what remains is only ever unrevealing moves in a row.
 
 **Done when.** Undo returns the exact prior state; two reversible walks undo in order; a reveal clears the stack; ending a phase clears it; the history never mutates a state it holds (cover with `tests/unit/test_state_isolation.gd`).
+
+**What landed.** `rules/command_history.gd`. It tiers each command itself through `CommitPolicy`, so the view makes one call and cannot disagree with the rule. It stores a copy of the state before each reversible command, so nothing the caller does to its own state can reach it, and `undo` hands that copy back. Phase end is `clear()`; the view calls it (5.2). `tests/unit/test_command_history.gd` covers exact undo with AP refunded, two moves in order, a shot, a confirmed action and a peeling move each clearing the stack, the held copy, and branching after an undo; the isolation test also asserts the shared map is untouched.
 
 ### 5.2 — Undo in the view
 

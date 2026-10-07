@@ -108,3 +108,20 @@ func test_a_peeled_copy_leaves_its_parent_untouched() -> void:
 		"peel must not leak into the state the command promised not to touch"
 	)
 	assert_eq(root.knowledge.known_cells(root).size(), 0)
+
+
+func test_the_undo_history_never_writes_to_the_map_or_a_state_it_holds() -> void:
+	var map := _corridor(5)
+	var snap := _snapshot(map)
+	var state := _fight(map)
+	state.in_contact = true
+	state.active_side = CombatState.PhaseSide.PLAYER
+	state.knowledge.peel(map, state)
+	var history := CommandHistory.new()
+	var command := MoveCommand.new(1, Vector3i(2, 0, 0))
+	history.record(command, state, command.apply_outcome(state))
+	var held := history.undo()
+	assert_not_same(held, state, "the history keeps a copy, not the caller's state")
+	assert_eq(held.get_unit(1).cell, Vector3i(0, 0, 0))
+	assert_eq(state.get_unit(1).cell, Vector3i(0, 0, 0), "recording changed nothing")
+	assert_true(_map_matches(map, snap), "the shared map is untouched")
