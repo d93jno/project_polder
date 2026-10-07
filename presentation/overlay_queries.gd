@@ -25,6 +25,11 @@ var shot_outcome: String = "" ## pins | drops to Bleeding Out | kills a bleeder 
 var cover_stops_label: String = ""
 var kills_bleeder: bool = false
 
+## Interact preview for a hovered machine (plan 06 §6.3). Empty when none is hovered. Read from the
+## rules: the command is validated and, if legal, applied to a duplicate state and diffed.
+var interact: Dictionary = {}
+var interact_label: String = ""
+
 
 static func compute(
 	map: BowlMap,
@@ -64,6 +69,10 @@ static func compute(
 				q.cover_stops_label = format_cover_stops(cell.material)
 		q.path = Movement.path(map, state, unit, hover)
 
+	if state.machine_at(hover) != null:
+		q.interact = interact_preview(map, state, unit, hover)
+		q.interact_label = format_interact(q.interact)
+
 	var path_cells: Array[Vector3i] = []
 	if q.path.reachable:
 		path_cells = q.path.cells
@@ -95,6 +104,87 @@ static func compute(
 			"label": weapon_label(watcher.weapon),
 		})
 	return q
+
+
+## What using the machine at `cell` would do, from the rules alone (plan 06 §6.3). The command is
+## validated; if it is legal it is applied to a duplicate state and the two are diffed, so the preview
+## cannot disagree with the rule. Nothing here computes water, AP or contact itself.
+static func interact_preview(map: BowlMap, state: CombatState, unit: Unit, cell: Vector3i) -> Dictionary:
+	var machine: Machine = state.machine_at(cell)
+	var command := MachineCommand.new(unit.id, cell, not machine.on)
+	var check := command.validate(state)
+	var out := {
+		"kind": machine.kind,
+		"turn_on": command.turn_on,
+		"ok": check.ok,
+		"reason": check.reason,
+		"cost": RulesConstants.INTERACT_COST,
+		"ap_left": unit.ap - RulesConstants.INTERACT_COST,
+		"affordable": unit.ap >= RulesConstants.INTERACT_COST,
+		"confirms": command.needs_confirm(state),
+		"contested": Contact.machine_starts_contact(map, state, unit, cell),
+		"watches": Command.hostile_watches_covering(map, state, unit.cell, unit.faction),
+		"water_from": map.water_step,
+		"water_to": command.water_step_after(state),
+		"changed_cells": [] as Array[Vector3i],
+		"bodies_in_it": [] as Array[int],
+	}
+	if check.ok and command.water_step_after(state) != map.water_step:
+		var after := command.apply(state)
+		var changed: Array[Vector3i] = []
+		for coord in map.cells.keys():
+			if map.step_at(coord) != after.map.step_at(coord):
+				changed.append(coord)
+		out["changed_cells"] = changed
+		var bodies: Array[int] = []
+		for body in state.units_of_faction(Taxonomy.Faction.PLAYER):
+			if body.is_active() and body.cell in changed:
+				bodies.append(body.id)
+		out["bodies_in_it"] = bodies
+	return out
+
+
+## Words, no hues (UI §14). Cost first, then what it does, then what it risks.
+static func format_interact(preview: Dictionary) -> String:
+	if preview.is_empty():
+		return ""
+	var machine_kind: Machine.Kind = preview["kind"]
+	var on: bool = preview["turn_on"]
+	var verbs: Dictionary = {
+		Machine.Kind.HATCH: ["close", "open"],
+		Machine.Kind.PUMP: ["stop", "start"],
+		Machine.Kind.SLUICE: ["close", "open"],
+	}
+	var verb: String = (verbs[machine_kind] as Array)[1 if on else 0]
+	var noun := str(Machine.Kind.keys()[machine_kind]).to_lower()
+	var head := "%s %s · %d AP" % [verb, noun, preview["cost"]]
+	if preview["affordable"]:
+		head += ", %d left" % preview["ap_left"]
+	else:
+		head += " · can't afford it"
+	var lines: Array[String] = [head]
+	if not preview["ok"] and preview["affordable"]:
+		lines.append(str(preview["reason"]))
+	var changed: Array = preview["changed_cells"]
+	if not changed.is_empty():
+		lines.append("water %s to %s · %d tiles" % [
+			_step_word(preview["water_from"]), _step_word(preview["water_to"]), changed.size()
+		])
+		var bodies: Array = preview["bodies_in_it"]
+		if not bodies.is_empty():
+			lines.append("%d of yours stand in it" % bodies.size())
+	if preview["contested"]:
+		lines.append("contested: a hostile is on it")
+	var watches: Array = preview["watches"]
+	if not watches.is_empty():
+		lines.append("%d watch%s fire" % [watches.size(), "" if watches.size() == 1 else "es"])
+	if preview["confirms"]:
+		lines.append("click again to confirm")
+	return "\n".join(lines)
+
+
+static func _step_word(step: Taxonomy.WaterStep) -> String:
+	return str(Taxonomy.WaterStep.keys()[step]).to_lower()
 
 
 ## "2 watches: rifle, long, pistol" — words only, no hues (UI §4.4).

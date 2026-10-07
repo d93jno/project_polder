@@ -108,7 +108,8 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"street_undo_shown", "street_undo_hidden":
 			return _setup_street_undo()
-		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek":
+		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek", \
+		"terrace_interact_sluice":
 			return _setup_terrace()
 		"terrace_water_bare", "terrace_falling_bare", "terrace_dock":
 			return _setup_terrace_water_bare()
@@ -225,6 +226,11 @@ func _setup_terrace() -> bool:
 	match _setup:
 		"terrace_flooded", "terrace_water_bare", "terrace_dock":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
+		"terrace_interact_sluice":
+			## Plan 06 §6.3: hover a sluice next to the rifleman, with the bowl falling so it can rise.
+			## No sluice is authored on the terrace until 6.5, so the shot adds one to the state.
+			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
+			_fight._state.add_machine(Machine.new(Vector3i(3, 3, 0), Machine.Kind.SLUICE))
 		"terrace_ridge_peek":
 			## Plan 3 §7.3: the ridge is out of frame at rest; a vertical peek reveals it.
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
@@ -239,6 +245,11 @@ func _setup_terrace() -> bool:
 	_fight._sync_water_from_map()
 	_fight._hover = Vector3i(4, 5, 2)
 	_fight._selected_id = 4 ## roof body
+	if _setup == "terrace_interact_sluice":
+		_fight.set_process(false) ## _process would re-pick the hover from the real mouse
+		_fight._hover = Vector3i(3, 3, 0)
+		_fight._selected_id = 1
+		_fight._cutaway_z = 0
 	_fight._redraw()
 	return true
 
@@ -349,6 +360,8 @@ func _capture_and_probe() -> void:
 			_probe_dock_above_water(img)
 		"terrace_ridge_peek":
 			_probe_ridge_in_frame(img)
+		"terrace_interact_sluice":
+			_probe_interact_label()
 		_:
 			pass
 
@@ -516,6 +529,19 @@ func _probe_falling_shows_bottom(img: Image) -> void:
 		_exit_code = 1
 	elif stats.spread < FALLING_BOTTOM_MIN_SPREAD:
 		push_error("shots: Falling water is a flat sheet, not water over a street: spread %.3f" % stats.spread)
+		_exit_code = 1
+
+
+## Plan 06 §6.3: hovering a machine draws what using it does, as words in the world.
+func _probe_interact_label() -> void:
+	var label: String = _fight._queries.interact_label
+	print("shots: interact label: %s" % label.replace("\n", " | "))
+	var drawn := false
+	for n in _fight._labels_root.get_children():
+		if n is Label3D and (n as Label3D).text.contains("sluice"):
+			drawn = true
+	if label.is_empty() or not drawn or not label.contains("water falling to flooded"):
+		push_error("shots: the sluice preview is not drawn (label '%s', drawn %s)" % [label, drawn])
 		_exit_code = 1
 
 

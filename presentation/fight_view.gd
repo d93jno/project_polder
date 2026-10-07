@@ -546,6 +546,12 @@ func _click_cell(cell: Vector3i) -> void:
 	if occupant != null and CombatState.is_hostile(actor.faction, occupant.faction):
 		_try(ShootCommand.new(actor.id, occupant.id))
 		return
+	var machine: Machine = _state.machine_at(cell)
+	if machine != null:
+		var use := MachineCommand.new(actor.id, cell, not machine.on)
+		if use.in_reach(_state):
+			_try(use)
+			return
 	_confirm.cancel()
 	if _state.in_contact:
 		_try(MoveCommand.new(actor.id, cell))
@@ -761,6 +767,12 @@ func _draw_overlay_labels() -> void:
 			_ground(far) + Vector3(0.0, 1.8, 0.0),
 			entry["label"],
 			0.012
+		)
+	if _queries.interact_label != "" and _hover.z <= _cutaway_z:
+		_spawn_label(
+			_ground(_hover) + Vector3(0.0, 3.6, 0.0),
+			_queries.interact_label,
+			0.011
 		)
 	if _queries.stack_label != "" and _state.map.has_cell(_hover) and _hover.z <= _cutaway_z:
 		_spawn_label(

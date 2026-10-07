@@ -17,6 +17,12 @@ func _init(p_unit_id: int = -1, p_machine_cell: Vector3i = Vector3i.ZERO, p_turn
 	turn_on = p_turn_on
 
 
+## Whether the unit stands close enough. Public so a click can tell "walk there" from "use it".
+func in_reach(state: CombatState) -> bool:
+	var unit: Unit = state.get_unit(unit_id)
+	return unit != null and _chebyshev(unit.cell, machine_cell) <= REACH
+
+
 func validate(state: CombatState) -> CommandResult:
 	var ready := _actor_ready(state, unit_id)
 	if not ready.ok:
@@ -27,7 +33,7 @@ func validate(state: CombatState) -> CommandResult:
 	var machine: Machine = state.machine_at(machine_cell)
 	if machine == null:
 		return CommandResult.failure("no machine there")
-	if _chebyshev(unit.cell, machine_cell) > REACH:
+	if not in_reach(state):
 		return CommandResult.failure("too far from the machine")
 	if machine.on == turn_on:
 		return CommandResult.failure("already %s" % _state_word(machine, turn_on))
