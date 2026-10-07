@@ -1,6 +1,6 @@
 # Phase 5 — Commit and undo: what stands, and what the player can take back
 
-**Status:** drafted, nothing built. Slices 5.0–5.4 below; §7 decisions locked.
+**Status:** 5.0 completed; 5.1–5.4 not built. Slices 5.0–5.4 below; §7 decisions locked.
 **Tracks:** GDD v1.17 §3.1 (free movement until contact), §5.3 (AP), §5.5 (MEDEVAC, bleeders), §8.2 (Ironman); UI/UX v0.17 §5 (what commits), §3 (mid-fight water).
 **Depends on:** Phase 4 (`plans/04_fog_what_the_squad_knows.md`), specifically 4.5: `RevealResult` and `Command.apply_outcome` are the fact this plan spends.
 **Goal:** the four tiers of UI §5 (free, reversible, committed, confirmed) exist in code, not only in prose. A move that revealed nothing can be taken back; one that revealed anything stands; the ugly irreversible actions ask once and state their cost. The interface never implies a tier it does not enforce.
@@ -57,9 +57,11 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint when t
 
 ### 5.0 — The tier as a value
 
-**Ships.** `CommitPolicy.Tier` (`FREE`, `REVERSIBLE`, `COMMITTED`, `CONFIRMED`) and `CommitPolicy.tier_of(command, outcome)`. A command is `CONFIRMED` when it registers as such (5.3), `COMMITTED` when its outcome revealed anything, otherwise `REVERSIBLE`. Selection, hover, camera and path planning are `FREE` by never being commands.
+**Ships.** `CommitPolicy.Tier` (`FREE`, `REVERSIBLE`, `COMMITTED`, `CONFIRMED`) and `CommitPolicy.tier_of(command, state, outcome)`, where `state` is the one the command was applied to. A command is `CONFIRMED` when `Command.needs_confirm(state)` says so, `COMMITTED` when its outcome revealed anything, otherwise `REVERSIBLE`. Selection, hover, camera and path planning are `FREE` by never being commands.
 
 **Done when.** A table-driven test names every case: a walk through known empty ground is reversible; a walk that peels a cell, triggers a Watch by entry, or enters an enemy line is committed (each separately); a shot, an interact and a throw are committed even with nothing else revealed; a registered confirm action is confirmed.
+
+**What landed.** `rules/commit_policy.gd` (`Tier`, `tier_of`, `is_undoable`) and `Command.needs_confirm(state)`, overridden by `ShootCommand` (the target is a bleeder) and `InteractCommand` (a Trauma Kit). Which actions confirm therefore lives on the command, beside its other rules, and 5.3's `ConfirmPrompt` reads it instead of keeping its own list. Setting a Watch and a throw are committed through `_is_act` (§7.4). `tests/unit/test_commit_policy.gd` names every case above, and that tiering does not mutate the state.
 
 ### 5.1 — The history
 
