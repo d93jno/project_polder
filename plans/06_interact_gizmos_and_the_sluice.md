@@ -1,6 +1,6 @@
 # Phase 6 — Interact gizmos and the sluice: machines you can start, and water you can point
 
-**Status:** 6.0–6.1 completed; 6.2–6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
+**Status:** 6.0–6.2 completed; 6.3–6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §3.1 (contact), §5.3 (AP), §5.6 (objectives: start / hold / stop the machine), §6.4 (redirection), §6.5 (the first-contact sluice); UI/UX v0.19 §3 (mid-fight water), §4.4 (reaction preview), §5 (confirm tier).
 **Depends on:** Phase 5 (`plans/05_commit_and_undo.md`) — a sluice is a Confirmed-tier action, and it goes through the one confirm prompt and the undo history. Phase 4 — "is it Live?" for the knock, the hatch and the machine comes from fog. Phase 3 — the terrace is the bowl the machines are authored on.
 **Goal:** the three things the terrace has been waiting for. A machine is data on a bowl with a state a command can change; interacting with one prices itself, names the Watches it would trigger and whether a Live hostile contests it before the player commits; and opening the sluice changes the water the whole rules layer reads, with a preview that shows exactly which cells change and what of the squad's stands in them.
@@ -77,6 +77,8 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint from 6
 **Ships.** Opening the sluice steps the bowl's water one step wetter (Dry→Mud→Falling→Flooded) through 6.1, as a Confirmed action that registers with plan 05's mechanism. Closing it does not put the water back (GDD §6.4: the sector "stays there for days"); it only stops further creep, and in a fight nothing creeps, so closing is a no-op the validator refuses with a reason.
 
 **Done when.** The sluice opens once per fight and the water steps once; Flooded is the ceiling and opening there fails with a reason; the cost line names the AP and what the water does; undo cannot take it back (it is Confirmed, so the history clears); the plan 05 confirm prompt is the only path.
+
+**What landed.** In `MachineCommand`: opening a `SLUICE` is Confirmed (`needs_confirm`), and applying it calls `redirect_water(water_step_after(state), water_z)` so the bowl steps one wetter (`FLOODED` is value 0, so wetter is one less) on a new map and leaves the parent's untouched. `validate` refuses closing ("a sluice cannot be closed again"), a second opening ("already open", which is what makes it once per fight) and opening at the ceiling ("the water is already as deep as it goes"). `water_step_after(state)` is public so 6.3's preview reads the same number the command applies. `ConfirmPrompt` learned the sluice: "confirm: opens the sluice, and the water rises from falling to flooded, 2 AP". Tests in `test_machines.gd` (each step, ceiling, once, Confirmed tier and the history clearing, preview equals apply, a pump leaves the map shared, a roof stays dry) and `test_confirm_prompt.gd`. Nothing in the view triggers a machine yet (6.3), and the water plane reads the map's step when it is synced, so it will not move on screen until 6.4 plays the change.
 
 ### 6.3 — The preview
 

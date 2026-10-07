@@ -31,9 +31,27 @@ func validate(state: CombatState) -> CommandResult:
 		return CommandResult.failure("too far from the machine")
 	if machine.on == turn_on:
 		return CommandResult.failure("already %s" % _state_word(machine, turn_on))
-	if machine.kind == Machine.Kind.SLUICE and not turn_on:
-		return CommandResult.failure("a sluice cannot be closed again")
+	if machine.kind == Machine.Kind.SLUICE:
+		if not turn_on:
+			return CommandResult.failure("a sluice cannot be closed again")
+		if state.map.water_step == Taxonomy.WaterStep.FLOODED:
+			return CommandResult.failure("the water is already as deep as it goes")
 	return CommandResult.success()
+
+
+## Opening the sluice is irreversible and ugly: it asks once, stating the cost (UI §5, plan 06 §6.2).
+func needs_confirm(state: CombatState) -> bool:
+	var machine: Machine = state.machine_at(machine_cell)
+	return machine != null and machine.kind == Machine.Kind.SLUICE and turn_on
+
+
+## The step the bowl's water will stand at after this command: one wetter for a sluice being opened
+## (GDD 6.4, plan 06 §7.2), unchanged for everything else. The preview reads this too.
+func water_step_after(state: CombatState) -> Taxonomy.WaterStep:
+	var step := state.map.water_step
+	if needs_confirm(state) and step != Taxonomy.WaterStep.FLOODED:
+		return (int(step) - 1) as Taxonomy.WaterStep
+	return step
 
 
 func _is_act() -> bool:
@@ -59,6 +77,9 @@ func _apply(state: CombatState, _reveal: RevealResult) -> CombatState:
 	var next := state.duplicate_state()
 	next.get_unit(unit_id).ap -= RulesConstants.INTERACT_COST
 	next.machine_at(machine_cell).on = turn_on
+	if needs_confirm(state):
+		## The whole bowl steps wetter. A new map, so the states sharing the old one are untouched.
+		next.redirect_water(water_step_after(state), state.map.water_z)
 	return next
 
 

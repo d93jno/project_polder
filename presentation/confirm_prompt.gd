@@ -47,6 +47,8 @@ static func key_of(command: Command) -> String:
 		return "shoot:%d:%d" % [command.attacker_id, command.target_id]
 	if command is InteractCommand:
 		return "interact:%d:%d:%s" % [command.unit_id, command.kind, command.target_cell]
+	if command is MachineCommand:
+		return "machine:%d:%s:%s" % [command.unit_id, command.machine_cell, command.turn_on]
 	return str(command.get_instance_id())
 
 
@@ -55,6 +57,10 @@ static func _what(command: Command, state: CombatState) -> String:
 		return "kills a bleeder"
 	if command is InteractCommand and command.kind == InteractCommand.Kind.TRAUMA_KIT:
 		return "uses the Trauma Kit and starts its MEDEVAC window"
+	if command is MachineCommand and command.needs_confirm(state):
+		return "opens the sluice, and the water rises from %s to %s" % [
+			_step_word(state.map.water_step), _step_word(command.water_step_after(state))
+		]
 	return "cannot be taken back"
 
 
@@ -62,6 +68,10 @@ static func _cost_ap(command: Command, state: CombatState) -> int:
 	if command is ShootCommand:
 		var attacker: Unit = state.get_unit(command.attacker_id)
 		return RulesConstants.shot_cost(attacker.weapon) if attacker != null else 0
-	if command is InteractCommand:
+	if command is InteractCommand or command is MachineCommand:
 		return RulesConstants.INTERACT_COST
 	return 0
+
+
+static func _step_word(step: Taxonomy.WaterStep) -> String:
+	return str(Taxonomy.WaterStep.keys()[step]).to_lower()

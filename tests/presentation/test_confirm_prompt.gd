@@ -67,3 +67,17 @@ func test_a_trauma_kit_and_a_shot_have_distinct_keys() -> void:
 	var shot_key: String = ConfirmPrompt.key_of(ShootCommand.new(1, 2))
 	var kit_key: String = ConfirmPrompt.key_of(InteractCommand.new(1, HERE, InteractCommand.Kind.TRAUMA_KIT))
 	assert_ne(shot_key, kit_key)
+
+
+func test_the_sluice_prompt_names_the_water_and_the_cost() -> void:
+	var state := CombatState.new()
+	state.map = BowlMap.new()
+	state.map.water_step = Taxonomy.WaterStep.FALLING
+	state.add_unit(Unit.new(1, Vector3i(0, 0, 0), Taxonomy.Faction.PLAYER))
+	state.add_machine(Machine.new(HERE, Machine.Kind.SLUICE))
+	var open := MachineCommand.new(1, HERE)
+	assert_true(open.needs_confirm(state))
+	var text: String = ConfirmPrompt.text_for(open, state)
+	assert_true(text.contains("falling to flooded"), text)
+	assert_true(text.contains("%d AP" % RulesConstants.INTERACT_COST))
+	assert_false(text.contains("%"), "no probability (UI §1)")

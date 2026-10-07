@@ -118,3 +118,76 @@ func test_the_machine_command_never_writes_the_map() -> void:
 	var before := (state.map.get_cell(GROUND) as Cell).duplicate_cell()
 	MachineCommand.new(1, GROUND).apply(state)
 	assert_true(state.map.get_cell(GROUND).equals(before))
+
+
+## --- The sluice (plan 06 §6.2) ---
+
+
+func _sluice_state(step: Taxonomy.WaterStep) -> CombatState:
+	var state := _state(Machine.new(GROUND, Machine.Kind.SLUICE, false))
+	state.map.water_step = step
+	return state
+
+
+func test_opening_the_sluice_steps_the_water_one_wetter() -> void:
+	var expect := {
+		Taxonomy.WaterStep.DRY: Taxonomy.WaterStep.MUD,
+		Taxonomy.WaterStep.MUD: Taxonomy.WaterStep.FALLING,
+		Taxonomy.WaterStep.FALLING: Taxonomy.WaterStep.FLOODED,
+	}
+	for from in expect:
+		var state := _sluice_state(from)
+		var next := MachineCommand.new(1, GROUND).apply(state)
+		assert_eq(next.map.water_step, expect[from], "from %s" % Taxonomy.WaterStep.keys()[from])
+		assert_eq(state.map.water_step, from, "the state it came from still reads its own water")
+		assert_not_same(next.map, state.map)
+		assert_same(next.map.cells, state.map.cells)
+
+
+func test_a_flooded_bowl_cannot_be_opened_further() -> void:
+	var state := _sluice_state(Taxonomy.WaterStep.FLOODED)
+	assert_eq(
+		MachineCommand.new(1, GROUND).validate(state).reason, "the water is already as deep as it goes"
+	)
+
+
+func test_the_sluice_opens_once_per_fight() -> void:
+	var opened := MachineCommand.new(1, GROUND).apply(_sluice_state(Taxonomy.WaterStep.DRY))
+	assert_eq(MachineCommand.new(1, GROUND).validate(opened).reason, "already open")
+	assert_eq(opened.map.water_step, Taxonomy.WaterStep.MUD, "a second opening cannot step it again")
+
+
+func test_opening_the_sluice_is_a_confirmed_action_and_clears_undo() -> void:
+	var state := _sluice_state(Taxonomy.WaterStep.DRY)
+	var command := MachineCommand.new(1, GROUND)
+	assert_true(command.needs_confirm(state))
+	assert_eq(
+		CommitPolicy.tier_of(command, state, command.apply_outcome(state)), CommitPolicy.Tier.CONFIRMED
+	)
+	assert_false(MachineCommand.new(1, GROUND).needs_confirm(_state(Machine.new(GROUND, Machine.Kind.PUMP))))
+	var history := CommandHistory.new()
+	state.knowledge.peel(state.map, state)
+	var walk := MoveCommand.new(1, Vector3i(2, 0, 0))
+	history.record(walk, state, walk.apply_outcome(state))
+	assert_true(history.can_undo())
+	history.record(command, state, command.apply_outcome(state))
+	assert_false(history.can_undo(), "a Confirmed action stands, and clears what is behind it")
+
+
+func test_the_water_a_preview_reads_is_the_water_the_command_applies() -> void:
+	var state := _sluice_state(Taxonomy.WaterStep.FALLING)
+	var command := MachineCommand.new(1, GROUND)
+	assert_eq(command.water_step_after(state), command.apply(state).map.water_step)
+	var pump := MachineCommand.new(1, GROUND)
+	var pump_state := _state(Machine.new(GROUND, Machine.Kind.PUMP))
+	assert_eq(pump.water_step_after(pump_state), pump_state.map.water_step, "only a sluice moves water")
+	assert_eq(pump.apply(pump_state).map.water_step, pump_state.map.water_step)
+	assert_same(pump.apply(pump_state).map, pump_state.map, "a pump leaves the map shared")
+
+
+func test_a_roof_stays_dry_and_the_street_gets_wetter() -> void:
+	var state := _sluice_state(Taxonomy.WaterStep.DRY)
+	state.map.water_z = 0
+	var next := MachineCommand.new(1, GROUND).apply(state)
+	assert_eq(next.map.step_at(GROUND), Taxonomy.WaterStep.MUD)
+	assert_eq(next.map.step_at(UPSTAIRS), Taxonomy.WaterStep.DRY, "above the water level is dry ground (GDD 5.8)")
