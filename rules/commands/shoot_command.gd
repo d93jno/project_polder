@@ -34,6 +34,12 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
+## Shooting a bleeder is an execution (UI §5): the one shot that confirms.
+func needs_confirm(state: CombatState) -> bool:
+	var target: Unit = state.get_unit(target_id)
+	return target != null and target.bleeding and not target.dead
+
+
 func _is_act() -> bool:
 	return true
 

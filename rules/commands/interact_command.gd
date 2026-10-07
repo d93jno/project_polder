@@ -42,6 +42,11 @@ func validate(state: CombatState) -> CommandResult:
 	return CommandResult.success()
 
 
+## A Trauma Kit starts a known MEDEVAC window (GDD 1.11): the route is seen before it is spent.
+func needs_confirm(_state: CombatState) -> bool:
+	return kind == Kind.TRAUMA_KIT
+
+
 func _is_act() -> bool:
 	return true
 

@@ -47,6 +47,12 @@ func _apply(state: CombatState, _reveal: RevealResult) -> CombatState:
 	return state.duplicate_state()
 
 
+## Irreversible and ugly: the player confirms once, with the cost stated (UI §5, plan 05).
+## Read from `state` before the command is applied. `CommitPolicy` is the only caller.
+func needs_confirm(_state: CombatState) -> bool:
+	return false
+
+
 ## Shoot, interact, throw, watch, extract — not a free/move step (UI §5).
 func _is_act() -> bool:
 	return false
