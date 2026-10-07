@@ -32,7 +32,8 @@ func test_terrace_footprint_is_20_by_14_and_every_ground_cell_is_placed() -> voi
 
 func test_terrace_passes_authoring_lint() -> void:
 	var failures := BowlAuthoring.lint(
-		FloodedTerrace.map(), TerraceStamps.stamps(), TerraceStamps.swim_columns()
+		FloodedTerrace.map(), TerraceStamps.stamps(), TerraceStamps.swim_columns(),
+		FloodedTerrace.machines()
 	)
 	assert_eq(failures, PackedStringArray(), "\n".join(failures))
 
@@ -142,3 +143,92 @@ func test_the_terrace_contact() -> void:
 		assert_true(s.get_unit(id).extracted)
 	assert_true(s.get_unit(P4).bleeding and not s.get_unit(P4).extracted)
 	assert_true(s.get_unit(D_PISTOL).is_active(), "upstairs pistol never saw out")
+
+
+## --- Machines (plan 06 §6.5) ---
+
+
+func _phases(step: Taxonomy.WaterStep) -> CombatState:
+	var state := FloodedTerrace.opening(step)
+	state.in_contact = true
+	state.active_side = CombatState.PhaseSide.PLAYER
+	state.knowledge.peel(state.map, state)
+	return state
+
+
+func test_the_terrace_authors_a_hatch_a_pump_and_a_sluice() -> void:
+	var state := FloodedTerrace.opening()
+	assert_eq(state.machines.size(), 3)
+	assert_eq(state.machine_at(FloodedTerrace.HATCH).kind, Machine.Kind.HATCH)
+	assert_true(state.machine_at(FloodedTerrace.HATCH).on, "open at the start, so the climb is as it was")
+	assert_eq(state.machine_at(FloodedTerrace.PUMP).kind, Machine.Kind.PUMP)
+	assert_eq(state.machine_at(FloodedTerrace.SLUICE).kind, Machine.Kind.SLUICE)
+	assert_false(state.machine_at(FloodedTerrace.SLUICE).on)
+
+
+func test_the_roof_is_still_reached_through_the_hatch() -> void:
+	var state := _phases(Taxonomy.WaterStep.FALLING)
+	var climber: Unit = state.get_unit(P4)
+	climber.cell = Vector3i(4, 5, 0) ## the stair column, ground floor
+	var up := Movement.path(state.map, state, climber, FloodedTerrace.ROOF_A)
+	assert_true(up.reachable, "stair, then the open hatch")
+
+
+func test_closing_the_hatch_from_the_roof_denies_the_climb_and_opening_it_restores_it() -> void:
+	var state := _phases(Taxonomy.WaterStep.FALLING)
+	var roof: Unit = state.get_unit(P4)
+	assert_eq(roof.cell, FloodedTerrace.ROOF_A)
+	var closed := _do(state, MachineCommand.new(P4, FloodedTerrace.HATCH, false))
+	assert_false(closed.machine_at(FloodedTerrace.HATCH).on)
+	var down := Movement.path(closed.map, closed, closed.get_unit(P4), Vector3i(4, 5, 1))
+	assert_false(down.reachable, "a closed hatch holds the roof")
+	closed.get_unit(P4).ap = RulesConstants.AP_POOL
+	var reopened := _do(closed, MachineCommand.new(P4, FloodedTerrace.HATCH, true))
+	assert_true(
+		Movement.path(reopened.map, reopened, reopened.get_unit(P4), Vector3i(4, 5, 1)).reachable,
+		"opened again, the way down is back"
+	)
+
+
+func test_opening_the_sluice_turns_a_canal_where_nothing_hides_into_deep_water() -> void:
+	var state := _phases(Taxonomy.WaterStep.FALLING)
+	var canal := FloodedTerrace.CANAL
+	var cost_before := Movement.move_cost(state.map, canal, state.get_unit(P1))
+	var hide_before := ExposureQuery.exposure(state.map, state, state.get_unit(P1)).state
+	assert_eq(hide_before, Exposure.State.NO_HIDE, "chest-deep Falling water hides no one (GDD 5.4)")
+	state = _do(state, MoveCommand.new(P2, FloodedTerrace.SLUICE + Vector3i(-1, 0, 0)))
+	assert_eq(state.get_unit(P2).cell, FloodedTerrace.SLUICE + Vector3i(-1, 0, 0))
+	var open := MachineCommand.new(P2, FloodedTerrace.SLUICE)
+	assert_true(open.needs_confirm(state), "the one Confirmed action on the terrace")
+	var after := _do(state, open)
+	assert_true(after.machine_at(FloodedTerrace.SLUICE).on)
+	assert_eq(after.map.water_step, Taxonomy.WaterStep.FLOODED)
+	assert_eq(state.map.water_step, Taxonomy.WaterStep.FALLING, "the branch before it keeps its water")
+	var cost_after := Movement.move_cost(after.map, canal, after.get_unit(P1))
+	var hide_after := ExposureQuery.exposure(after.map, after, after.get_unit(P1)).state
+	assert_ne(hide_after, Exposure.State.NO_HIDE, "deep water now hides a body on the canal")
+	assert_eq(cost_before, RulesConstants.step_move_cost(Taxonomy.WaterStep.FALLING))
+	assert_eq(cost_after, RulesConstants.step_move_cost(Taxonomy.WaterStep.FLOODED))
+	assert_eq(after.map.step_at(FloodedTerrace.ROOF_A), Taxonomy.WaterStep.DRY, "a roof stays dry (GDD 5.8)")
+	assert_eq(after.map.step_at(FloodedTerrace.ROOF_B), Taxonomy.WaterStep.DRY)
+	assert_eq(
+		Movement.move_cost(after.map, FloodedTerrace.ROOF_A, after.get_unit(P4)),
+		RulesConstants.step_move_cost(Taxonomy.WaterStep.DRY),
+	)
+
+
+func test_the_sluice_is_refused_on_the_default_flooded_terrace() -> void:
+	var state := _phases(Taxonomy.WaterStep.FLOODED)
+	state.get_unit(P2).cell = FloodedTerrace.SLUICE + Vector3i(-1, 0, 0)
+	var check := MachineCommand.new(P2, FloodedTerrace.SLUICE).validate(state)
+	assert_false(check.ok)
+	assert_eq(check.reason, "the water is already as deep as it goes")
+
+
+func test_a_pump_can_be_started_and_changes_no_water() -> void:
+	var state := _phases(Taxonomy.WaterStep.FALLING)
+	state.get_unit(P3).cell = FloodedTerrace.PUMP + Vector3i(-1, 0, 0)
+	var next := _do(state, MachineCommand.new(P3, FloodedTerrace.PUMP))
+	assert_true(next.machine_at(FloodedTerrace.PUMP).on)
+	assert_eq(next.map.water_step, Taxonomy.WaterStep.FALLING)
+	assert_same(next.map, state.map, "a pump leaves the shared map alone (plan 06 §7.4)")

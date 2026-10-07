@@ -19,7 +19,9 @@ static func stamps() -> Array:
 		Stamp.new("env_roof_deck_b", Vector3i(6, 5, 2), 0.0),
 		Stamp.new("env_shanty_tarp", FloodedTerrace.ROOF_B, 0.0),
 		Stamp.new("env_stair", FloodedTerrace.STAIR, 0.0),
-		Stamp.new("env_ladder", FloodedTerrace.LADDER, 0.0),
+		Stamp.new("env_hatch", FloodedTerrace.HATCH, 0.0),
+		Stamp.new("env_pump_house", FloodedTerrace.PUMP_ORIGIN, 0.0),
+		Stamp.new("env_sluice_gauge", FloodedTerrace.SLUICE_ORIGIN, 0.0),
 		## Pier along +X on the near bank (yaw 90 swaps the 1×3 footprint).
 		Stamp.new("env_pier", FloodedTerrace.PIER_ORIGIN, 90.0),
 	]

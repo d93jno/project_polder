@@ -21,6 +21,8 @@ const _WATCH_HOVER := Vector3i(10, 5, 0)
 ## bottom shows through; an opaque sheet is flat.
 const FALLING_BOTTOM_MIN_SPREAD := 0.075
 
+const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+
 var _setup: String = "street_watch"
 var _setup_given: bool = false
 var _scene_path: String = "res://scenes/main.tscn"
@@ -109,7 +111,7 @@ func _apply_setup() -> bool:
 		"street_undo_shown", "street_undo_hidden":
 			return _setup_street_undo()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek", \
-		"terrace_interact_sluice":
+		"terrace_interact_sluice", "terrace_machines":
 			return _setup_terrace()
 		"terrace_water_bare", "terrace_falling_bare", "terrace_dock":
 			return _setup_terrace_water_bare()
@@ -230,12 +232,9 @@ func _setup_terrace() -> bool:
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
 		"terrace_water_sweep":
 			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
-			_fight._state.add_machine(Machine.new(Vector3i(3, 3, 0), Machine.Kind.SLUICE))
 		"terrace_interact_sluice":
 			## Plan 06 §6.3: hover a sluice next to the rifleman, with the bowl falling so it can rise.
-			## No sluice is authored on the terrace until 6.5, so the shot adds one to the state.
 			_fight._state.map.water_step = Taxonomy.WaterStep.FALLING
-			_fight._state.add_machine(Machine.new(Vector3i(3, 3, 0), Machine.Kind.SLUICE))
 		"terrace_ridge_peek":
 			## Plan 3 §7.3: the ridge is out of frame at rest; a vertical peek reveals it.
 			_fight._state.map.water_step = Taxonomy.WaterStep.FLOODED
@@ -250,10 +249,19 @@ func _setup_terrace() -> bool:
 	_fight._sync_water_from_map()
 	_fight._hover = Vector3i(4, 5, 2)
 	_fight._selected_id = 4 ## roof body
+	if _setup == "terrace_machines":
+		## Fog draws nothing for a piece with an Unknown cell, so walk the squad up to both blocks.
+		_fight._state.get_unit(FloodedTerrace.P2).cell = FloodedTerrace.SLUICE + Vector3i(-1, 0, 0)
+		_fight._state.get_unit(FloodedTerrace.P3).cell = FloodedTerrace.PUMP + Vector3i(-1, 0, 0)
+		## A solid block hides its own far side, so a second body stands on the other side of it.
+		_fight._state.get_unit(FloodedTerrace.P1).cell = FloodedTerrace.PUMP + Vector3i(2, 0, 0)
+		_fight._state.get_unit(FloodedTerrace.P4).cell = FloodedTerrace.PUMP + Vector3i(2, 1, 0)
+		_fight._state.knowledge.peel(_fight._state.map, _fight._state)
 	if _setup == "terrace_interact_sluice":
 		_fight.set_process(false) ## _process would re-pick the hover from the real mouse
-		_fight._hover = Vector3i(3, 3, 0)
-		_fight._selected_id = 1
+		_fight._hover = FloodedTerrace.SLUICE
+		_fight._selected_id = 2 ## the recruit, one step from the sluice
+		_fight._state.get_unit(2).cell = FloodedTerrace.SLUICE + Vector3i(-1, 0, 0)
 		_fight._cutaway_z = 0
 	_fight._redraw()
 	return true
@@ -276,13 +284,14 @@ func _setup_terrace_water_bare() -> bool:
 func _setup_terrace_water_sweep() -> bool:
 	if not _setup_terrace_water_bare():
 		return false
-	var sluice := Vector3i(3, 3, 0)
+	var sluice: Vector3i = FloodedTerrace.SLUICE
 	_fight.set_process(false)
-	_fight._selected_id = 1
+	_fight._selected_id = 2
+	_fight._state.get_unit(2).cell = sluice + Vector3i(-1, 0, 0) ## one step from the sluice
 	_fight._hover = sluice
-	var open := MachineCommand.new(1, sluice)
+	var open := MachineCommand.new(2, sluice)
 	_fight._try(open) ## arms the confirm
-	_fight._try(MachineCommand.new(1, sluice)) ## commits it
+	_fight._try(MachineCommand.new(2, sluice)) ## commits it
 	if _fight._water_old == null:
 		push_error("shots: the sluice did not start a water change")
 		_exit_code = 1
@@ -314,7 +323,6 @@ func _setup_terrace_fog_peeled() -> bool:
 		push_error("shots: terrace_fog_peeled needs --bowl=terrace")
 		_exit_code = 1
 		return false
-	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
 	var seer: Unit = _fight._state.get_unit(FloodedTerrace.P1)
 	var clan: Unit = _fight._state.get_unit(FloodedTerrace.ROOF_CLAN)
 	if seer == null or clan == null:
@@ -395,6 +403,8 @@ func _capture_and_probe() -> void:
 			_probe_water_sweep(img)
 		"terrace_interact_sluice":
 			_probe_interact_label()
+		"terrace_machines":
+			_probe_machines_drawn()
 		_:
 			pass
 
@@ -565,11 +575,26 @@ func _probe_falling_shows_bottom(img: Image) -> void:
 		_exit_code = 1
 
 
+## Plan 06 §6.5: the three machines the terrace authors are drawn, as the kit's own pieces.
+func _probe_machines_drawn() -> void:
+	var seen: Dictionary = {}
+	for n in _fight._bowl.get_children():
+		seen[str(n.get_meta("polder_piece", ""))] = true
+	var missing: Array[String] = []
+	for piece in ["env_hatch", "env_pump_house", "env_sluice_gauge"]:
+		if not seen.has(piece):
+			missing.append(piece)
+	print("shots: machines drawn, missing %s" % [missing])
+	if not missing.is_empty():
+		push_error("shots: the terrace's machines are not drawn: %s" % [missing])
+		_exit_code = 1
+
+
 ## Plan 06 §6.4, mid-change: tiles the front has passed show the new water (Flooded: dark and nearly
 ## opaque), tiles it has not reached show the old (Falling: the pale street shows through). Both are
 ## on screen at once, so the change is a front moving across tiles and not a fade.
 func _probe_water_sweep(img: Image) -> void:
-	var near := _patch_luminance(img, Vector3i(5, 4, 0))
+	var near := _patch_luminance(img, Vector3i(6, 4, 0))
 	var far := _patch_luminance(img, Vector3i(14, 4, 0))
 	print("shots: sweep probe near (new, flooded) %.2f, far (old, falling) %.2f" % [near, far])
 	if far - near < 0.12:

@@ -14,14 +14,22 @@ const D_PISTOL := 11 ## upstairs window (INTERIOR)
 ## Authored interior occupant — seated at load; fog decides whether they are drawn (§7.6).
 const ROOF_CLAN := 20
 
-## House A origin (stair + ladder column). House B beside it.
+## House A origin (stair + hatch column). House B beside it.
 const HOUSE_A := Vector3i(4, 5, 0)
 const HOUSE_B := Vector3i(6, 5, 0)
 const ROOF_A := Vector3i(4, 5, 2)
 const ROOF_B := Vector3i(7, 5, 2) ## shanty deck cell on house B
 const CLAN_CELL := Vector3i(7, 5, 0) ## authored occupant inside house B
 const STAIR := Vector3i(4, 5, 0)
-const LADDER := Vector3i(4, 5, 1)
+## The roof is reached through a hatch (plan 06 §6.5). It starts open, so the climb is what it was;
+## closing it from the roof denies the climb. The hatch decides the climb alone: no LINK flag there.
+const HATCH := Vector3i(4, 5, 1)
+## A pump house (a 2x2 block of masonry) and a sluice gauge beside the canal head. The machine is the
+## cell a unit operates, one tile from where it stands; the origin is the corner the stamp is placed on.
+const PUMP_ORIGIN := Vector3i(14, 5, 0)
+const PUMP := Vector3i(14, 5, 0)
+const SLUICE_ORIGIN := Vector3i(4, 1, 0)
+const SLUICE := Vector3i(4, 2, 0)
 const INSIDE_A := Vector3i(4, 5, 0) ## stair-column ground room
 const UPSTAIRS_B := Vector3i(6, 5, 1)
 const CANAL := Vector3i(3, 3, 0)
@@ -53,7 +61,29 @@ static func map(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> BowlMa
 		map.set_cell(Vector3i(x, 8, 0), Cell.new(Taxonomy.CoverMaterial.MASONRY))
 	_house_volume(map, HOUSE_A)
 	_house_volume(map, HOUSE_B)
+	_machine_block(map, PUMP_ORIGIN)
+	_machine_block(map, SLUICE_ORIGIN)
 	return map
+
+
+## A 2x2 solid block at street level: the body of a pump house or a sluice gauge. Masonry, which is
+## what the kit's MANIFEST says both pieces are.
+static func _machine_block(map: BowlMap, origin: Vector3i) -> void:
+	for dx in 2:
+		for dy in 2:
+			map.set_cell(
+				Vector3i(origin.x + dx, origin.y + dy, origin.z),
+				Cell.new(Taxonomy.CoverMaterial.MASONRY)
+			)
+
+
+## The terrace's machines and their opening state. Fight state, so they live on `CombatState`.
+static func machines() -> Array:
+	return [
+		Machine.new(HATCH, Machine.Kind.HATCH, true),
+		Machine.new(PUMP, Machine.Kind.PUMP, false),
+		Machine.new(SLUICE, Machine.Kind.SLUICE, false),
+	]
 
 
 static func _house_volume(map: BowlMap, origin: Vector3i) -> void:
@@ -75,9 +105,9 @@ static func _house_volume(map: BowlMap, origin: Vector3i) -> void:
 			else:
 				map.set_cell(ground, Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
 	if is_a:
-		## The stair (z 0 to 1) and the ladder (z 1 to 2) each link up from their lower cell.
+		## The stair (z 0 to 1) links up from its lower cell. The roof hatch (z 1 to 2) is a machine, not a flag.
 		map.get_cell(Vector3i(origin.x, origin.y, 0)).flags |= Taxonomy.CellFlags.LINK
-		map.set_cell(Vector3i(origin.x, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room | Taxonomy.CellFlags.LINK))
+		map.set_cell(Vector3i(origin.x, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
 		map.set_cell(Vector3i(origin.x + 1, origin.y, 1), Cell.new(Taxonomy.CoverMaterial.MASONRY, room))
 		map.set_cell(Vector3i(origin.x, origin.y, 2), Cell.new(Taxonomy.CoverMaterial.AIR, Taxonomy.CellFlags.DECK))
 	else:
@@ -118,5 +148,7 @@ static func opening(step: Taxonomy.WaterStep = Taxonomy.WaterStep.FLOODED) -> Co
 	state.add_unit(rifle)
 	state.add_watch(LiveWatch.new(D_RIFLE, Vector3i(0, -1, 0)))
 	state.add_unit(Unit.new(D_PISTOL, UPSTAIRS_B, DRIFTER, Taxonomy.WeaponClass.PISTOL))
+	for machine in machines():
+		state.add_machine(machine)
 	Occupants.seat(state, occupant_roster())
 	return state

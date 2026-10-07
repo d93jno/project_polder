@@ -1,6 +1,6 @@
 # Phase 6 — Interact gizmos and the sluice: machines you can start, and water you can point
 
-**Status:** 6.0–6.4 completed; 6.5 not built. Slices 6.0–6.5 below; §7 decisions locked.
+**Status:** completed — 6.0–6.5 shipped. §7 decisions locked.
 **Tracks:** GDD v1.18 §3.1 (contact), §5.3 (AP), §5.6 (objectives: start / hold / stop the machine), §6.4 (redirection), §6.5 (the first-contact sluice); UI/UX v0.19 §3 (mid-fight water), §4.4 (reaction preview), §5 (confirm tier).
 **Depends on:** Phase 5 (`plans/05_commit_and_undo.md`) — a sluice is a Confirmed-tier action, and it goes through the one confirm prompt and the undo history. Phase 4 — "is it Live?" for the knock, the hatch and the machine comes from fog. Phase 3 — the terrace is the bowl the machines are authored on.
 **Goal:** the three things the terrace has been waiting for. A machine is data on a bowl with a state a command can change; interacting with one prices itself, names the Watches it would trigger and whether a Live hostile contests it before the player commits; and opening the sluice changes the water the whole rules layer reads, with a preview that shows exactly which cells change and what of the squad's stands in them.
@@ -101,6 +101,14 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint from 6
 **Ships.** A hatch on house A's stair column, a pump house and a sluice on the levee, as cells in `flooded_terrace.gd` and stamps in the stamps file, using the kit pieces that exist. A fight in `tests/fights/test_flooded_terrace.gd` opens the sluice and asserts the consequence on movement and exposure. Lint checks the machines have stamps and the stamps have machines (the same two-way check 3.8 added for connectors).
 
 **Done when.** The terrace passes lint; the fight test opens the sluice and asserts the squad on the canal now swims where it waded, and a roof stays dry (GDD 5.8); a shot shows the three machines drawn.
+
+**What landed.** The terrace is 20×14 with three machines (`FloodedTerrace.machines()`, added by `opening()`):
+
+- **Hatch** at (4,5,1), replacing the ladder to the roof. It starts open, so the climb is what it was, and it carries no `LINK` flag: the machine decides alone. Closing it from the roof denies the climb, and opening it restores it.
+- **Pump house** (`PUMP_ORIGIN` (14,5,0), machine cell (14,5,0)) and **sluice gauge** (`SLUICE_ORIGIN` (4,1,0), machine cell (4,2,0)), each a 2×2 block of masonry, which is what the kit's MANIFEST says both pieces are. A unit operates one from an adjacent tile.
+- Stamps use the kit's own `env_hatch`, `env_pump_house` and `env_sluice_gauge`; no new art.
+
+`BowlAuthoring.lint` takes the machines and checks them both ways, as 3.8 did for connectors: a machine must have its piece stamped over its cell; a hatch, pump house or sluice stamp must have a machine; a drawn connector is linked by either the map's `LINK` or a hatch; and a hatch that also carries `LINK` fails. `tests/fights/test_flooded_terrace.gd` asserts the three machines and their starting state, the climb through the hatch, closing it from the roof and opening it again, a pump that starts and changes no water, the default Flooded terrace refusing the sluice, and a Falling terrace where the sluice steps the water to Flooded. The fight test asserts what the rules actually change, which is not the move cost: `step_move_cost` is the same for Falling and Flooded today, and what differs is hiding (chest-deep Falling water hides no one, GDD 5.4; deep water can), so the test checks `ExposureQuery` on the canal before and after, plus that both roofs stay Dry. The shots from 6.3 and 6.4 now use the terrace's own sluice instead of one added to the state, and `terrace_machines` probes that the three pieces are drawn (fog draws nothing for a stamp with an Unknown cell, so the setup walks two of the squad up to the blocks first). What is not built: drawing the hatch's open or closed lid, the sluice leaf lifting, and the pump house's damaged dressing (the kit has the nodes; they wait on the table's pump upkeep).
 
 ---
 

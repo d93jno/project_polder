@@ -15,9 +15,37 @@ func test_terrace_passes_lint() -> void:
 	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
 	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
 	var failures := BowlAuthoring.lint(
-		FloodedTerrace.map(), TerraceStamps.stamps(), TerraceStamps.swim_columns()
+		FloodedTerrace.map(), TerraceStamps.stamps(), TerraceStamps.swim_columns(),
+		FloodedTerrace.machines()
 	)
 	assert_eq(failures, PackedStringArray(), "\n".join(failures))
+
+
+func _terrace_lint(map: BowlMap, stamps: Array, machines: Array) -> String:
+	return "\n".join(BowlAuthoring.lint(map, stamps, [], machines))
+
+
+func test_terrace_machines_are_each_drawn_and_each_machine_piece_is_a_machine() -> void:
+	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	## Without its machines the terrace's hatch has no link and the machine pieces have no machine.
+	var bare := _terrace_lint(FloodedTerrace.map(), TerraceStamps.stamps(), [])
+	assert_true(bare.contains("connector drawn but not linked"), bare)
+	assert_true(bare.contains("machine piece with no machine: env_pump_house"), bare)
+	assert_true(bare.contains("machine piece with no machine: env_sluice_gauge"), bare)
+	## Take a stamp away and its machine is not drawn.
+	var no_sluice: Array = TerraceStamps.stamps().filter(func(s): return s.piece_id != "env_sluice_gauge")
+	var undrawn := _terrace_lint(FloodedTerrace.map(), no_sluice, FloodedTerrace.machines())
+	assert_true(undrawn.contains("machine not drawn: SLUICE"), undrawn)
+
+
+func test_a_hatch_that_also_carries_a_link_flag_fails_lint() -> void:
+	const TerraceStamps := preload("res://presentation/fixtures/flooded_terrace_stamps.gd")
+	const FloodedTerrace := preload("res://rules/fixtures/flooded_terrace.gd")
+	var map := FloodedTerrace.map()
+	map.get_cell(FloodedTerrace.HATCH).flags |= Taxonomy.CellFlags.LINK
+	var out := _terrace_lint(map, TerraceStamps.stamps(), FloodedTerrace.machines())
+	assert_true(out.contains("also carries LINK"), out)
 
 
 func test_cutaway_passes_lint() -> void:

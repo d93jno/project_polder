@@ -15,13 +15,15 @@ static func lint(
 	map: BowlMap,
 	stamps: Array,
 	swim_columns: Array = [], ## Vector2i (x, y) columns allowed to stack without a connector
+	machines: Array = [], ## Machine: what the bowl authors, to be checked against its stamps
 ) -> PackedStringArray:
 	var failures: PackedStringArray = []
 	failures.append_array(_cover_honesty(map, stamps))
 	failures.append_array(_no_orphan_cells(map, stamps))
 	failures.append_array(_no_overlaps(stamps))
 	failures.append_array(_no_invisible_climb(map, stamps, swim_columns))
-	failures.append_array(_links_match_connectors(map, stamps))
+	failures.append_array(_links_match_connectors(map, stamps, machines))
+	failures.append_array(_machines_match_stamps(map, stamps, machines))
 	return failures
 
 
@@ -144,7 +146,7 @@ static func _no_invisible_climb(
 
 
 ## GDD 5.3: the LINK flag is the rule, the connector stamp is the picture. Each must say the same.
-static func _links_match_connectors(map: BowlMap, stamps: Array) -> PackedStringArray:
+static func _links_match_connectors(map: BowlMap, stamps: Array, machines: Array = []) -> PackedStringArray:
 	var out: PackedStringArray = []
 	var linked: Dictionary = _connector_links(stamps)
 	for key in linked.keys():
@@ -152,6 +154,8 @@ static func _links_match_connectors(map: BowlMap, stamps: Array) -> PackedString
 		var lower := Vector3i(int(p[0]), int(p[1]), int(p[2]))
 		if not map.has_cell(lower):
 			continue
+		if _hatch_at(machines, lower) != null:
+			continue ## the hatch decides alone (plan 06 §6.0)
 		if not map.can_step(lower, lower + Vector3i(0, 0, 1)):
 			out.append("connector drawn but not linked: no LINK flag at %s or above it" % lower)
 	for coord_any in map.cells.keys():
@@ -159,6 +163,56 @@ static func _links_match_connectors(map: BowlMap, stamps: Array) -> PackedString
 		var cell: Cell = map.get_cell(coord)
 		if cell.has_flag(Taxonomy.CellFlags.LINK) and not linked.has("%d,%d,%d" % [coord.x, coord.y, coord.z]):
 			out.append("LINK flag with no stair/ladder/hatch drawn at %s" % coord)
+	return out
+
+
+## The piece each machine kind is drawn as (the kit's own ids, assets/env/kits/terrace/MANIFEST.md).
+const MACHINE_PIECES := {
+	Machine.Kind.HATCH: "env_hatch",
+	Machine.Kind.PUMP: "env_pump_house",
+	Machine.Kind.SLUICE: "env_sluice_gauge",
+}
+
+
+static func _hatch_at(machines: Array, cell: Vector3i) -> Machine:
+	for m in machines:
+		var machine: Machine = m
+		if machine.kind == Machine.Kind.HATCH and machine.cell == cell:
+			return machine
+	return null
+
+
+## Two-way, as 3.8 did for connectors: a machine must be drawn, a machine piece must be a machine,
+## and a hatch is the only truth for its climb, so it must not also carry a LINK flag.
+static func _machines_match_stamps(map: BowlMap, stamps: Array, machines: Array) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for m in machines:
+		var machine: Machine = m
+		var piece: String = MACHINE_PIECES[machine.kind]
+		var drawn := false
+		for s in stamps:
+			var stamp: Stamp = s
+			if stamp.piece_id == piece and machine.cell in PresentationCatalog.stamp_cells(stamp):
+				drawn = true
+		if not drawn:
+			out.append("machine not drawn: %s at %s has no %s stamp over it" % [
+				Machine.Kind.keys()[machine.kind], machine.cell, piece
+			])
+		if machine.kind == Machine.Kind.HATCH and map.has_cell(machine.cell) \
+				and map.get_cell(machine.cell).has_flag(Taxonomy.CellFlags.LINK):
+			out.append("hatch at %s also carries LINK: the hatch decides the climb alone" % machine.cell)
+	for s in stamps:
+		var stamp: Stamp = s
+		for kind in MACHINE_PIECES:
+			if MACHINE_PIECES[kind] != stamp.piece_id:
+				continue
+			var found := false
+			for m in machines:
+				var machine: Machine = m
+				if machine.kind == kind and machine.cell in PresentationCatalog.stamp_cells(stamp):
+					found = true
+			if not found:
+				out.append("machine piece with no machine: %s at %s" % [stamp.piece_id, stamp.origin])
 	return out
 
 
