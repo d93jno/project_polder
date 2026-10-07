@@ -1,6 +1,6 @@
 # Phase 6 — Interact gizmos and the sluice: machines you can start, and water you can point
 
-**Status:** drafted, nothing built. Slices 6.0–6.5 below; §7 decisions need an answer before 6.1.
+**Status:** drafted, nothing built. Slices 6.0–6.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §3.1 (contact), §5.3 (AP), §5.6 (objectives: start / hold / stop the machine), §6.4 (redirection), §6.5 (the first-contact sluice); UI/UX v0.19 §3 (mid-fight water), §4.4 (reaction preview), §5 (confirm tier).
 **Depends on:** Phase 5 (`plans/05_commit_and_undo.md`) — a sluice is a Confirmed-tier action, and it goes through the one confirm prompt and the undo history. Phase 4 — "is it Live?" for the knock, the hatch and the machine comes from fog. Phase 3 — the terrace is the bowl the machines are authored on.
 **Goal:** the three things the terrace has been waiting for. A machine is data on a bowl with a state a command can change; interacting with one prices itself, names the Watches it would trigger and whether a Live hostile contests it before the player commits; and opening the sluice changes the water the whole rules layer reads, with a preview that shows exactly which cells change and what of the squad's stands in them.
@@ -124,34 +124,44 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint from 6
 
 ---
 
-## 7. Decisions still needed
+## 7. Decisions
 
-### 7.1 — How does a command change water without writing a shared map?
+### 7.1 — How does a command change water without writing a shared map? **`BowlMap.with_water`.**
+
+Locked (A).
 
 The map is shared by every copy of a state and CLAUDE.md says commands must never write it.
 
-- **A. ★ `BowlMap.with_water(step, z)`.** A new map object that shares the cell dictionary and owns its water; the redirection swaps `state.map` for it. No call site changes, because every rule already reads water through `map.step_at`. The cells stay shared and read-only; only the two water fields differ. Smallest change that keeps every existing invariant.
+- **A (chosen). `BowlMap.with_water(step, z)`.** A new map object that shares the cell dictionary and owns its water; the redirection swaps `state.map` for it. No call site changes, because every rule already reads water through `map.step_at`. The cells stay shared and read-only; only the two water fields differ. Smallest change that keeps every existing invariant.
 - **B. Water on `CombatState`.** `state.water_step` / `state.water_z`, and every rule reads water from the state. Cleaner ownership, but it changes the signature of every function that takes a map and reads water (`Movement`, exposure, break, overlay queries, the drawing's `in_water`), a wide change for one feature.
 - **C. A water overlay keyed by cell.** A per-cell step on the state, consulted before the map. Supports two surfaces later, but it is a second water model beside the map's and the two can disagree.
 
-### 7.2 — What does the sluice change in a bowl with one plane?
+### 7.2 — What does the sluice change in a bowl with one plane? **The whole bowl steps one wetter.**
 
-- **A. ★ The whole bowl steps one wetter.** Matches GDD §6.4's "one step wetter" on the only plane the terrace has.
+Locked (A).
+
+- **A (chosen). The whole bowl steps one wetter.** Matches GDD §6.4's "one step wetter" on the only plane the terrace has.
 - **B. Only cells downstream of the sluice.** Closer to a real sluice, but "downstream" needs a flow direction the map does not carry, which is a new rule and a GDD change.
 
-### 7.3 — Can the sluice be closed again in a fight?
+### 7.3 — Can the sluice be closed again in a fight? **No: opening is one-way within a fight.**
 
-- **A. ★ No: opening is one-way within a fight.** GDD §6.4: the sector stays wet for days. It also keeps the preview honest, because there is no "undo" the player can mistake for the sluice's own.
+Locked (A).
+
+- **A (chosen). No: opening is one-way within a fight.** GDD §6.4: the sector stays wet for days. It also keeps the preview honest, because there is no "undo" the player can mistake for the sluice's own.
 - **B. Yes, closing steps it back.** Easier to experiment with, but it contradicts the hangover the GDD builds the card around.
 
-### 7.4 — What does a pump do in a fight?
+### 7.4 — What does a pump do in a fight? **A flippable state; its water effect is table mode's.**
 
-- **A. ★ A flippable state with a rule that reads it only where the GDD asks for one: nothing yet.** Ship the machine and its interact, assert the state flips, and leave its water effect to table mode (out of scope above).
+Locked (A).
+
+- **A (chosen). A flippable state with a rule that reads it only where the GDD asks for one: nothing yet.** Ship the machine and its interact, assert the state flips, and leave its water effect to table mode (out of scope above).
 - **B. A pump lowers the step by one.** The natural gameplay, but it is the same redirection mechanism run the other way and wants the upkeep model first (GDD §6.1).
 
-### 7.5 — Does a closed hatch block shots and sight?
+### 7.5 — Does a closed hatch block shots and sight? **No: a hatch gates the climb only.**
 
-- **A. ★ No. A hatch is a connector, not a wall.** It gates the climb only (6.0). Sight and shot rules stay as they are.
+Locked (A).
+
+- **A (chosen). No. A hatch is a connector, not a wall.** It gates the climb only (6.0). Sight and shot rules stay as they are.
 - **B. A closed hatch blocks the line through its cell.** More tactical, but it adds a material-like state to LOS and Plan 4's one-vision-query rule would need to learn it.
 
 ---
