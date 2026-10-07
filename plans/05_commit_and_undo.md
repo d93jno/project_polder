@@ -1,6 +1,6 @@
 # Phase 5 — Commit and undo: what stands, and what the player can take back
 
-**Status:** drafted, nothing built. Slices 5.0–5.4 below; §7 decisions need an answer before 5.2.
+**Status:** drafted, nothing built. Slices 5.0–5.4 below; §7 decisions locked.
 **Tracks:** GDD v1.17 §3.1 (free movement until contact), §5.3 (AP), §5.5 (MEDEVAC, bleeders), §8.2 (Ironman); UI/UX v0.17 §5 (what commits), §3 (mid-fight water).
 **Depends on:** Phase 4 (`plans/04_fog_what_the_squad_knows.md`), specifically 4.5: `RevealResult` and `Command.apply_outcome` are the fact this plan spends.
 **Goal:** the four tiers of UI §5 (free, reversible, committed, confirmed) exist in code, not only in prose. A move that revealed nothing can be taken back; one that revealed anything stands; the ugly irreversible actions ask once and state their cost. The interface never implies a tier it does not enforce.
@@ -81,7 +81,7 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint when t
 
 ### 5.4 — Housekeeping
 
-**Ships.** UI §5 and §18 ticked for what is built; the Trauma Kit registered as a confirm action pending the MEDEVAC slice.
+**Ships.** UI §5 and §18 ticked for what is built, and the committed row naming Watch set (7.4); the Trauma Kit registered as a confirm action pending the MEDEVAC slice.
 
 **Done when.** `make test` green, docs match the code, and nothing in `fight_view` decides a tier.
 
@@ -115,23 +115,23 @@ Each slice ends with `make test` green; `make shots` joins the checkpoint when t
 
 ---
 
-## 7. Decisions still needed
+## 7. Decisions
 
-### 7.1 — Does a reveal clear all history, or only the move's own entry?
+### 7.1 — Does a reveal clear all history, or only the move's own entry? **Clear everything behind it.**
 
-Working default: **clear everything behind it** (decision above). The alternative keeps earlier unrevealing moves undoable, but then undoing them replays a position the player has since learned things about. Raise to the GDD only if playtests find the clear too harsh.
+Locked. The alternative keeps earlier unrevealing moves undoable, but then undoing them replays a position the player has since learned things about. Raise to the GDD only if playtests find the clear too harsh.
 
-### 7.2 — Does undo refund AP?
+### 7.2 — Does undo refund AP? **Yes.**
 
-Working default: **yes, the whole state returns, AP included**, because a taken-back move was never committed (UI §5). Free movement before contact has no AP at all (GDD §3.1), so this matters only once phases start.
+Locked. The whole state returns, AP included, because a taken-back move was never committed (UI §5). Free movement before contact has no AP at all (GDD §3.1), so this matters only once phases start.
 
-### 7.3 — How many steps back?
+### 7.3 — How many steps back? **Unbounded within a phase, cleared at phase end.**
 
-Working default: **unbounded within a phase, cleared at phase end.** A cap is a rule nobody asked for; the reveal boundary already limits it.
+Locked. A cap is a rule nobody asked for; the reveal boundary already limits it.
 
-### 7.4 — Is a Watch set a reversible move?
+### 7.4 — Is a Watch set a reversible move? **No, it is committed.**
 
-Setting a Watch spends AP and reveals nothing, but UI §5 does not list it as committed. Working default: **committed** (an act), because the Watch can trigger on the enemy's very next step and the player would be undoing around a reaction. Confirm with the GDD wording on Watch (§5.5).
+Locked. Setting a Watch spends AP and reveals nothing, but UI §5 does not list it as committed. It is an act, because the Watch can trigger on the enemy's very next step and the player would be undoing around a reaction. UI §5's committed row names it in 5.4.
 
 ---
 
