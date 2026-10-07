@@ -325,11 +325,13 @@ New with GDD 1.11. The route and its window must be visible *before* the Trauma 
 - The store (4.6) makes a previously walked route Known-quiet on a return visit, which is the payoff the store exists for.
 - How window length is computed from route length, and how logistics and waystations extend it, are the MEDEVAC plan's. This decision only fixes *which terrain* it may use and *what happens with none*.
 
-### 7.9 — How do map facts interact with fog? **Deferred to table mode. Three questions, none blocking.**
+### 7.9 — How do map facts interact with fog? **Decided (GDD 1.18); built in table mode.**
 
 New with GDD 1.12. The causeway's approach is now readable in bands, and once it is building *"its route and progress are map facts … a loud town cannot make itself unseen again by waiting."* Survey marks and staged material are the earlier bands; FOBs are the same kind of thing (UI §8: *"places on the map, visible, targets"*). None of these is an actor (fog hides actors) and none is terrain that ages toward dust (Known-quiet). They are persistent structures the player is meant to be able to read.
 
-**Nothing in this plan needs the answer.** Inside a fight there is no causeway to hide: a fight *on* a causeway is authored terrain like any bowl (GDD §6.5; this is my reading, the GDD only says first contact "follows Section 6.5"). The table-scale rule belongs to table mode. The questions are recorded so the plan that writes it starts from them.
+**Nothing in this plan needs the answer.** Inside a fight there is no causeway to hide: a fight *on* a causeway is authored terrain like any bowl (GDD §6.5; this is my reading, the GDD only says first contact "follows Section 6.5"). The table-scale rule belongs to table mode. The questions are recorded, and now answered, so the plan that writes it starts from them.
+
+**Decided:** Q1 dome-fed and current on known bowls, last-seen elsewhere; Q2 progress is frozen and aged where last-seen, current where dome-fed; Q3 two layers, truth in the campaign and what was last seen in a top-level `facts` map in the store. GDD 1.18 and UI 0.18 carry it.
 
 **Q1 — What makes a map fact visible?** The docs already give three precedents that do not agree, and the causeway text picks none:
 
@@ -357,7 +359,7 @@ GDD 1.13: *"A squad wipe without the founder ends that deployment and loses thos
 - **"Found"** means a later squad has a sight line onto the anchor (Live), not that it physically stands there. This is cheap and matches "a squad's vision reaches a tile". If the GDD wants a body to be walked to, that is a stricter rule and a different trigger.
 - **What arrives** is the sealed cells as Known-quiet, stamped with the visit they were seen on, so they are already aged. Nothing arrives as Live.
 
-**Also open, and only the GDD can settle it:** what counts as a wipe. The plan's definition (no active player unit, none extracted) treats a squad of bleeders nobody can reach as wiped. A partial outcome (two out, two dead) is EXTRACTED, not a wipe, and its intel is written normally.
+**Settled (GDD 1.18):** found means sight, as above, and a wipe is no active player unit and none extracted, which treats a squad of bleeders nobody can reach as wiped. A partial outcome (two out, two dead) is EXTRACTED, not a wipe, and its intel is written normally.
 
 ### 7.11 — In what order do stacked Watches resolve? **Oldest Watch first.**
 
@@ -382,13 +384,12 @@ All of these landed in **GDD 1.14** and **UI/UX 0.9**, except the open ones at t
 | Stacked Watches resolve oldest first (§7.11) | GDD §5.2 Watch paragraph; UI §4.3 and §4.4 |
 | Exposure sources located by what a unit can locate (§4.3) | UI §4.2 "Where from is what this unit can locate"; UI §6 "The squad's picture" |
 
-**Still open, and now recorded where they will be found:**
+**Settled in GDD 1.18 and UI 0.18:** map facts against fog (§7.9), found means sight, a wipe is no unit able to act and none extracted, and a Trauma Kit commit is a Confirmed action.
 
-- **Map facts against fog** (§7.9): GDD §10 and a UI §18 checklist item. Leaning is dome-fed on known bowls, last-seen elsewhere.
+**Still open, recorded in GDD §10:**
+
 - **Tactical comms** (earshot radius, wall dampening, radios as equipment): GDD §10.
-- **Recovering a lost squad's intel**: sight versus reaching the body on foot. GDD §10. Plan 04's working default is sight.
 - **The floor MEDEVAC window** (1 round): GDD §10, tuning.
-- **Committing a Trauma Kit as a Confirmed-tier action** is my inference from GDD 1.11's "before committing the Trauma Kit". It was not added to UI §5's tier table. Decide it when `plans/05` is written.
 
 ---
 
