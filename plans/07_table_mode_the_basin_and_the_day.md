@@ -1,6 +1,6 @@
 # Phase 7 — Table mode: the basin as a graph, and a day that ticks
 
-**Status:** drafted, nothing built. Slices 7.0–7.5 below; §7 decisions need an answer before 7.0.
+**Status:** drafted, nothing built. Slices 7.0–7.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §3.1 (modes, time, the boat camp), §4.2 (logistics, the table day's verbs), §4.3 (labor board), §6.1 (the graph), §6.2 (creep), §8.5 (extraction); UI/UX v0.21 §8 (table mode), §5 (what commits), §6 (fog; map facts, decided in plan 4 §7.9).
 **Depends on:** Phase 6 — `BowlMap.with_water` is how a dispatched fight reads the basin's water for its bowl; machines are what a fight changes on the way back. Phase 5 — "Day end" is one explicit commit and goes through the confirm prompt. Phase 4 — the campaign store (`KnowledgeStore`) is the save this plan extends, and map facts (§7.9) are the table's fog.
 **Goal:** the other half of the game exists as a deterministic layer under a minimal surface. The basin is a graph of bowls the rules can read (step, grade, pump, feeders); a day ends and the water walks, readably; the player moves a handful of hands, sends one fireteam to one bowl, and plays that fight on the same geometry they already play; and when it ends they are home, with the morning on the table. If a table day has no decision that changes tomorrow's map, the slice has failed UI filter 10.
@@ -130,38 +130,50 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint from 7
 
 ---
 
-## 7. Decisions still needed
+## 7. Decisions
 
-### 7.1 — What does the first playable table day decide?
+### 7.1 — What does the first playable table day decide? **Water and labor, with a real dispatch.**
 
-- **A. ★ Water and labor, with a real dispatch.** Read the graph, move hands, send the fireteam to the one authored bowl, end the day, read the morning. It exercises every rule in this plan and no other layer.
+Locked (A).
+
+- **A (chosen). Water and labor, with a real dispatch.** Read the graph, move hands, send the fireteam to the one authored bowl, end the day, read the morning. It exercises every rule in this plan and no other layer.
 - **B. Add the currencies economy.** Food, fuel and scrap that actually deplete and replenish. More to balance before anything is playable, and the GDD leaves the digits to the prototype.
 - **C. Dispatch only.** A menu that launches the terrace fight. Fast, but it is the "table day with no decision that changes tomorrow's map" UI §8 says is a failure.
 
-### 7.2 — How big is the fixture basin?
+### 7.2 — How big is the fixture basin? **About seven bowls in three rings: a rim, a floor ring and a sump.**
 
-- **A. ★ About seven bowls in three rings: a rim, a floor ring and a sump.** Enough that a feeder list can have two or three entries, so "two neighbours or a majority of the ring" and the sump's grade both do work. Only the terrace has an authored map (7.3).
+Locked (A).
+
+- **A (chosen). About seven bowls in three rings: a rim, a floor ring and a sump.** Enough that a feeder list can have two or three entries, so "two neighbours or a majority of the ring" and the sump's grade both do work. Only the terrace has an authored map (7.3).
 - **B. Three bowls.** Too few: the majority rule degenerates and the knowability test proves little.
 - **C. A full basin of twenty or more.** Mostly authoring and balancing, with no extra rule to prove.
 
-### 7.3 — What form does the table take?
+### 7.3 — What form does the table take? **A flat board: bowls as nodes, feeders as edges, in 2D over the existing HUD layer.**
 
-- **A. ★ A flat board: bowls as nodes, feeders as edges, in 2D over the existing HUD layer.** Cheap, readable without hue, and it proves UI §8's claims. A 3D table can replace it later without touching the rules.
+Locked (A).
+
+- **A (chosen). A flat board: bowls as nodes, feeders as edges, in 2D over the existing HUD layer.** Cheap, readable without hue, and it proves UI §8's claims. A 3D table can replace it later without touching the rules.
 - **B. A 3D model of the basin.** The "table" of the fiction and a large art and camera cost. It should wait until the rules and the information design are settled.
 
-### 7.4 — Is Day end the only way time passes on the table?
+### 7.4 — Is Day end the only way time passes on the table? **Yes, plus one day per dispatch.**
 
-- **A. ★ Yes, plus one day per dispatch.** GDD §4.2: a table day spends a day when you sit, and a deployment is a day. The clock stays one number.
+Locked (A).
+
+- **A (chosen). Yes, plus one day per dispatch.** GDD §4.2: a table day spends a day when you sit, and a deployment is a day. The clock stays one number.
 - **B. Also a "rest" or "skip" verb.** That is a way to end a day with nothing decided, which UI §8 names as the thing to avoid.
 
-### 7.5 — How does a pump's upkeep state get set?
+### 7.5 — How does a pump's upkeep state get set? **From posted hands and scrap over the previous days.**
 
-- **A. ★ From posted hands and scrap over the previous days: fully posted holds it `KEPT`, a gap lets it fall to `THIN`, a longer gap to `FAILING`, then it breaks.** A fixed counter per pump, so wear is a clock the player can read (GDD §6.2: "Wear is the clock").
+Locked (A).
+
+- **A (chosen). From posted hands and scrap over the previous days: fully posted holds it `KEPT`, a gap lets it fall to `THIN`, a longer gap to `FAILING`, then it breaks.** A fixed counter per pump, so wear is a clock the player can read (GDD §6.2: "Wear is the clock").
 - **B. A separate upkeep action per pump.** More verbs than the labor board allows (GDD §4.3: a handful of buckets, not per-pump clicking).
 
-### 7.6 — Does a wiped squad's loss land before or after the Day end?
+### 7.6 — Does a wiped squad's loss land before or after the Day end? **At the fight's end, on the way home.**
 
-- **A. ★ At the fight's end, on the way home.** The table opens on the morning with the bench already smaller, so the loss is the first thing read, not a surprise at the next tick.
+Locked (A).
+
+- **A (chosen). At the fight's end, on the way home.** The table opens on the morning with the bench already smaller, so the loss is the first thing read, not a surprise at the next tick.
 - **B. At Day end.** Keeps the table's number steady until the commit, but hides a loss the player already knows.
 
 ---
