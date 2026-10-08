@@ -1,0 +1,174 @@
+# Phase 8 — Redirection at table scale: spread, hangover and the card
+
+**Status:** drafted, nothing built. Slices 8.0–8.5 below; §7 decisions need an answer before 8.0.
+**Tracks:** GDD v1.18 §6.2 (creep), §6.4 (redirection: the card, its constraints, its cost), §6.5 (the first-contact sluice), §6.6 (Bitter), §4.3 (what a dry tile is), §4.2 ("refuse the sluice"); UI/UX v0.22 §8 (redirection is previewed before it is spent), §3 (mid-fight water).
+**Depends on:** Phase 7 — the basin, the day tick, the campaign, dispatch and the way home. Phase 6 — a sluice opened in a fight is the redirection; `HomeCommand` already leaves the bowl a step wetter and held (`hang_days`). Phase 5 — the preview ends in a Confirmed action.
+**Goal:** the highest-consequence button in the game is a decision the player made with the consequences in front of them. A redirection spreads in a way the rules can state, leaves a hangover the campaign remembers (and that a later ending can read as Bitter), and is previewed on the table before the fireteam is sent: which bowls step wetter and by how much, whether the creep reaches the next bowl, roughly how long the target hangs wet, and what of the player's own is standing in it. A regretted sluice should be a decision the player made, not a consequence the map withheld (GDD §6.4).
+
+---
+
+## 0. Why this, and why not the alternatives
+
+**Plan 7 stopped at the edge of the idea.** A sluice opened in a fight steps the bowl one wetter and holds it for five days (`HomeCommand`, `BasinBowl.hang_days`). That is the hold. It is not the redirection GDD §6.4 describes: nothing spreads to a neighbour ("creep can overshoot into the next bowl if ignored"), nothing of the player's stands anywhere to be drowned, no record is kept for the Bitter rule, and the table says nothing before the player commits. The first button in the game with a hangover has no hangover on the table yet.
+
+**The design is written, and one clause in it is a test.** GDD §6.4: *"Knowable before it is spent … which bowls step wetter and by how much, whether the creep can reach the next bowl, roughly how long the target hangs wet, and what of theirs is standing in it."* That is a function of the basin and the labor plan, so it is a pure query under `rules/basin/` that simulates on a copy and diffs, exactly how plan 6's interact preview works at the tactical scale. The invariant is the same one: the preview is the rule run, so it cannot disagree with it.
+
+**What exists to build on.** `BasinDay` already has creep, a leak cap and the drying rule; `Campaign` already carries the labor board and the basin; `HomeCommand` already records a redirection as a step and a hang. The new parts are small and each is testable headless: a spread rule, a per-bowl list of what stands there, a ledger, a simulation, and one surface.
+
+**Why not the neighbours.**
+
+- *Bands, mail, the causeway and FOBs* are map facts on the facts layer (plan 4 §7.9) and do not need a redirection to exist. They are the next plans' (§8). The causeway is the one with a stake here: GDD §6.4 says "you can drown a bridge", so the preview must be able to name a road. That needs a road flag per bowl (§7.2) and nothing more.
+- *The founder* (GDD §8.2–§8.3: precise redirection wants the body on the gauge) is not modelled yet. Gating the sluice on the founder is a rules change that waits for the founder; "refuse the sluice" is built as a table choice that does not need one (§7.5).
+- *Reverse a pump, cut a levee.* GDD §6.4 lists three ways to redirect. The terrace has a sluice; a pump and a levee cut are other machines on other maps. The ledger and the preview are written over "a redirection", not "a sluice", so they take those later.
+- *The economy.* Fields that are drowned cost food in the GDD, and food is a plain count that does not tick yet (plan 7 decision 7.1). A ruined field is recorded and shown; what it does to rations is the day-economy plan's.
+
+---
+
+## 1. Decisions taken
+
+| Decision | Choice | Consequence |
+| --- | --- | --- |
+| What a redirection is | **A recorded event, not just a changed step** | The campaign keeps a ledger: bowl, day, the step it came from and whether it was the authored first-contact card. Bitter reads the ledger. |
+| The preview | **The rule run on a copy of the campaign, diffed** | No second implementation. `RedirectionPreview` clones the campaign, applies the redirection, ticks the basin forward under the current labor plan and reports what changed. |
+| Knowable | **The preview names exactly what GDD §6.4 lists, and says when it is a range** | Precision follows the ring (§7.3); a half-fixed ring previews as a range and the card says it is a range. |
+| What the table may know | **Only bowls the player knows** | The preview never names a bowl that reads *unknown*; creep into one says "into ground you have not walked". |
+| Where the preview appears | **On the dispatch slot, before the fireteam is sent** | UI §8: dispatch is the only moment the information can change a decision. |
+| Bitter | **A pure query, no UI** | GDD §6.6: the ending is computed from hidden counts; there is no score screen. `Ending.is_bitter(campaign)` exists so the later ending plan can call it; nothing here draws it. |
+
+---
+
+## 2. Layout
+
+```
+rules/basin/basin_bowl.gd            stands: what is on a dry tile of the bowl (§7.2)
+rules/basin/basin_day.gd             creep across bowls (§7.1) and ruin on wet ground
+rules/basin/redirection.gd           Redirection: the ledger entry; the one place a bowl is redirected
+rules/campaign.gd                    redirections: Array of Redirection
+rules/basin/redirection_preview.gd   the query: simulate on a copy, diff, say when it is a range
+rules/basin/ending.gd                Ending.is_bitter(campaign): a query, nothing draws it
+rules/commands/table/home_command.gd records the redirection through Redirection, not by hand
+rules/fixtures/bowl_openings.gd      which bowls carry a sluice, and which is the first-contact card
+presentation/table_queries.gd        the card's words, from the preview
+presentation/table_view.gd           the dispatch slot shows the card, and a "hold the sluice" choice
+tests/unit/basin/test_creep.gd, test_redirection.gd, test_redirection_preview.gd, test_ending.gd
+tests/invariants/test_knowability.gd extended: a spread step is announced like any other
+```
+
+---
+
+## 3. Deliverable phases
+
+Each slice ends with `make test` green. `make shots` joins the checkpoint at 8.4.
+
+### 8.0 — Creep across bowls
+
+**Ships.** A rule for what a redirected or leaking bowl does to the bowls it feeds (decision 7.1), written into `BasinDay` beside the leak and drying rules it extends. A bowl fed by a feeder that stands two or more steps wetter than it, and whose own ring does not hold, walks one step wetter, announced like every other step (a walk with its days, landing on a later tick). Nothing spreads past one bowl a day. The late leak cap still applies to a dead pump and is not widened to the spread: a ring that holds stops creep.
+
+**Done when.** `test_creep.gd` shows a Flooded redirected bowl pushing a Dry neighbour toward Mud over days and then stopping while its own ring holds; the same spread running on without a stop when the ring does not hold; an uphill-only rule (a bowl never pushes the bowls that feed it); and no spread into a bowl with more than half its feeders as dry as it. `tests/invariants/test_knowability.gd` is extended with redirected starts: a spread step still lands only after a day of being read as walking.
+
+### 8.1 — What stands in a bowl
+
+**Ships.** `BasinBowl.stands`: counts of what the player has on the bowl's dry tiles, from the list GDD §4.3 gives (*empty / camp / field / ruined / road / post / forward camp*) reduced to the ones a redirection can drown: `fields`, `camps`, `posts`, `ruined` and a `road` flag (§7.2). The day tick ruins a field in a bowl that has walked to Mud or wetter (GDD §4.3: "Mud kills fields") and never restores one: a ruined field is a record the player can read, not a number that heals. Counts are part of the save (`CampaignCodec`).
+
+**Done when.** A field in a bowl that goes Mud becomes ruined, once, and stays ruined when the water recedes; posts and camps in a wet bowl are listed, not destroyed; a bowl nobody has walked reads *unknown* and its stands are not readable; the codec round-trips stands; the opening fixture has a few stands on the walked bowls so the preview has something to name.
+
+### 8.2 — The ledger and Bitter
+
+**Ships.** `Redirection` (the bowl, the day, the step it left, whether it was the first-contact card) and `Campaign.redirections`. `HomeCommand` records one through `Redirection.record(campaign, bowl_id, from_step, first_contact)` instead of setting the bowl's step and hang by hand, so there is a single place that redirects. `Ending.is_bitter(campaign)` is true when a redirection that is not the first-contact card still hangs: its bowl stands wetter than the step it left. A redirection stops counting when the bowl has walked back to or past that step (GDD §6.6: "still has a hanging wet tile at the end").
+
+**Done when.** The first-contact sluice never makes a campaign Bitter; a later one does until the bowl has dried back; two redirections of one bowl count once and the second is judged against the step the first left; `HomeCommand`'s existing tests still pass through the new path; the ledger round-trips through the save.
+
+### 8.3 — The preview
+
+**Ships.** `RedirectionPreview.read(campaign, bowl_id, horizon_days)` returns, as data: the bowls that step wetter and by how many steps, whether the creep reaches a bowl beyond the first (and which), how many days the target hangs wet, and what stands in each affected bowl (`fields`, `camps`, `posts`, a road). It clones the campaign, applies the redirection through 8.2's single place, ticks the basin forward under the current labor plan and diffs. Only bowls the player knows are named; one they do not know contributes a line, "creep reaches ground you have not walked", and nothing else. Precision follows the ring (§7.3): each affected bowl in an instrumented ring gives an exact day count, and a half-fixed ring gives a range and sets `is_range`.
+
+**Done when.** The preview's list equals the bowls whose steps differ after a real `HomeCommand` with the redirection and the same days run, asserted over the opening and the late-ring fixtures; it changes nothing (campaign and basin identical before and after); it never names an unknown bowl; a ring that is fully instrumented gives exact days and a half-fixed one gives a range with `is_range` set; and no function in `presentation/` computes a step, a spread or a hang.
+
+### 8.4 — The surface
+
+**Ships.** The dispatch slot shows the card for a bowl with a sluice, before the fireteam is sent and before the sluice is ever opened: each affected bowl by name with its step now and its step after, a line for creep reaching beyond the first bowl, the hang as days (or *about N to M days*, and the word *range*), and what the player has standing in each, as counts. It reads in words and shapes with no hue (UI §14), never a bar or a percentage (UI §8), and ends in plain words, "this is what a sluice at the terrace does". The morning read gains the hangover: *held wet* lines for each redirected bowl and a spread step on the day it begins to walk.
+
+**Done when.** A shot shows the dispatch slot with the card for the terrace; the card's bowls and counts equal the preview's; the `never shows` assertions of plan 7.4 still hold; the card never names an unknown bowl; and a human can read the card, choose to send the fireteam anyway or hold the sluice (8.5), and see the same bowls change in the morning if they open it.
+
+### 8.5 — Refuse the sluice, and the first-contact card
+
+**Ships.** "Refuse the sluice" as a dispatch choice (GDD §4.2: an active no). A checkbox on the dispatch slot that seats the fight with the bowl's sluice locked (`Machine.locked`, which `MachineCommand` refuses with a reason), and a plain line on the card saying so. The first fight at a bowl that carries the authored first-contact card is flagged on the bowl (`BowlOpenings`), so the redirection it records is `first_contact` and never makes the campaign Bitter (GDD §6.5). Everything else about the first-contact sluice is unchanged.
+
+**Done when.** A dispatch with the sluice held produces a fight in which `MachineCommand` refuses to open it with a reason, and the preview card for that dispatch says there is no redirection; the first redirection at the terrace is recorded as first contact and the next is not; and the held choice is not saved (it belongs to a dispatch, which is not).
+
+---
+
+## 4. Explicitly out of scope
+
+- Gating the sluice on the founder (GDD §8.2, §8.3). A later plan, once the founder is a unit on the table.
+- Reversing a pump and cutting a levee as redirections, and a second water surface on one map (UI §3). The ledger takes them; nothing here builds them.
+- Food, rations and what a ruined field costs. Ruined fields are recorded and shown, and the day-economy plan makes them matter.
+- Roads as a graph, the causeway as a structure, vehicles. A bowl has a road flag so the preview can say "a road is drowned".
+- Bands and mail reacting to a redirection (GDD §6.4: Drifters and Wake-Riders treat the new canal as home; Purifiers notice a sluice that moved), Vanguard APCs dying in it, and the Overwatch kit drowned with it. Those are consequences on other layers.
+- The ending itself, its thresholds and its screens. `Ending.is_bitter` is a query; the ending is computed from hidden counts later (GDD §6.6).
+- Rendering the spread on the tactical map. The tile-by-tile play-out in a fight is plan 6.4's, and the basin-scale picture is the board's.
+
+---
+
+## 5. Verification
+
+1. `make test` green.
+2. **Knowable.** A spread step is announced like any other: over a long run of redirections and labor plans, no step lands unless the day before read as walking that way.
+3. **Preview equals rule.** The preview's affected bowls equal the bowls that differ after the real command and the same days, over both fixtures; it names no bowl the player has not walked.
+4. **One place redirects.** `grep` finds no assignment to a bowl's step or `hang_days` outside `BasinDay` and `Redirection`.
+5. **The ledger is the truth for Bitter.** `Ending.is_bitter` reads only the ledger and the basin; the first-contact card never counts.
+6. **Branchable.** The preview and every redirection return a new campaign and leave the input unchanged; the isolation tests are extended.
+7. **The surface decides nothing.** `table_view` and `table_board` name none of the spread, hang or preview rules; the plan 7.4 assertion is extended to them.
+8. `make shots` shows the card; UI §8's *never shows* column holds; no hue carries it.
+
+---
+
+## 6. Sequencing note
+
+**8.0 and 8.1 first and independent.** Both extend the tick and neither needs the other, but the preview needs both. **8.2 before 8.3** because the preview applies a redirection through the one place 8.2 builds. **8.3 is the contract** the screen is written against, as 7.1's knowability test was for plan 7. **8.4 needs 8.3.** **8.5 last**: it touches `Machine`, `MachineCommand`, the dispatch and the fixtures, and is the only slice that reaches back into the tactical layer.
+
+---
+
+## 7. Decisions still needed
+
+### 7.1 — How does a redirection spread?
+
+- **A. ★ A bowl fed by a feeder two or more steps wetter than itself walks one step wetter when its own ring does not hold; never past one bowl a day; never up to the bowls that feed it.** It is the overshoot GDD §6.4 names ("creep can overshoot into the next bowl if ignored"), it reuses the ring-holds test that already limits a dead pump, and it stops by itself while the ring holds.
+- **B. No spread: a redirection only holds its own bowl.** Simplest, and then "whether the creep can reach the next bowl" has no answer to preview, which the GDD says the card must name.
+- **C. A fuller water model.** Heads, flows, rates. GDD §6.1: "Do not simulate liters."
+
+### 7.2 — What does the player have standing in a bowl?
+
+- **A. ★ A few counts per bowl, plus a road flag: fields, camps, posts, ruined.** Enough for the card to say "2 fields, a post and the road" and for Mud to ruin a field. It is a summary of GDD §4.3's tile states, not a tile map.
+- **B. Only the labor board's counts, not placed anywhere.** No per-bowl answer, so the card cannot say what stands in the water.
+- **C. Per-tile states for every dry tile of every bowl.** The full GDD §4.3 list and a lot of data and authoring for a first card.
+
+### 7.3 — How tightly does a redirection preview in a half-fixed ring? (GDD §10)
+
+- **A. ★ Exact where every bowl in the affected ring has instruments, otherwise a range one day wider for each affected bowl that does not, and the card says *range*.** It follows the GDD ("a mature network previews tightly, a half-fixed outer bowl previews as a range and says so") and the day count it widens is something a test can state.
+- **B. Always exact.** Tidy, and it breaks the knowability rule the other way: it would claim more than the instruments know.
+- **C. Always a range.** Honest and uselessly vague in a fully instrumented ring.
+
+### 7.4 — Which redirection is the first-contact card?
+
+- **A. ★ The first redirection recorded at a bowl whose opening carries the authored first-contact sluice (the terrace).** GDD §6.5 says the map offers it, so it is data on the bowl, not a guess about the player's history.
+- **B. Whichever redirection happens first in the campaign.** Simple, and it lets any bowl's first sluice be the free one.
+- **C. None: every redirection counts.** The first-contact card would then make a campaign Bitter, which the GDD says it never does.
+
+### 7.5 — "Refuse the sluice", before there is a founder
+
+- **A. ★ A dispatch choice that locks the sluice for that fight.** An active no (GDD §4.2), built without the founder; gating on the founder is a later change to which squad may open it.
+- **B. Model a founder now.** The founder carries other rules (First Gauge, the Call, scars, the empty-chair tax) that are far larger than this plan.
+- **C. No refusal verb.** Then the only way to "refuse" is to send nobody, which is not the choice the GDD names.
+
+### 7.6 — When does a redirection stop counting toward Bitter?
+
+- **A. ★ When its bowl has walked back to or past the step it left.** The hangover is the water being wetter than before; once it is not, the neighbours have their land back (GDD §6.6: "still has a hanging wet tile").
+- **B. When its hold runs out.** The hold is five days and the walk back takes longer, so a campaign could stop being Bitter while the ditch is still on the map.
+- **C. Never.** Once a redirection, always Bitter. The GDD calls the ending computed from what is on the map at the end.
+
+---
+
+## 8. What comes after
+
+`plans/09` is **bands and mail** as map facts on the facts layer plan 4 reserved: the marks heard and where, arriving late until radio; a band as a person in a place with one job, warm or cold as a map fact; and the consequences GDD §6.4 lists for a redirection (the new canal becomes someone's home). Then research and the handoff, the base cutaway, the causeway and Vanguard FOBs with the push-has-broken check, the founder as a unit, the day economy that makes a ruined field cost food, and last a 3D basin table over the same rules.
