@@ -32,6 +32,8 @@ var bench: Array[int] = []
 var basin: Basin = null
 var assignments_today: int = 0
 var dispatched_today: bool = false
+## The fireteam that is out: {"bowl": String, "ids": Array[int]}. Empty while everyone is home.
+var deployment: Dictionary = {}
 ## What the last Day end did, as data: the morning read draws from this.
 var morning: DayResult = null
 
@@ -76,6 +78,30 @@ func posted_pumps() -> Dictionary:
 	return posted
 
 
+## One person is gone: a roster death shrinks the pool (GDD §4.2). Taken from the roster first, then
+## wherever hands are idle, then from the rest in a fixed order, so it is always the same person.
+func lose_person() -> void:
+	for bucket in [
+		Bucket.ROSTER, Bucket.IDLE, Bucket.POSTS, Bucket.WORKSHOP, Bucket.RESEARCH, Bucket.FIELDS, Bucket.PUMPS,
+	]:
+		if hands(bucket) > 0:
+			labor[bucket] = hands(bucket) - 1
+			return
+
+
+## The day closes: pumps are posted, scrap is spent, the basin ticks and the next morning opens with
+## what moved. Call it on a campaign you own. Day end and the way home both end a day through here.
+func close_day() -> void:
+	var posted := posted_pumps()
+	scrap -= posted.size() * SCRAP_PER_POST
+	var result := BasinDay.end(basin, posted)
+	basin = result.basin
+	morning = result
+	day += 1
+	assignments_today = 0
+	dispatched_today = false
+
+
 func duplicate_campaign() -> Campaign:
 	var copy := Campaign.new()
 	copy.day = day
@@ -87,5 +113,6 @@ func duplicate_campaign() -> Campaign:
 	copy.basin = basin.duplicate_basin() if basin != null else null
 	copy.assignments_today = assignments_today
 	copy.dispatched_today = dispatched_today
+	copy.deployment = deployment.duplicate(true)
 	copy.morning = morning
 	return copy

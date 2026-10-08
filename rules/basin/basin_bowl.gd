@@ -21,6 +21,8 @@ var leak_days: int = 2
 ## A step in progress, so it can be read the day before it lands (GDD §6.1 knowability).
 var walk: Walk = Walk.NONE
 var walk_days_left: int = 0
+## Days left that this bowl is held wet by a chosen redirection (GDD §6.4). Nothing dries it meanwhile.
+var hang_days: int = 0
 ## Walked before. An unvisited bowl reads as unknown, never as dry.
 var known: bool = false
 ## Instruments are awake here, so the ring around it can be read. A plate reads only its own bowl.
@@ -51,6 +53,7 @@ func duplicate_bowl() -> BasinBowl:
 	copy.leak_days = leak_days
 	copy.walk = walk
 	copy.walk_days_left = walk_days_left
+	copy.hang_days = hang_days
 	copy.known = known
 	copy.instrumented = instrumented
 	return copy

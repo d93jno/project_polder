@@ -8,6 +8,8 @@ extends TableCommand
 func validate(campaign: Campaign) -> CommandResult:
 	if campaign.basin == null:
 		return CommandResult.failure("there is no basin to tick")
+	if not campaign.deployment.is_empty():
+		return CommandResult.failure("the fireteam is still out")
 	return CommandResult.success()
 
 
@@ -16,12 +18,5 @@ func needs_confirm(_campaign: Campaign) -> bool:
 
 
 func _apply(next: Campaign) -> Campaign:
-	var posted := next.posted_pumps()
-	next.scrap -= posted.size() * Campaign.SCRAP_PER_POST
-	var result := BasinDay.end(next.basin, posted)
-	next.basin = result.basin
-	next.morning = result
-	next.day += 1
-	next.assignments_today = 0
-	next.dispatched_today = false
+	next.close_day()
 	return next

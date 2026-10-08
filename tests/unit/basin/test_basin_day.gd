@@ -172,12 +172,18 @@ func test_the_basin_dries_from_the_rim_inward() -> void:
 
 func test_a_step_never_lands_the_day_it_starts() -> void:
 	var basin := Ring.opening()
+	var started := 0
+	var landed := 0
 	for _day in 30:
 		var result := BasinDay.end(basin, _all_posted(basin))
-		for started in result.walks_started:
+		started += result.walks_started.size()
+		landed += result.moved.size()
+		for begun in result.walks_started:
 			for move in result.moved:
-				assert_ne(started["id"], move["id"], "a bowl that began walking did not also land")
+				assert_ne(begun["id"], move["id"], "a bowl that began walking did not also land")
 		basin = result.basin
+	assert_gt(started, 0, "water started walking in the run")
+	assert_gt(landed, 0, "and some of it landed")
 
 
 func test_the_tick_is_deterministic() -> void:

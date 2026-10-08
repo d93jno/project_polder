@@ -16,6 +16,10 @@ const FEEDERS_NEEDED_TO_DRY := 2
 ## inner slow, GDD §6.2).
 const DRY_DAYS := 2
 
+## Days a redirected bowl is held wet before it can walk drier again: "the target sector walks one step
+## wetter and stays there for days" (GDD §6.4). Working default.
+const REDIRECTION_HANG_DAYS := 5
+
 ## One ignored late pump walks Dry to Mud and stops while the rest of the ring holds (GDD §6.2).
 const LEAK_CAP_STEP := Taxonomy.WaterStep.MUD
 

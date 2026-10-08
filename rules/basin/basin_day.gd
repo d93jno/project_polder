@@ -35,6 +35,7 @@ static func _wear(prev: BasinBowl, now: BasinBowl, posted_today: bool, result: D
 
 
 static func _water(basin: Basin, prev: BasinBowl, now: BasinBowl, result: DayResult) -> void:
+	now.hang_days = maxi(prev.hang_days - 1, 0)
 	var want := _want(basin, prev, now.pump)
 	if want == BasinBowl.Walk.NONE:
 		now.walk = BasinBowl.Walk.NONE
@@ -64,7 +65,7 @@ static func _want(basin: Basin, prev: BasinBowl, pump_now: BasinBowl.Pump) -> Ba
 		if _ring_holds(basin, prev) and int(prev.step) <= int(BasinRules.LEAK_CAP_STEP):
 			return BasinBowl.Walk.NONE
 		return BasinBowl.Walk.WETTER
-	if pump_now == BasinBowl.Pump.ON and prev.step != Taxonomy.WaterStep.DRY \
+	if pump_now == BasinBowl.Pump.ON and prev.step != Taxonomy.WaterStep.DRY and prev.hang_days <= 0 \
 			and _feeders_dry_enough(basin, prev):
 		return BasinBowl.Walk.DRIER
 	return BasinBowl.Walk.NONE
