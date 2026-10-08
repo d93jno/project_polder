@@ -12,6 +12,12 @@ var path: String = DEFAULT_PATH
 var bowls: Dictionary = {}
 ## Indices into the current bowl's unrecovered list recovered during this fight (in memory only).
 var _recovered_ids: Array[int] = []
+## The table's campaign, kept beside `bowls` (plan 07 §7.5). The store never reads it: `CampaignSave`
+## owns the shape. It is carried through a load and a save untouched, so a fight ending cannot lose it.
+var campaign_data: Dictionary = {}
+## What the player last saw of facts that span bowls (survey marks, the causeway, FOBs; plan 4 §7.9 Q3).
+## Reserved and empty: nothing writes it yet.
+var facts: Dictionary = {}
 
 
 static func fresh(p_path: String = DEFAULT_PATH) -> KnowledgeStore:
@@ -51,13 +57,22 @@ func to_dict() -> Dictionary:
 			"cells": (b.get("cells", {}) as Dictionary).duplicate(true),
 			"unrecovered": (b.get("unrecovered", []) as Array).duplicate(true),
 		}
-	return {"version": VERSION, "bowls": bowls_out}
+	var out := {"version": VERSION, "bowls": bowls_out}
+	if not campaign_data.is_empty():
+		out["campaign"] = campaign_data.duplicate(true)
+	if not facts.is_empty():
+		out["facts"] = facts.duplicate(true)
+	return out
 
 
 static func from_dict(data: Dictionary) -> KnowledgeStore:
 	var store := KnowledgeStore.new()
 	if data.is_empty():
 		return store
+	if typeof(data.get("campaign")) == TYPE_DICTIONARY:
+		store.campaign_data = (data["campaign"] as Dictionary).duplicate(true)
+	if typeof(data.get("facts")) == TYPE_DICTIONARY:
+		store.facts = (data["facts"] as Dictionary).duplicate(true)
 	var bowls_in: Dictionary = data.get("bowls", {})
 	for bowl_id in bowls_in.keys():
 		var raw: Variant = bowls_in[bowl_id]

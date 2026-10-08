@@ -62,16 +62,26 @@ var _wall_fade
 const ConfirmPrompt := preload("res://presentation/confirm_prompt.gd")
 
 var _confirm = ConfirmPrompt.new()
+## Set before the view enters the tree to play a given fight instead of the shared opening: the table
+## dispatches here (plan 07 §7.3, §7.5). `store_path` is where its fog memory is read and written.
+var fight_state: CombatState = null
+var store_path: String = KnowledgeStore.DEFAULT_PATH
+var _ended := false
+signal fight_ended(state: CombatState)
 var _water_old ## the previous water, drawn only while a change plays (plan 06 6.4)
 var _water_tween: Tween
 var _history := CommandHistory.new()
 
 
 func _ready() -> void:
-	_bowl_id = _parse_bowl_arg()
-	_state = _opening()
+	if fight_state != null:
+		_state = fight_state
+		_bowl_id = _state.bowl_id if not _state.bowl_id.is_empty() else "terrace"
+	else:
+		_bowl_id = _parse_bowl_arg()
+		_state = _opening()
 	## Prior visits seed Known-quiet; opening peel makes the start Live (plan 04 §4.6 / §4.4).
-	KnowledgeStore.load_from().begin_fight(_state, _bowl_id)
+	KnowledgeStore.load_from(store_path).begin_fight(_state, _bowl_id)
 	_state.knowledge.peel(_state.map, _state)
 	_stamps = _stamps_for_bowl()
 	_dock_cells = PresentationCatalog.dock_cells(_stamps)
@@ -587,6 +597,7 @@ func _try(cmd: Command) -> void:
 		_play_water_change(before.map, cmd.machine_cell)
 	_hud.set_note("")
 	_redraw()
+	_check_fight_end()
 
 
 ## Take back the last reversible move (UI §5). The rules say what is reversible, not this.
@@ -613,6 +624,19 @@ func _end_phase() -> void:
 	if _state.active_side == CombatState.PhaseSide.ENEMY:
 		_run_enemy_phase()
 	_redraw()
+	_check_fight_end()
+
+
+## A fight is over when no player body can act: extracted or wiped (plan 04 §4.6). The store is
+## written once, here, and never mid-fight; the table listens for `fight_ended` to bring the squad home.
+func _check_fight_end() -> void:
+	if _ended or _state.outcome() == CombatState.FightOutcome.ONGOING:
+		return
+	_ended = true
+	if _state.knowledge_store != null:
+		_state.knowledge_store.commit_fight(_state)
+	_hud.set_note("the fight is over")
+	fight_ended.emit(_state)
 
 
 func _run_enemy_phase() -> void:

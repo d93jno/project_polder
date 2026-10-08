@@ -13,6 +13,7 @@ Single source for Claude Code (`CLAUDE.md`), `AGENTS.md` tools and Copilot. Edit
   ```bash
   make editor
   make run
+  make table
   make import
   make test
   make build
@@ -27,6 +28,12 @@ Single source for Claude Code (`CLAUDE.md`), `AGENTS.md` tools and Copilot. Edit
   empty selection, even if GUT itself exits successfully.
 
 ## Architecture
+
+- `make table` runs `scenes/game.tscn` (`presentation/game.gd`): the table, and dispatch to a fight and
+  home again. The campaign (`rules/campaign.gd`, `rules/basin/`, `rules/commands/table/`) is a layer
+  above the tactical one: only `TableDispatch.build_fight` and `HomeCommand` cross, a fight reads the
+  basin's water only through `BowlMap.with_water`, and no tactical rule names the campaign (a test
+  reads every file). `make run` is still the shared opening, with no campaign.
 
 - `scenes/main.tscn` starts `presentation/fight_view.gd`, which programmatically
   composes the P0 tactical scene, HUD, camera, meshes, water, and overlays.

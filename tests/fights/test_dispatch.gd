@@ -119,6 +119,7 @@ func test_nothing_in_the_tactical_rules_reads_the_basin_or_the_campaign() -> voi
 	## One water, one combat model: the basin meets a fight only through `TableDispatch`.
 	var allowed := [
 		"res://rules/campaign.gd", "res://rules/table_dispatch.gd", "res://rules/dispatch_result.gd",
+		"res://rules/campaign_codec.gd", "res://rules/campaign_save.gd",
 	]
 	var offenders: Array[String] = []
 	for dir in ["res://rules", "res://rules/commands"]:

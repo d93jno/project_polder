@@ -11,7 +11,12 @@ const _Board := preload("res://presentation/table_board.gd")
 const _Confirm := preload("res://presentation/confirm_prompt.gd")
 const _Opening := preload("res://rules/fixtures/table_opening.gd")
 
+## `what` is "day_end" or "dispatch": the moments the game saves or leaves for a fight.
+signal campaign_committed(campaign: Campaign, what: String)
+
 var campaign: Campaign
+## True when a game flow listens for dispatch. Standalone, a dispatch only marks the fireteam out.
+var wired := false
 var _selected_bowl: String = ""
 var _chosen: Array[int] = []
 var _confirm = _Confirm.new()
@@ -235,5 +240,11 @@ func _try(command: TableCommand) -> void:
 		return
 	_confirm.cancel()
 	campaign = command.apply(campaign)
-	_note.text = "the fight is not wired to the table yet (plan 07 §7.5)" if command is DispatchCommand else ""
+	_note.text = ""
+	if command is DispatchCommand and not wired:
+		_note.text = "nothing is listening: run the table through the game (make table) to play the fight"
 	_refresh()
+	if command is EndDayCommand:
+		campaign_committed.emit(campaign, "day_end")
+	elif command is DispatchCommand:
+		campaign_committed.emit(campaign, "dispatch")
