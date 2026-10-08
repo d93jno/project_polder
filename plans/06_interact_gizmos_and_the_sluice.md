@@ -186,4 +186,4 @@ Locked (A).
 
 ## 8. What comes after
 
-**Table mode** (UI §8) inherits the machine state and the water change at basin scale: which bowls step wetter, creep, how long it hangs, the Bitter rule, and the water graph with pump upkeep. **First Gauge** as a trait gates the sluice's precision and adds its once-per-fight spend on top of the confirm from plan 05. **Enemy phase behaviour** around machines is AI, kept out of `rules/`, and waits for whichever plan introduces it.
+**Table mode** (UI §8) is `plans/07_table_mode_the_basin_and_the_day.md`: the basin as a graph, the day tick, labor, and a dispatch that plays the fight on `with_water`. It inherits the machine state and the water change; the table-scale redirection card (which bowls step wetter, creep, how long it hangs, the Bitter rule) is that plan's `plans/08`. **First Gauge** as a trait gates the sluice's precision and adds its once-per-fight spend on top of the confirm from plan 05. **Enemy phase behaviour** around machines is AI, kept out of `rules/`, and waits for whichever plan introduces it.
