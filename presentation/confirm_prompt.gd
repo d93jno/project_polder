@@ -15,7 +15,7 @@ func is_armed() -> bool:
 
 ## Returns true when this press commits: the same action, already armed. Otherwise arms it and
 ## returns false. `anchor` is the cell the player is pointing at; moving off it disarms.
-func press(command: Command, anchor: Vector3i) -> bool:
+func press(command: RefCounted, anchor: Vector3i = Vector3i.ZERO) -> bool:
 	var key := key_of(command)
 	if key == _key:
 		cancel()
@@ -42,7 +42,17 @@ static func text_for(command: Command, state: CombatState) -> String:
 	]
 
 
-static func key_of(command: Command) -> String:
+## Day end has no AP to state: it names what the day does (plan 07 §7.4).
+static func text_for_day_end(campaign: Campaign) -> String:
+	var posts := campaign.posted_pumps().size()
+	var kept := "no pump is posted" if posts == 0 else "%d pump%s posted" % [posts, "" if posts == 1 else "s"]
+	return "confirm: end day %d, %s and the water walks — click again · Esc cancels" % [campaign.day, kept]
+
+
+static func key_of(command: RefCounted) -> String:
+	if command is EndDayCommand:
+		return "end_day"
+
 	if command is ShootCommand:
 		return "shoot:%d:%d" % [command.attacker_id, command.target_id]
 	if command is InteractCommand:

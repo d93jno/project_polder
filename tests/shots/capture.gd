@@ -94,6 +94,8 @@ func _parse_args() -> void:
 			_boot_frames = maxi(1, int(arg.substr("--warmup=".length())))
 		elif arg.begins_with("--settle="):
 			_wait_frames = maxi(1, int(arg.substr("--settle=".length())))
+	if _setup.begins_with("table_"):
+		_scene_path = "res://scenes/table.tscn"
 	## Any ad-hoc option means "just show me this state", not the named regression setup.
 	if not _setup_given and (
 		not _dos.is_empty() or not _hook_path.is_empty() or not _crop.is_empty()
@@ -110,6 +112,8 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"street_undo_shown", "street_undo_hidden":
 			return _setup_street_undo()
+		"table_opening", "table_morning", "table_dispatch":
+			return _setup_table()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek", \
 		"terrace_interact_sluice", "terrace_machines":
 			return _setup_terrace()
@@ -178,6 +182,24 @@ func _setup_street_watch() -> bool:
 	_fight._draw_preview()
 	_fight._draw_overlay_labels()
 	_fight._sync_hud()
+	return true
+
+
+## Plan 07 §7.4: the table surface, played through its own commands. `table_morning` lets the pumps go
+## unposted until something moves overnight, so the morning read has words; `table_dispatch` picks the
+## terrace and all four on the bench, so the dispatch slot leads with the bowl.
+func _setup_table() -> bool:
+	var view = _fight
+	if _setup == "table_morning":
+		view._assign(Campaign.Bucket.PUMPS, Campaign.Bucket.IDLE)
+		view._assign(Campaign.Bucket.PUMPS, Campaign.Bucket.IDLE)
+		for _day in BasinRules.BREAKS_AFTER_DAYS: ## the morning the pumps break
+			view._on_day_end()
+			view._on_day_end() ## arm, then confirm
+	if _setup == "table_dispatch":
+		view._on_bowl("terrace")
+		for id in [1, 2, 3]:
+			view._on_body(true, id)
 	return true
 
 
@@ -387,6 +409,8 @@ func _capture_and_probe() -> void:
 			_probe_spent_ap_darker(img)
 		"street_yaw180":
 			_probe_quay_faded()
+		"table_opening", "table_morning", "table_dispatch":
+			_probe_table()
 		"street_undo_shown":
 			_probe_undo(img, true)
 		"street_undo_hidden":
@@ -457,6 +481,26 @@ func _probe_spent_ap_darker(img: Image) -> void:
 		_exit_code = 1
 		return
 	print("shots: AP probe ok lit=%s spent=%s" % [lit_l, spent_l])
+
+
+## Plan 07 §7.4: the table draws what the rules say and never what UI §8 forbids.
+func _probe_table() -> void:
+	var text: Array[String] = _fight.all_text()
+	var joined := "\n".join(text)
+	print("shots: table text lines %d, morning '%s'" % [text.size(), _fight._morning.text.replace("\n", " | ")])
+	var failures: Array[String] = []
+	if not joined.contains("terrace") or not joined.contains("unknown"):
+		failures.append("the board is not drawn (a known bowl and an unknown one)")
+	for banned in ["%", "goal", "target"]:
+		if joined.contains(banned):
+			failures.append("UI 8 never shows '%s'" % banned)
+	if _setup == "table_morning" and _fight._morning.text == "nothing moved":
+		failures.append("the morning read has nothing to say after the pumps were left")
+	if _setup == "table_dispatch" and _fight._queries.dispatch.get("bowl_lines", []).is_empty():
+		failures.append("the dispatch slot does not lead with the bowl")
+	for failure in failures:
+		push_error("shots: table: %s" % failure)
+		_exit_code = 1
 
 
 ## Plan 05 §5.2: the Undo control is present exactly when the history can act, and that is the
