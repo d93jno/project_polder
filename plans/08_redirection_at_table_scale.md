@@ -1,6 +1,6 @@
 # Phase 8 — Redirection at table scale: spread, hangover and the card
 
-**Status:** drafted, nothing built. Slices 8.0–8.5 below; §7 decisions need an answer before 8.0.
+**Status:** drafted, nothing built. Slices 8.0–8.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §6.2 (creep), §6.4 (redirection: the card, its constraints, its cost), §6.5 (the first-contact sluice), §6.6 (Bitter), §4.3 (what a dry tile is), §4.2 ("refuse the sluice"); UI/UX v0.22 §8 (redirection is previewed before it is spent), §3 (mid-fight water).
 **Depends on:** Phase 7 — the basin, the day tick, the campaign, dispatch and the way home. Phase 6 — a sluice opened in a fight is the redirection; `HomeCommand` already leaves the bowl a step wetter and held (`hang_days`). Phase 5 — the preview ends in a Confirmed action.
 **Goal:** the highest-consequence button in the game is a decision the player made with the consequences in front of them. A redirection spreads in a way the rules can state, leaves a hangover the campaign remembers (and that a later ending can read as Bitter), and is previewed on the table before the fireteam is sent: which bowls step wetter and by how much, whether the creep reaches the next bowl, roughly how long the target hangs wet, and what of the player's own is standing in it. A regretted sluice should be a decision the player made, not a consequence the map withheld (GDD §6.4).
@@ -129,41 +129,53 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 8.4
 
 ---
 
-## 7. Decisions still needed
+## 7. Decisions
 
-### 7.1 — How does a redirection spread?
+### 7.1 — How does a redirection spread? **A bowl fed by a feeder two or more steps wetter walks one step wetter when its own ring does not hold.**
 
-- **A. ★ A bowl fed by a feeder two or more steps wetter than itself walks one step wetter when its own ring does not hold; never past one bowl a day; never up to the bowls that feed it.** It is the overshoot GDD §6.4 names ("creep can overshoot into the next bowl if ignored"), it reuses the ring-holds test that already limits a dead pump, and it stops by itself while the ring holds.
+Locked (A).
+
+- **A (chosen). A bowl fed by a feeder two or more steps wetter than itself walks one step wetter when its own ring does not hold; never past one bowl a day; never up to the bowls that feed it.** It is the overshoot GDD §6.4 names ("creep can overshoot into the next bowl if ignored"), it reuses the ring-holds test that already limits a dead pump, and it stops by itself while the ring holds.
 - **B. No spread: a redirection only holds its own bowl.** Simplest, and then "whether the creep can reach the next bowl" has no answer to preview, which the GDD says the card must name.
 - **C. A fuller water model.** Heads, flows, rates. GDD §6.1: "Do not simulate liters."
 
-### 7.2 — What does the player have standing in a bowl?
+### 7.2 — What does the player have standing in a bowl? **A few counts per bowl, plus a road flag.**
 
-- **A. ★ A few counts per bowl, plus a road flag: fields, camps, posts, ruined.** Enough for the card to say "2 fields, a post and the road" and for Mud to ruin a field. It is a summary of GDD §4.3's tile states, not a tile map.
+Locked (A).
+
+- **A (chosen). A few counts per bowl, plus a road flag: fields, camps, posts, ruined.** Enough for the card to say "2 fields, a post and the road" and for Mud to ruin a field. It is a summary of GDD §4.3's tile states, not a tile map.
 - **B. Only the labor board's counts, not placed anywhere.** No per-bowl answer, so the card cannot say what stands in the water.
 - **C. Per-tile states for every dry tile of every bowl.** The full GDD §4.3 list and a lot of data and authoring for a first card.
 
-### 7.3 — How tightly does a redirection preview in a half-fixed ring? (GDD §10)
+### 7.3 — How tightly does a redirection preview in a half-fixed ring? (GDD §10) **Exact where every bowl in the affected ring has instruments, otherwise a labelled range.**
 
-- **A. ★ Exact where every bowl in the affected ring has instruments, otherwise a range one day wider for each affected bowl that does not, and the card says *range*.** It follows the GDD ("a mature network previews tightly, a half-fixed outer bowl previews as a range and says so") and the day count it widens is something a test can state.
+Locked (A).
+
+- **A (chosen). Exact where every bowl in the affected ring has instruments, otherwise a range one day wider for each affected bowl that does not, and the card says *range*.** It follows the GDD ("a mature network previews tightly, a half-fixed outer bowl previews as a range and says so") and the day count it widens is something a test can state.
 - **B. Always exact.** Tidy, and it breaks the knowability rule the other way: it would claim more than the instruments know.
 - **C. Always a range.** Honest and uselessly vague in a fully instrumented ring.
 
-### 7.4 — Which redirection is the first-contact card?
+### 7.4 — Which redirection is the first-contact card? **The first one recorded at a bowl whose opening carries the authored sluice.**
 
-- **A. ★ The first redirection recorded at a bowl whose opening carries the authored first-contact sluice (the terrace).** GDD §6.5 says the map offers it, so it is data on the bowl, not a guess about the player's history.
+Locked (A).
+
+- **A (chosen). The first redirection recorded at a bowl whose opening carries the authored first-contact sluice (the terrace).** GDD §6.5 says the map offers it, so it is data on the bowl, not a guess about the player's history.
 - **B. Whichever redirection happens first in the campaign.** Simple, and it lets any bowl's first sluice be the free one.
 - **C. None: every redirection counts.** The first-contact card would then make a campaign Bitter, which the GDD says it never does.
 
-### 7.5 — "Refuse the sluice", before there is a founder
+### 7.5 — "Refuse the sluice", before there is a founder **A dispatch choice that locks the sluice for that fight.**
 
-- **A. ★ A dispatch choice that locks the sluice for that fight.** An active no (GDD §4.2), built without the founder; gating on the founder is a later change to which squad may open it.
+Locked (A).
+
+- **A (chosen). A dispatch choice that locks the sluice for that fight.** An active no (GDD §4.2), built without the founder; gating on the founder is a later change to which squad may open it.
 - **B. Model a founder now.** The founder carries other rules (First Gauge, the Call, scars, the empty-chair tax) that are far larger than this plan.
 - **C. No refusal verb.** Then the only way to "refuse" is to send nobody, which is not the choice the GDD names.
 
-### 7.6 — When does a redirection stop counting toward Bitter?
+### 7.6 — When does a redirection stop counting toward Bitter? **When its bowl has walked back to or past the step it left.**
 
-- **A. ★ When its bowl has walked back to or past the step it left.** The hangover is the water being wetter than before; once it is not, the neighbours have their land back (GDD §6.6: "still has a hanging wet tile").
+Locked (A).
+
+- **A (chosen). When its bowl has walked back to or past the step it left.** The hangover is the water being wetter than before; once it is not, the neighbours have their land back (GDD §6.6: "still has a hanging wet tile").
 - **B. When its hold runs out.** The hold is five days and the walk back takes longer, so a campaign could stop being Bitter while the ditch is still on the map.
 - **C. Never.** Once a redirection, always Bitter. The GDD calls the ending computed from what is on the map at the end.
 
