@@ -7,6 +7,8 @@ var basin: Basin = null
 var moved: Array[Dictionary] = []
 ## {id, dir, in_days}: a step that began walking, readable from this morning.
 var walks_started: Array[Dictionary] = []
+## {id, count}: fields that went under and are ruined (GDD §4.3: "Mud kills fields").
+var fields_ruined: Array[Dictionary] = []
 ## Pump ids that broke from neglect.
 var pumps_broke: Array[String] = []
 ## {id, from, to}: upkeep states that changed.
@@ -14,4 +16,4 @@ var upkeep_changed: Array[Dictionary] = []
 
 
 func anything_moved() -> bool:
-	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty())
+	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty() and fields_ruined.is_empty())

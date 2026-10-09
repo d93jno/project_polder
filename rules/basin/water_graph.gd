@@ -21,6 +21,11 @@ static func read(basin: Basin, id: String) -> Dictionary:
 		"walking": bowl.walk,
 		"eta_days": bowl.walk_days_left if bowl.walk != BasinBowl.Walk.NONE else 0,
 		"instrumented": bowl.instrumented,
+		## What the player has there is theirs to know wherever they have walked (plan 08 §7.2).
+		"stands": {
+			"fields": bowl.fields, "camps": bowl.camps, "posts": bowl.posts,
+			"ruined": bowl.ruined, "road": bowl.road,
+		},
 	}
 	if bowl.instrumented:
 		var feeders: Array = []

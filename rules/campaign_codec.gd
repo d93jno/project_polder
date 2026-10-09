@@ -16,6 +16,7 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 			"neglect": b.neglect, "feeders": b.feeders.duplicate(), "leak_days": b.leak_days,
 			"walk": int(b.walk), "walk_days_left": b.walk_days_left, "hang_days": b.hang_days,
 			"known": b.known, "instrumented": b.instrumented,
+			"fields": b.fields, "camps": b.camps, "posts": b.posts, "ruined": b.ruined, "road": b.road,
 		})
 	return {
 		"day": campaign.day, "food": campaign.food, "fuel": campaign.fuel, "scrap": campaign.scrap,
@@ -71,6 +72,11 @@ static func from_dict(data: Dictionary) -> Campaign:
 		bowl.hang_days = int(raw.get("hang_days", 0))
 		bowl.known = bool(raw.get("known", false))
 		bowl.instrumented = bool(raw.get("instrumented", false))
+		bowl.fields = int(raw.get("fields", 0))
+		bowl.camps = int(raw.get("camps", 0))
+		bowl.posts = int(raw.get("posts", 0))
+		bowl.ruined = int(raw.get("ruined", 0))
+		bowl.road = bool(raw.get("road", false))
 		basin.add_bowl(bowl)
 	campaign.basin = basin
 	campaign.morning = _morning_from_dict(data.get("morning"), basin)
@@ -89,7 +95,10 @@ static func _morning_to_dict(result: DayResult) -> Dictionary:
 	var upkeep: Array = []
 	for u in result.upkeep_changed:
 		upkeep.append({"id": u["id"], "from": int(u["from"]), "to": int(u["to"])})
-	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep}
+	var ruined: Array = []
+	for r in result.fields_ruined:
+		ruined.append({"id": r["id"], "count": int(r["count"])})
+	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep, "fields_ruined": ruined}
 
 
 static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
@@ -103,6 +112,8 @@ static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
 		result.walks_started.append({"id": str(w["id"]), "dir": int(w["dir"]) as BasinBowl.Walk, "in_days": int(w["in_days"])})
 	for id in raw.get("pumps_broke", []):
 		result.pumps_broke.append(str(id))
+	for r in raw.get("fields_ruined", []):
+		result.fields_ruined.append({"id": str(r["id"]), "count": int(r["count"])})
 	for u in raw.get("upkeep_changed", []):
 		result.upkeep_changed.append({"id": str(u["id"]), "from": int(u["from"]) as BasinBowl.Upkeep, "to": int(u["to"]) as BasinBowl.Upkeep})
 	return result

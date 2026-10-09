@@ -20,6 +20,9 @@ const DRY_DAYS := 2
 ## wetter and stays there for days" (GDD §6.4). Working default.
 const REDIRECTION_HANG_DAYS := 5
 
+## How many steps wetter a feeder must stand before it pushes the bowl it feeds (plan 08 §7.1).
+const SPREAD_STEPS := 2
+
 ## One ignored late pump walks Dry to Mud and stops while the rest of the ring holds (GDD §6.2).
 const LEAK_CAP_STEP := Taxonomy.WaterStep.MUD
 

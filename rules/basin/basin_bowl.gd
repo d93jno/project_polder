@@ -23,6 +23,13 @@ var walk: Walk = Walk.NONE
 var walk_days_left: int = 0
 ## Days left that this bowl is held wet by a chosen redirection (GDD §6.4). Nothing dries it meanwhile.
 var hang_days: int = 0
+## What the player has on this bowl's dry tiles: a summary of GDD §4.3's tile states, not a tile map
+## (plan 08 §7.2). Only the ones a redirection can drown. A ruined field stays ruined.
+var fields: int = 0
+var camps: int = 0
+var posts: int = 0
+var ruined: int = 0
+var road: bool = false
 ## Walked before. An unvisited bowl reads as unknown, never as dry.
 var known: bool = false
 ## Instruments are awake here, so the ring around it can be read. A plate reads only its own bowl.
@@ -54,6 +61,11 @@ func duplicate_bowl() -> BasinBowl:
 	copy.walk = walk
 	copy.walk_days_left = walk_days_left
 	copy.hang_days = hang_days
+	copy.fields = fields
+	copy.camps = camps
+	copy.posts = posts
+	copy.ruined = ruined
+	copy.road = road
 	copy.known = known
 	copy.instrumented = instrumented
 	return copy

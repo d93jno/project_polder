@@ -63,3 +63,30 @@ func test_the_runs_are_not_vacuous() -> void:
 		landed += result.moved.size()
 		basin = result.basin
 	assert_gt(landed, 5, "water walked during the run")
+
+
+func test_no_spread_step_lands_unannounced_after_a_redirection() -> void:
+	## A redirected bowl pushes its neighbours (plan 08 §8.0). That is still water walking, so it is
+	## still read as walking, one day out, before it lands.
+	for seed_value in range(1, 13):
+		var start := Ring.late_ring()
+		start.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FLOODED
+		start.bowl(Ring.TERRACE).hang_days = BasinRules.REDIRECTION_HANG_DAYS
+		_drive(start, seed_value, 60, true)
+
+
+func test_a_redirection_run_is_not_vacuous() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var basin := Ring.late_ring()
+	basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FLOODED
+	basin.bowl(Ring.TERRACE).hang_days = BasinRules.REDIRECTION_HANG_DAYS
+	var landed := 0
+	for _day in 40:
+		var posted := {}
+		for id in basin.ids():
+			posted[id] = true
+		var result := BasinDay.end(basin, posted)
+		landed += result.moved.size()
+		basin = result.basin
+	assert_gt(landed, 0, "the spread landed in the run")

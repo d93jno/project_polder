@@ -36,6 +36,19 @@ static func _wear(prev: BasinBowl, now: BasinBowl, posted_today: bool, result: D
 
 static func _water(basin: Basin, prev: BasinBowl, now: BasinBowl, result: DayResult) -> void:
 	now.hang_days = maxi(prev.hang_days - 1, 0)
+	_step(basin, prev, now, result)
+	_ruin(now, result)
+
+
+## Mud kills fields (GDD §4.3), once and for good: a ruined field is a record, not a number that heals.
+static func _ruin(now: BasinBowl, result: DayResult) -> void:
+	if int(now.step) <= int(Taxonomy.WaterStep.MUD) and now.fields > 0:
+		result.fields_ruined.append({"id": now.id, "count": now.fields})
+		now.ruined += now.fields
+		now.fields = 0
+
+
+static func _step(basin: Basin, prev: BasinBowl, now: BasinBowl, result: DayResult) -> void:
 	var want := _want(basin, prev, now.pump)
 	if want == BasinBowl.Walk.NONE:
 		now.walk = BasinBowl.Walk.NONE
@@ -58,10 +71,12 @@ static func _water(basin: Basin, prev: BasinBowl, now: BasinBowl, result: DayRes
 
 ## Which way this bowl is walking, if any, given the previous day's neighbours and its pump today.
 static func _want(basin: Basin, prev: BasinBowl, pump_now: BasinBowl.Pump) -> BasinBowl.Walk:
-	if pump_now == BasinBowl.Pump.DEAD:
+	## Wetter pressure is a dead pump leaking, or a feeder far wetter than this bowl pouring into it.
+	if pump_now == BasinBowl.Pump.DEAD or _pushed_by_feeder(basin, prev):
 		if prev.step == Taxonomy.WaterStep.FLOODED:
 			return BasinBowl.Walk.NONE
-		## The late leak cap: one ignored pump walks Dry to Mud and stops while the ring holds.
+		## The cap: one ignored pump, or one redirected neighbour, walks Dry to Mud and stops while the
+		## rest of the ring holds (GDD §6.2). A ring that does not hold lets it run on.
 		if _ring_holds(basin, prev) and int(prev.step) <= int(BasinRules.LEAK_CAP_STEP):
 			return BasinBowl.Walk.NONE
 		return BasinBowl.Walk.WETTER
@@ -69,6 +84,24 @@ static func _want(basin: Basin, prev: BasinBowl, pump_now: BasinBowl.Pump) -> Ba
 			and _feeders_dry_enough(basin, prev):
 		return BasinBowl.Walk.DRIER
 	return BasinBowl.Walk.NONE
+
+
+## Creep across bowls (plan 08 §7.1, GDD §6.4: "creep can overshoot into the next bowl"). A bowl is
+## pushed wetter when a feeder stands two or more steps wetter than it, unless more than half its
+## feeders are already as dry as it is. Only from a feeder to the bowl it feeds, so it never climbs
+## to the bowls that feed it, and a tick reads the previous day, so it never crosses two bowls in one.
+static func _pushed_by_feeder(basin: Basin, bowl: BasinBowl) -> bool:
+	var pushed := false
+	var as_dry := 0
+	for feeder_id in bowl.feeders:
+		var feeder: BasinBowl = basin.bowl(feeder_id)
+		if feeder == null:
+			continue
+		if int(bowl.step) - int(feeder.step) >= BasinRules.SPREAD_STEPS:
+			pushed = true
+		if int(feeder.step) >= int(bowl.step):
+			as_dry += 1
+	return pushed and as_dry * 2 <= bowl.feeders.size()
 
 
 ## At least half the ring still has a working pump. A bowl with no feeders holds by itself.

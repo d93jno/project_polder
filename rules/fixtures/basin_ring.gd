@@ -42,6 +42,10 @@ static func opening() -> Basin:
 	for id in [TERRACE, RIDGE_W, RIDGE_N]:
 		basin.bowl(id).known = true
 	basin.bowl(TERRACE).instrumented = true
+	## Roof plots are dry above a flooded street (GDD 5.8), so the terrace's camp and post stand in it.
+	basin.bowl(TERRACE).camps = 1
+	basin.bowl(TERRACE).posts = 1
+	basin.bowl(RIDGE_W).posts = 1
 	return basin
 
 
@@ -52,4 +56,12 @@ static func late_ring() -> Basin:
 	for id in basin.order:
 		basin.bowl(id).known = true
 		basin.bowl(id).instrumented = true
+	## Fields on the dry inner ring, the first real ones (GDD §4.3), a road through the second polder.
+	basin.bowl(TERRACE).fields = 2
+	basin.bowl(TERRACE).camps = 1
+	basin.bowl(POLDER_A).fields = 3
+	basin.bowl(POLDER_A).road = true
+	basin.bowl(POLDER_B).fields = 2
+	basin.bowl(POLDER_B).posts = 1
+	basin.bowl(RIDGE_W).posts = 1
 	return basin
