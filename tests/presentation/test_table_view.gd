@@ -208,3 +208,132 @@ func test_the_view_computes_no_rule_of_its_own() -> void:
 		var text := FileAccess.get_file_as_string(path)
 		for forbidden in ["BasinDay", "posted_pumps", "WaterGraph", "hang_days", "REDIRECTION", "step_move_cost", "BREAKS_AFTER"]:
 			assert_false(text.contains(forbidden), "%s must not know %s" % [path, forbidden])
+
+
+## --- The redirection card (plan 08 §8.4) ---
+
+
+func _card_campaign() -> Campaign:
+	## A dry late ring with the terrace in Mud and every pump kept, so a sluice there crosses the threshold.
+	var c := Opening.opening()
+	c.basin = Ring.late_ring()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.MUD
+	c.scrap = 99
+	c.labor[B.PUMPS] = 7
+	c.labor[B.IDLE] = 0
+	return c
+
+
+func _card_view() -> Control:
+	var view = TableView.new()
+	view.campaign = _card_campaign()
+	add_child_autofree(view)
+	return view
+
+
+func test_the_card_appears_on_the_dispatch_slot_for_a_bowl_with_a_sluice_before_anyone_is_sent() -> void:
+	var view := _card_view()
+	assert_true(view._queries.dispatch.get("card", []).is_empty(), "nothing is chosen yet")
+	view._on_bowl(Ring.TERRACE)
+	var card: Array = view._queries.dispatch["card"]
+	assert_eq(card[0], "if the sluice at terrace is opened:")
+	assert_true(view._card.text.contains("terrace mud to falling"))
+	assert_eq(view.campaign.deployment.size(), 0, "and nobody has been sent")
+
+
+func test_a_bowl_without_a_sluice_offers_no_card() -> void:
+	var view := _card_view()
+	view._on_bowl(Ring.RIDGE_W)
+	assert_false(view._queries.dispatch.has("card"))
+	assert_eq(view._card.text, "")
+
+
+func test_the_card_names_what_the_preview_names_and_nothing_else() -> void:
+	var c := _card_campaign()
+	var preview := RedirectionPreview.read(c, Ring.TERRACE)
+	var lines := Queries.redirection_card(preview, Ring.TERRACE)
+	var text := "\n".join(lines)
+	for entry in preview["bowls"]:
+		assert_true(text.contains(str(entry["id"])), "%s is on the card" % entry["id"])
+	assert_false(text.contains(Ring.POLDER_A), "and a bowl the preview does not name is not")
+	assert_true(text.contains("2 fields drowned"), "what stands in the water, in counts")
+	assert_true(text.contains("the creep reaches the next bowl"))
+
+
+func test_a_fully_instrumented_ring_reads_exactly_and_a_half_fixed_one_says_range() -> void:
+	var c := _card_campaign()
+	var exact := "\n".join(Queries.redirection_card(RedirectionPreview.read(c, Ring.TERRACE), Ring.TERRACE))
+	assert_false(exact.contains("a range"))
+	assert_false(exact.contains("about"))
+	c.basin.bowl(Ring.POLDER_B).instrumented = false
+	var ranged := "\n".join(Queries.redirection_card(RedirectionPreview.read(c, Ring.TERRACE), Ring.TERRACE))
+	assert_true(ranged.contains("a range: not every bowl here has instruments"))
+	assert_true(ranged.contains("about"))
+
+
+func test_the_card_never_names_a_bowl_the_player_has_not_walked() -> void:
+	var c := _card_campaign()
+	c.basin.bowl(Ring.POLDER_B).known = false
+	var text := "\n".join(Queries.redirection_card(RedirectionPreview.read(c, Ring.TERRACE), Ring.TERRACE))
+	assert_false(text.contains(Ring.POLDER_B))
+	assert_true(text.contains("and reaches ground you have not walked"))
+
+
+func test_a_flooded_bowl_says_its_sluice_can_do_no_more() -> void:
+	var c := _card_campaign()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FLOODED
+	var lines := Queries.redirection_card(RedirectionPreview.read(c, Ring.TERRACE), Ring.TERRACE)
+	assert_eq(lines, ["a sluice at terrace can do no more: the water is already as deep as it goes"] as Array[String])
+
+
+func test_the_card_has_no_bar_percentage_or_target() -> void:
+	var view := _card_view()
+	view._on_bowl(Ring.TERRACE)
+	var text: String = view._card.text.to_lower()
+	for banned in ["%", "goal", "target", "progress"]:
+		assert_false(text.contains(banned), banned)
+
+
+func test_the_morning_says_a_redirected_bowl_is_held_wet_and_how_long() -> void:
+	var c := _card_campaign()
+	Redirection.record(c, Ring.TERRACE, Taxonomy.WaterStep.FALLING)
+	var lines: Array[String] = Queries.compute(c, "", [] as Array[int]).morning
+	assert_true("terrace: held wet, %d days" % BasinRules.REDIRECTION_HANG_DAYS in lines, str(lines))
+
+
+func test_the_morning_says_when_a_hold_has_run_out_but_the_water_is_still_wetter() -> void:
+	var c := _card_campaign()
+	Redirection.record(c, Ring.TERRACE, Taxonomy.WaterStep.FALLING)
+	c.basin.bowl(Ring.TERRACE).hang_days = 0
+	var lines: Array[String] = Queries.compute(c, "", [] as Array[int]).morning
+	assert_true("terrace: still wetter than before the sluice" in lines, str(lines))
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.DRY
+	assert_false(_has_line(Queries.compute(c, "", [] as Array[int]).morning, "terrace"), "a bowl that dried back says nothing")
+
+
+func _has_line(lines: Array, prefix: String) -> bool:
+	for line in lines:
+		if str(line).begins_with(prefix):
+			return true
+	return false
+
+
+func test_the_morning_names_the_fields_a_flood_ruined_on_known_bowls_only() -> void:
+	var c := _card_campaign()
+	var result := DayResult.new()
+	result.basin = c.basin
+	result.fields_ruined = [
+		{"id": Ring.POLDER_B, "count": 2}, {"id": Ring.SUMP, "count": 1},
+	] as Array[Dictionary]
+	c.basin.bowl(Ring.SUMP).known = false
+	c.morning = result
+	var lines: Array[String] = Queries.compute(c, "", [] as Array[int]).morning
+	assert_true("polder_b: 2 fields ruined" in lines)
+	assert_false(_has_line(lines, "sump"))
+
+
+func test_the_view_still_decides_nothing_about_redirection() -> void:
+	for path in ["res://presentation/table_view.gd", "res://presentation/table_board.gd"]:
+		var text := FileAccess.get_file_as_string(path)
+		for forbidden in ["RedirectionPreview", "Redirection.", "Ending", "hang_days_min", "steps_wetter"]:
+			assert_false(text.contains(forbidden), "%s must not know %s" % [path, forbidden])

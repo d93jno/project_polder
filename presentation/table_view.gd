@@ -31,6 +31,7 @@ var _morning: Label
 var _dispatch_box: VBoxContainer
 var _dispatch_button: Button
 var _note: Label
+var _card: Label
 var _day_end: Button
 
 
@@ -57,7 +58,7 @@ func _build() -> void:
 	var panel := VBoxContainer.new()
 	panel.position = Vector2(864, 8)
 	panel.size = Vector2(404, 660)
-	panel.add_theme_constant_override("separation", 6)
+	panel.add_theme_constant_override("separation", 3)
 	add_child(panel)
 
 	_day = _label(panel, 22)
@@ -69,7 +70,7 @@ func _build() -> void:
 	_assignments = _label(panel, 14)
 	_section(panel, "this morning")
 	_morning = _label(panel, 14)
-	_morning.custom_minimum_size = Vector2(0, 92)
+	_morning.custom_minimum_size = Vector2(0, 64)
 	_section(panel, "dispatch")
 	_dispatch_box = VBoxContainer.new()
 	panel.add_child(_dispatch_box)
@@ -80,6 +81,14 @@ func _build() -> void:
 	_day_end = Button.new()
 	_day_end.pressed.connect(_on_day_end)
 	panel.add_child(_day_end)
+
+	## The redirection card sits on the board, beside the sump, where the water it is about to change is.
+	_card = Label.new()
+	_card.position = Vector2(572, 430)
+	_card.size = Vector2(276, 236)
+	_card.add_theme_font_size_override("font_size", 13)
+	_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(_card)
 
 	_note = Label.new()
 	_note.position = Vector2(8, 676)
@@ -161,7 +170,8 @@ func _rebuild_dispatch() -> void:
 	head.add_theme_font_size_override("font_size", 15)
 	_dispatch_box.add_child(head)
 	## The bowl first, then the bodies (UI §8).
-	for line in d.get("bowl_lines", []):
+	_card.text = "\n".join(d.get("card", []))
+	for line in (d.get("bowl_lines", []) as Array).slice(0, 2):
 		var l := Label.new()
 		l.text = str(line)
 		l.add_theme_font_size_override("font_size", 13)
