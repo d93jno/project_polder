@@ -127,3 +127,72 @@ func _scan(dir_path: String, pattern: RegEx, offenders: Array[String]) -> void:
 	for sub in DirAccess.get_directories_at(dir_path):
 		if sub != "fixtures":
 			_scan(dir_path.path_join(sub), pattern, offenders)
+
+
+## --- Meeting a band at table scale (plan 10 §10.1) ---
+
+const Queries := preload("res://presentation/table_queries.gd")
+
+
+func _sent_and_home(extract: Array, kill: Array = []) -> Campaign:
+	var c := Opening.opening()
+	var ids: Array[int] = [1, 2, 3, 4]
+	c = DispatchCommand.new(Ring.TERRACE, ids).apply(c)
+	var fight := TableDispatch.build_fight(c, Ring.TERRACE, ids)
+	for id in extract:
+		fight.get_unit(id).extracted = true
+	for id in kill:
+		fight.get_unit(id).dead = true
+		fight.get_unit(id).hp = 0
+	var cmd := HomeCommand.new(fight)
+	assert_true(cmd.validate(c).ok, cmd.validate(c).reason)
+	return cmd.apply(c)
+
+
+func test_coming_home_with_someone_meets_the_bands_at_that_bowl_once() -> void:
+	var c := _sent_and_home([1, 2, 3, 4])
+	assert_true(Bands.band(c, "wake_riders").met())
+	assert_eq(Bands.band(c, "wake_riders").met_day, 1, "the day they were met, not the day after")
+	assert_eq(c.morning.bands_met, ["wake_riders"] as Array[String])
+	assert_false(Bands.band(c, "roof_clan").met(), "a band elsewhere is not met")
+
+
+func test_a_wiped_squad_meets_nobody() -> void:
+	var c := _sent_and_home([], [1, 2, 3, 4])
+	assert_false(Bands.band(c, "wake_riders").met())
+	assert_eq(c.morning.bands_met, [] as Array[String])
+
+
+func test_one_survivor_is_enough() -> void:
+	var c := _sent_and_home([2], [1, 3, 4])
+	assert_true(Bands.band(c, "wake_riders").met())
+
+
+func test_a_met_band_is_not_met_again_on_a_later_trip() -> void:
+	var c := _sent_and_home([1, 2, 3, 4])
+	c.close_day()
+	var ids: Array[int] = [1, 2, 3, 4]
+	c = DispatchCommand.new(Ring.TERRACE, ids).apply(c)
+	var fight := TableDispatch.build_fight(c, Ring.TERRACE, ids)
+	for id in ids:
+		fight.get_unit(id).extracted = true
+	c = HomeCommand.new(fight).apply(c)
+	assert_eq(c.morning.bands_met, [] as Array[String])
+
+
+func test_the_morning_names_the_meeting_in_words() -> void:
+	var c := _sent_and_home([1, 2, 3, 4])
+	var q = Queries.compute(c, "", [] as Array[int])
+	assert_true(q.morning.has("you met the wake riders at terrace"))
+	for line in q.morning:
+		for banned in ["warm", "trust", "reputation", "loyal", "%"]:
+			assert_false(line.to_lower().contains(banned), "UI 8: '%s' in '%s'" % [banned, line])
+
+
+func test_the_meeting_is_saved_with_the_morning() -> void:
+	var c := _sent_and_home([1, 2, 3, 4])
+	var path := "user://meet_test_save.json"
+	CampaignSave.save_campaign(c, path)
+	var loaded = CampaignSave.load_campaign(path)
+	DirAccess.remove_absolute(path)
+	assert_eq(loaded.morning.bands_met, ["wake_riders"] as Array[String])

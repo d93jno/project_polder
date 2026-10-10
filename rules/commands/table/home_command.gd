@@ -33,6 +33,11 @@ func _apply(next: Campaign) -> Campaign:
 		Redirection.record(next, bowl_id, result.water_after)
 	next.deployment = {}
 	var brought := Economy.salvage(next, bowl_id, result.survivors.size())
+	## Someone got out, so the people at that bowl have been met (plan 10, decision 7.1).
+	var met: Array[String] = []
+	if not result.survivors.is_empty():
+		met = Bands.meet_at(next, bowl_id)
 	next.close_day()
 	next.morning.salvage = brought
+	next.morning.bands_met = met
 	return next

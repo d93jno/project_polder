@@ -1,6 +1,6 @@
 # Phase 10 — Bands and mail: people in places, and news that arrives late
 
-**Status:** drafted; §7 decisions locked (A); 10.0 completed. Slices 10.0–10.5 below.
+**Status:** drafted; §7 decisions locked (A); 10.0–10.1 completed. Slices 10.0–10.5 below.
 **Tracks:** GDD v1.18 §5.12 (bands: one job each, capped per ring, warm or cold, a band is a person in a place; rumours arrive late until radio), §5.11 (meeting, flight, the band that remembers), §4.2 ("answer mail" as a table verb), §6.4 (a redirection's consequences: "the new canal becomes someone's home"), §6.6 (a warm band is half of the door left open); UI/UX v0.24 §6 (map facts and ageing), §8 (*bands are people in places*; no meter on a face; no quest log).
 **Depends on:** Phase 9 — the economy gives a band's food job something to add to and the camp something to take a name from. Phase 8 — the redirection ledger is what makes a band go cold, and the card is where the player is warned. Phase 7 — the basin, the day tick, the campaign and its assignments. Phase 4 — the `facts` layer the store reserved beside `bowls`, and the rule that a fact is current on bowls the dome reaches and last-seen elsewhere.
 **Goal:** the basin has other people in it. A band is a person in a place with one job; what it knows reaches the table late, as a mark on the map where it was heard; and a player who floods its canal or takes the crate it needed finds the part of the basin that was talking has gone quiet. None of it is a number: no warmth meter, no reputation bar, no quest log (GDD §5.12, UI §8).
@@ -76,6 +76,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 10.
 **Ships.** `HomeCommand` meets the band of the bowl the fireteam came home from, when someone got out, as decision 7.1 says. A met band is warm, holds the job the opening authors for it, and appears in the morning read (*you met a band at the terrace*). Nothing about a band is read from a bowl the player has not been to.
 
 **Done when.** A dispatch that comes home with a survivor meets the bowl's band once; a wiped squad does not; a bowl with no band meets none; and the morning names the meeting in words with no number.
+
+**What landed.** `HomeCommand` calls `Bands.meet_at` for the bowl the fireteam came home from when at least one of them got out (one survivor is enough; a wiped squad meets nobody), before the day closes, so `met_day` is the day of the meeting and not the day after. The cap per ring still applies. `DayResult.bands_met` carries the ids, is saved with the morning, and the morning reads *you met the wake riders at terrace*. A band elsewhere, a band already met and a bowl with no band meet nothing. The morning has no word for warmth, trust or reputation, and a test checks it. Tests in `tests/unit/basin/test_band.gd`.
 
 ### 10.2 — Jobs
 

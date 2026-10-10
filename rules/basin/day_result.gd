@@ -29,6 +29,9 @@ var salvage: Dictionary = {}
 var arrived: int = 0
 var left: int = 0
 
+## Bands met by the fireteam that came home (plan 10 §10.1): their ids.
+var bands_met: Array[String] = []
+
 
 func anything_moved() -> bool:
 	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty() and fields_ruined.is_empty())

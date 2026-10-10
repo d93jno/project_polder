@@ -112,6 +112,8 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	var result := campaign.morning
 	if result == null:
 		return out
+	for id in result.bands_met:
+		out.append("you met the %s at %s" % [id.replace("_", " "), _met_where(campaign, id)])
 	if result.arrived > 0:
 		out.append("%d came to the camp" % result.arrived)
 	if result.left > 0:
@@ -156,6 +158,12 @@ static func fuel_line(campaign: Campaign, bowl_id: String) -> String:
 	if Economy.leg_reaches_home(campaign, bowl_id):
 		return "fuel there and back: %d, leaves %d" % [cost, campaign.fuel - cost]
 	return "fuel there and back: %d, you have %d: it does not reach home" % [cost, campaign.fuel]
+
+
+## Where a met band stands, in the morning it was met (the bowl the fireteam was at).
+static func _met_where(campaign: Campaign, band_id: String) -> String:
+	var b := Bands.band(campaign, band_id)
+	return b.bowl_id() if b != null else "a bowl"
 
 
 static func scrap_short_line(unkept: int) -> String:
