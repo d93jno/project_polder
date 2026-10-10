@@ -29,6 +29,7 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 		"cards_spent": campaign.cards_spent.keys(),
 		"salvaged": campaign.salvaged.keys(),
 		"bands": _bands_to_array(campaign),
+		"inbox": _entries_to_array(campaign.inbox), "radio": campaign.radio,
 	}
 
 
@@ -95,8 +96,33 @@ static func from_dict(data: Dictionary) -> Campaign:
 	for id in data.get("salvaged", []):
 		campaign.salvaged[str(id)] = true
 	campaign.bands = _bands_from(data.get("bands"))
+	campaign.inbox = _entries_from(data.get("inbox"))
+	campaign.radio = bool(data.get("radio", false))
 	campaign.morning = _morning_from_dict(data.get("morning"), basin)
 	return campaign
+
+
+static func _entries_to_array(entries: Array[MailEntry]) -> Array:
+	var out: Array = []
+	for e in entries:
+		out.append({
+			"band": e.band_id, "bowl": e.bowl_id, "event": int(e.event), "from": e.from, "to": e.to,
+			"happened": e.happened_day, "arrives": e.arrives_day,
+		})
+	return out
+
+
+static func _entries_from(raw: Variant) -> Array[MailEntry]:
+	var out: Array[MailEntry] = []
+	if typeof(raw) != TYPE_ARRAY:
+		return out
+	for entry in raw:
+		if typeof(entry) == TYPE_DICTIONARY and (entry as Dictionary).has("bowl"):
+			out.append(MailEntry.new(
+				str(entry.get("band", "")), str(entry["bowl"]), int(entry.get("event", 0)) as MailEntry.Event,
+				int(entry.get("happened", 0)), int(entry.get("arrives", 0)), int(entry.get("from", 0)), int(entry.get("to", 0)),
+			))
+	return out
 
 
 static func _bands_to_array(campaign: Campaign) -> Array:
@@ -157,7 +183,7 @@ static func _morning_to_dict(result: DayResult) -> Dictionary:
 		ruined.append({"id": r["id"], "count": int(r["count"])})
 	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep, "fields_ruined": ruined,
 		"meal": result.meal.duplicate(), "harvest": result.harvest.duplicate(),
-		"scrap_made": result.scrap_made, "arrived": result.arrived, "left": result.left, "salvage": result.salvage.duplicate(), "bands_met": result.bands_met.duplicate(), "band_food": result.band_food, "names_given": result.names_given.duplicate(),
+		"scrap_made": result.scrap_made, "arrived": result.arrived, "left": result.left, "salvage": result.salvage.duplicate(), "bands_met": result.bands_met.duplicate(), "heard": _entries_to_array(result.heard), "band_food": result.band_food, "names_given": result.names_given.duplicate(),
 	}
 
 
@@ -186,6 +212,7 @@ static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
 	result.scrap_made = int(raw.get("scrap_made", 0))
 	for id in raw.get("bands_met", []):
 		result.bands_met.append(str(id))
+	result.heard = _entries_from(raw.get("heard"))
 	for id in raw.get("names_given", []):
 		result.names_given.append(str(id))
 	result.band_food = int(raw.get("band_food", 0))

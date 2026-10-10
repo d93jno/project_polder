@@ -111,3 +111,13 @@ static func call_names(campaign: Campaign) -> Array[String]:
 			campaign.labor[Campaign.Bucket.ROSTER] = campaign.hands(Campaign.Bucket.ROSTER) + 1
 			given.append(b.id)
 	return given
+
+
+## The bands move one bowl along their routes every `BAND_MOVE_DAYS` days (decision 7.5): a fixed, authored
+## step, no dice. `new_day` is the morning that is opening.
+static func move_on(campaign: Campaign, new_day: int) -> void:
+	if new_day % BasinRules.BAND_MOVE_DAYS != 0:
+		return
+	for b in campaign.bands:
+		if b.route.size() > 1:
+			b.at = (b.at + 1) % b.route.size()

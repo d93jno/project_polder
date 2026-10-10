@@ -58,6 +58,11 @@ const BANDS_PER_RING := 2
 ## What a band on the FOOD job brings in a day (plan 10 §10.2).
 const BAND_FOOD_PER_DAY := 1
 
+## Mail (plan 10 §10.3, decision 7.2): days between an event and the report of it reaching the table, until
+## radio. Bands (decision 7.5): days between steps along a route.
+const MAIL_LAG_DAYS := 2
+const BAND_MOVE_DAYS := 3
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 

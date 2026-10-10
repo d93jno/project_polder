@@ -42,6 +42,10 @@ var salvaged: Dictionary = {} ## bowl id -> true
 ## Every band in the basin, met or not (plan 10): truth lives here; what the player last saw of each is the
 ## store's `facts` layer.
 var bands: Array[Band] = []
+## Reports on their way to the table, and whether a mast has taken the lag away (plan 10 §10.3). Nothing sets
+## `radio` yet: research does, in a later plan.
+var inbox: Array[MailEntry] = []
+var radio: bool = false
 ## What the last Day end did, as data: the morning read draws from this.
 var morning: DayResult = null
 
@@ -133,8 +137,14 @@ func close_day() -> void:
 	Economy.harvest(self, result)
 	Economy.eat(self, result)
 	Economy.follow_the_water(self, result)
+	## The eyes read the day where the bands stood in it; then the bands move on, and what is due is heard.
+	var reports := Mail.read(self, result, day + 1)
+	Bands.move_on(self, day + 1)
 	morning = result
 	day += 1
+	for e in reports:
+		inbox.append(e)
+	result.heard = Mail.deliver(self, day)
 	assignments_today = 0
 	dispatched_today = false
 
@@ -157,5 +167,8 @@ func duplicate_campaign() -> Campaign:
 	copy.salvaged = salvaged.duplicate()
 	for b in bands:
 		copy.bands.append(b.duplicate_band())
+	for e in inbox:
+		copy.inbox.append(e.duplicate_entry())
+	copy.radio = radio
 	copy.morning = morning
 	return copy

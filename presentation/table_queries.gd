@@ -112,6 +112,10 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	var result := campaign.morning
 	if result == null:
 		return out
+	for entry in result.heard:
+		var heard := heard_line(campaign, entry)
+		if heard != "":
+			out.append(heard)
 	for id in result.bands_met:
 		out.append("you met the %s at %s" % [id.replace("_", " "), _met_where(campaign, id)])
 	if result.band_food > 0:
@@ -162,6 +166,23 @@ static func fuel_line(campaign: Campaign, bowl_id: String) -> String:
 	if Economy.leg_reaches_home(campaign, bowl_id):
 		return "fuel there and back: %d, leaves %d" % [cost, campaign.fuel - cost]
 	return "fuel there and back: %d, you have %d: it does not reach home" % [cost, campaign.fuel]
+
+
+## A report from a band's eyes, in words, for a bowl the player has not walked: on one they have, the dome
+## already says it now, and the mail adds nothing (plan 10 §10.3). Naming the bowl does not make it known.
+static func heard_line(campaign: Campaign, entry: MailEntry) -> String:
+	if _known(campaign, entry.bowl_id):
+		return ""
+	var what := ""
+	match entry.event:
+		MailEntry.Event.STEP_LANDED:
+			what = "went from %s to %s" % [step_word(entry.from as Taxonomy.WaterStep), step_word(entry.to as Taxonomy.WaterStep)]
+		MailEntry.Event.WALK_BEGAN:
+			what = "began to walk %s" % ("wetter" if entry.to == int(BasinBowl.Walk.WETTER) else "drier")
+		MailEntry.Event.PUMP_BROKE:
+			what = "the pump broke"
+	var ago := campaign.day - entry.happened_day
+	return "heard: %s, %s, %s" % [entry.bowl_id, what, "today" if ago <= 0 else "%d day%s ago" % [ago, "" if ago == 1 else "s"]]
 
 
 ## Where a met band stands, in the morning it was met (the bowl the fireteam was at).
