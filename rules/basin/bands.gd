@@ -65,3 +65,49 @@ static func warm_count(campaign: Campaign) -> int:
 		if b.met() and b.warm:
 			n += 1
 	return n
+
+
+## Why a band cannot take `job` now, or "" if it can (plan 10 §10.2, decision 7.6): a job change is a
+## table day, so it needs a day still to spend.
+static func why_not_job(campaign: Campaign, id: String, job: Band.Job) -> String:
+	var b := band(campaign, id)
+	if b == null:
+		return "no such band"
+	if not b.met():
+		return "you have not met them"
+	if not b.warm:
+		return "they have gone cold and take no work"
+	if b.job == job:
+		return "they already hold that job"
+	if not campaign.deployment.is_empty():
+		return "the fireteam is out"
+	if campaign.dispatched_today:
+		return "the day is spent"
+	return ""
+
+
+static func set_job(campaign: Campaign, id: String, job: Band.Job) -> void:
+	var b := band(campaign, id)
+	b.job = job
+	b.name_given = false
+
+
+## Warm, met bands holding `job`.
+static func with_job(campaign: Campaign, job: Band.Job) -> Array[Band]:
+	var out: Array[Band] = []
+	for b in campaign.bands:
+		if b.met() and b.warm and b.job == job:
+			out.append(b)
+	return out
+
+
+## The NAME job: the first day a warm band holds it, one person comes to the roster, and the job is then
+## spent. Returns the ids of the bands that gave one. The camp's people only change here, through labor.
+static func call_names(campaign: Campaign) -> Array[String]:
+	var given: Array[String] = []
+	for b in with_job(campaign, Band.Job.NAME):
+		if not b.name_given:
+			b.name_given = true
+			campaign.labor[Campaign.Bucket.ROSTER] = campaign.hands(Campaign.Bucket.ROSTER) + 1
+			given.append(b.id)
+	return given

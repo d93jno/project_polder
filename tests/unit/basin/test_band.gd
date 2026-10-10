@@ -196,3 +196,100 @@ func test_the_meeting_is_saved_with_the_morning() -> void:
 	var loaded = CampaignSave.load_campaign(path)
 	DirAccess.remove_absolute(path)
 	assert_eq(loaded.morning.bands_met, ["wake_riders"] as Array[String])
+
+
+## --- Jobs (plan 10 §10.2) ---
+
+
+func _met() -> Campaign:
+	var c := Opening.opening()
+	Bands.meet_at(c, Ring.TERRACE)
+	Bands.meet_at(c, Ring.RIDGE_W)
+	return c
+
+
+func test_a_job_changes_through_a_confirmed_command_that_spends_the_day() -> void:
+	var c := _met()
+	var cmd := SetJobCommand.new("wake_riders", Band.Job.FOOD)
+	assert_true(cmd.needs_confirm(c))
+	assert_true(cmd.validate(c).ok)
+	var next := cmd.apply(c)
+	assert_eq(Bands.band(next, "wake_riders").job, Band.Job.FOOD)
+	assert_true(next.dispatched_today, "a table day")
+	assert_eq(Bands.band(c, "wake_riders").job, Band.Job.EYES, "the campaign before it is unchanged")
+
+
+func test_a_job_change_is_refused_with_a_reason() -> void:
+	var c := Opening.opening()
+	assert_eq(SetJobCommand.new("wake_riders", Band.Job.FOOD).validate(c).reason, "you have not met them")
+	c = _met()
+	assert_eq(SetJobCommand.new("nobody", Band.Job.FOOD).validate(c).reason, "no such band")
+	assert_eq(SetJobCommand.new("wake_riders", Band.Job.EYES).validate(c).reason, "they already hold that job")
+	c.dispatched_today = true
+	assert_eq(SetJobCommand.new("wake_riders", Band.Job.FOOD).validate(c).reason, "the day is spent")
+	c.dispatched_today = false
+	c.deployment = {"bowl": Ring.TERRACE, "ids": [1]}
+	assert_eq(SetJobCommand.new("wake_riders", Band.Job.FOOD).validate(c).reason, "the fireteam is out")
+
+
+func test_a_cold_band_takes_no_job() -> void:
+	var c := _met()
+	Bands.band(c, "wake_riders").warm = false
+	assert_eq(SetJobCommand.new("wake_riders", Band.Job.FOOD).validate(c).reason, "they have gone cold and take no work")
+
+
+func test_changing_a_job_uses_the_days_dispatch() -> void:
+	var c := SetJobCommand.new("wake_riders", Band.Job.FOOD).apply(_met())
+	var ids: Array[int] = [1]
+	assert_false(DispatchCommand.new(Ring.TERRACE, ids).validate(c).ok)
+
+
+func test_a_food_band_brings_in_food_through_the_economy() -> void:
+	var c := _met() ## the roof-clan holds FOOD already
+	var before := c.food
+	var mouths := c.people()
+	c.close_day()
+	assert_eq(c.morning.band_food, BasinRules.BAND_FOOD_PER_DAY)
+	assert_eq(c.food, before + BasinRules.BAND_FOOD_PER_DAY - BasinRules.food_for(mouths))
+	c = SetJobCommand.new("wake_riders", Band.Job.FOOD).apply(_met())
+	c.close_day()
+	assert_eq(c.morning.band_food, 2 * BasinRules.BAND_FOOD_PER_DAY)
+
+
+func test_an_unmet_or_cold_band_brings_nothing() -> void:
+	var c := Opening.opening()
+	c.close_day()
+	assert_eq(c.morning.band_food, 0)
+	c = _met()
+	Bands.band(c, "roof_clan").warm = false
+	c.close_day()
+	assert_eq(c.morning.band_food, 0)
+
+
+func test_a_name_comes_to_the_roster_once() -> void:
+	var c := SetJobCommand.new("wake_riders", Band.Job.NAME).apply(_met())
+	var roster := c.hands(Campaign.Bucket.ROSTER)
+	var people := c.people()
+	c.close_day()
+	assert_eq(c.hands(Campaign.Bucket.ROSTER), roster + 1)
+	assert_eq(c.morning.names_given, ["wake_riders"] as Array[String])
+	assert_eq(c.people(), people + 1)
+	c.close_day()
+	assert_eq(c.hands(Campaign.Bucket.ROSTER), roster + 1, "the job is spent")
+	assert_eq(c.morning.names_given, [] as Array[String])
+
+
+func test_the_morning_names_the_work_in_words() -> void:
+	var c := SetJobCommand.new("wake_riders", Band.Job.NAME).apply(_met())
+	c.close_day()
+	var q = Queries.compute(c, "", [] as Array[int])
+	assert_true(q.morning.has("the bands brought in 1 food"))
+	assert_true(q.morning.has("the wake riders sent a name to the roster"))
+
+
+func test_a_warn_band_takes_the_job_and_nothing_else_happens_yet() -> void:
+	var c := SetJobCommand.new("wake_riders", Band.Job.WARN).apply(_met())
+	assert_eq(Bands.band(c, "wake_riders").job, Band.Job.WARN)
+	var food := c.food
+	c.close_day()
+	assert_eq(c.food, food + 1 - BasinRules.food_for(c.people()), "only the clan's food, from the clan")

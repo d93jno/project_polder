@@ -157,7 +157,7 @@ static func _morning_to_dict(result: DayResult) -> Dictionary:
 		ruined.append({"id": r["id"], "count": int(r["count"])})
 	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep, "fields_ruined": ruined,
 		"meal": result.meal.duplicate(), "harvest": result.harvest.duplicate(),
-		"scrap_made": result.scrap_made, "arrived": result.arrived, "left": result.left, "salvage": result.salvage.duplicate(), "bands_met": result.bands_met.duplicate(),
+		"scrap_made": result.scrap_made, "arrived": result.arrived, "left": result.left, "salvage": result.salvage.duplicate(), "bands_met": result.bands_met.duplicate(), "band_food": result.band_food, "names_given": result.names_given.duplicate(),
 	}
 
 
@@ -186,6 +186,9 @@ static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
 	result.scrap_made = int(raw.get("scrap_made", 0))
 	for id in raw.get("bands_met", []):
 		result.bands_met.append(str(id))
+	for id in raw.get("names_given", []):
+		result.names_given.append(str(id))
+	result.band_food = int(raw.get("band_food", 0))
 	result.arrived = int(raw.get("arrived", 0))
 	result.left = int(raw.get("left", 0))
 	return result

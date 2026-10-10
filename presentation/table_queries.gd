@@ -114,6 +114,10 @@ static func _morning(campaign: Campaign) -> Array[String]:
 		return out
 	for id in result.bands_met:
 		out.append("you met the %s at %s" % [id.replace("_", " "), _met_where(campaign, id)])
+	if result.band_food > 0:
+		out.append("the bands brought in %d food" % result.band_food)
+	for id in result.names_given:
+		out.append("the %s sent a name to the roster" % id.replace("_", " "))
 	if result.arrived > 0:
 		out.append("%d came to the camp" % result.arrived)
 	if result.left > 0:

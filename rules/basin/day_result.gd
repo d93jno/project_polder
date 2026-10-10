@@ -32,6 +32,10 @@ var left: int = 0
 ## Bands met by the fireteam that came home (plan 10 §10.1): their ids.
 var bands_met: Array[String] = []
 
+## Food the bands on the FOOD job brought in, and the bands whose NAME job put a name on the roster (plan 10 §10.2).
+var band_food: int = 0
+var names_given: Array[String] = []
+
 
 func anything_moved() -> bool:
 	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty() and fields_ruined.is_empty())

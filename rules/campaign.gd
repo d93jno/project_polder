@@ -128,6 +128,8 @@ func close_day() -> void:
 	var result := BasinDay.end(basin, posted)
 	basin = result.basin
 	Economy.work(self, result)
+	Economy.band_food(self, result)
+	result.names_given = Bands.call_names(self)
 	Economy.harvest(self, result)
 	Economy.eat(self, result)
 	Economy.follow_the_water(self, result)

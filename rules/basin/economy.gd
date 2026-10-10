@@ -104,3 +104,9 @@ static func follow_the_water(campaign: Campaign, result: DayResult) -> void:
 		if people < capacity(campaign) and campaign.food >= BasinRules.food_for(people + BasinRules.ARRIVALS_PER_DAY):
 			campaign.labor[Campaign.Bucket.IDLE] = campaign.hands(Campaign.Bucket.IDLE) + BasinRules.ARRIVALS_PER_DAY
 			result.arrived = BasinRules.ARRIVALS_PER_DAY
+
+
+## Bands on the FOOD job bring in a stated amount a day (plan 10 §10.2).
+static func band_food(campaign: Campaign, result: DayResult) -> void:
+	result.band_food = Bands.with_job(campaign, Band.Job.FOOD).size() * BasinRules.BAND_FOOD_PER_DAY
+	campaign.food += result.band_food
