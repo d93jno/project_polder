@@ -23,12 +23,17 @@ static func read(campaign: Campaign, bowl_id: String, horizon_days: int = DEFAUL
 	var without := campaign.duplicate_campaign()
 	Redirection.record(with, bowl_id, to_step)
 	var track := {}
+	var food_lost := 0
 	_observe(0, with, without, track)
 	for day in range(1, horizon_days + 1):
 		with.close_day()
 		without.close_day()
 		_observe(day, with, without, track)
-	return _result(campaign, bowl_id, to_step, horizon_days, with, without, track)
+		## Food the walked fields would have brought in and did not (plan 09 §9.1); counts, not a rate.
+		food_lost += int(without.morning.harvest["food"]) - int(with.morning.harvest["food"])
+	var result := _result(campaign, bowl_id, to_step, horizon_days, with, without, track)
+	result["food_lost"] = food_lost
+	return result
 
 
 ## Per bowl: the days it stood wetter than it would have, how much wetter at worst, and where.

@@ -110,6 +110,10 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	var result := campaign.morning
 	if result == null:
 		return out
+	if int(result.harvest["food"]) > 0:
+		out.append("the fields brought in %d food" % result.harvest["food"])
+	if int(result.harvest["unwalked"]) > 0:
+		out.append("and more from ground you have not walked")
 	if int(result.meal["short"]) > 0:
 		out.append("the camp ate %d food and was short by %d" % [result.meal["ate"], result.meal["short"]])
 	elif int(result.meal["ate"]) > 0:

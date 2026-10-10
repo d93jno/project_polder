@@ -5,6 +5,27 @@ extends Object
 ## growth arrive in the slices after it.
 
 
+## The harvest comes in after the basin ticks, so ground that went to Mud overnight yields nothing:
+## each Dry, un-ruined field yields food, and each hand in FIELDS adds to it, one hand to a field, in the
+## basin's fixed order so it is always the same fields that are worked. Falling and Mud are promises,
+## not food (GDD §4.3). Split by whether the player has walked the bowl, so the table never states a
+## number from ground it has not seen.
+static func harvest(campaign: Campaign, result: DayResult) -> void:
+	var hands := campaign.hands(Campaign.Bucket.FIELDS)
+	var out := {"food": 0, "unwalked": 0, "fields": 0}
+	for id in campaign.basin.order:
+		var bowl: BasinBowl = campaign.basin.bowl(id)
+		if bowl.step != Taxonomy.WaterStep.DRY or bowl.fields <= 0:
+			continue
+		var worked := mini(hands, bowl.fields)
+		hands -= worked
+		var food := bowl.fields * BasinRules.FIELD_YIELD + worked * BasinRules.HAND_YIELD
+		out["fields"] += bowl.fields
+		out["food" if bowl.known else "unwalked"] += food
+		campaign.food += food
+	result.harvest = out
+
+
 ## The camp eats once the basin has ticked. Food never goes below zero; what could not be fed is
 ## recorded as a shortfall, which is a fact for the morning, not a number that carries.
 static func eat(campaign: Campaign, result: DayResult) -> void:

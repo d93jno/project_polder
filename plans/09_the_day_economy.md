@@ -1,6 +1,6 @@
 # Phase 9 — The day economy: mouths, fields, fuel and scrap
 
-**Status:** drafted; §7 decisions locked (A); 9.0 completed. Slices 9.0–9.5 below.
+**Status:** drafted; §7 decisions locked (A); 9.0–9.1 completed. Slices 9.0–9.5 below.
 **Tracks:** GDD v1.18 §4.2 (the four currencies, fuel knowable like water, surplus spendable), §4.3 (food is a problem until the basin feeds the ridge; fields tick on the day clock; people follow the water out; the labor board), §6.4 (a drowned field is a cost), §6.6 (civic lose: food at zero before fields exist); UI/UX v0.23 §8 (previews show capabilities, never bars, percentages or targets).
 **Depends on:** Phase 8 — fields are counted per bowl (`BasinBowl.fields`, `ruined`) and ruin is recorded but costs nothing yet. Phase 7 — `Campaign` holds food, fuel and scrap as plain counts that nothing spends except pump upkeep (scrap), and the labor board has a FIELDS bucket that does nothing. `DayResult` is the morning's data.
 **Goal:** the three counts on the table start to mean something, and every one of them can be read before it bites. Mouths eat, fields feed, a dispatch burns fuel, scrap comes from somewhere, and a ruined field is finally a cost the player can see coming. Nothing is a bar: the table says "food lasts four days", never "food 62%".
@@ -71,6 +71,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 **Ships.** Harvest: a bowl's un-ruined `fields` on ground that is Dry yield food per field per day, scaled by the hands in the FIELDS bucket (§7.1). Falling and Mud yield nothing (GDD §4.3); a ruined field yields nothing for good. A bowl the player has not walked contributes to the tick, but the table's forecast lines it as *ground you have not walked*.
 
 **Done when.** Fields on a Dry bowl raise food each day; hands in FIELDS change the harvest by the stated rule; Mud ruins a field and the harvest drops by exactly that field in the forecast and the tick alike; and a redirection's preview (plan 8) can state the food it will cost, in counts.
+
+**What landed.** `Economy.harvest`, run in `Campaign.close_day` after the basin tick and before the meal, so ground that went to Mud overnight yields nothing that day. A Dry, un-ruined field yields `FIELD_YIELD` (1) and each hand in FIELDS adds `HAND_YIELD` (1), one hand to a field, handed out in the basin's fixed order. `DayResult.harvest` is `{food, unwalked, fields}`: food from bowls the player has walked is stated (*the fields brought in N food*), food from bowls they have not is only *and more from ground you have not walked*, never a number. `RedirectionPreview.read` gains `food_lost`, the walked fields' harvest the redirection costs over the horizon, from the same two simulated runs; the card's line for it is 9.5's. The forecast needed no change: it ends real days, so it counts the harvest. The opening basin has no Dry fields (they are promises, GDD §4.3), so its food still lasts four days; the late ring is the fixture with fields. Tests in `tests/unit/basin/test_economy.gd`.
 
 ### 9.2 — Fuel and the leg
 

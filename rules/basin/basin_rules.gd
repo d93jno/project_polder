@@ -27,6 +27,11 @@ const SPREAD_STEPS := 2
 ## A working default, so ten people eat three a day.
 const MOUTHS_PER_FOOD := 4
 
+## Fields (plan 09 §9.1, §7.1): each Dry, un-ruined field yields this much food a day, and each hand
+## in the FIELDS bucket adds this much more, one hand to a field (GDD §4.3: the labor board's food engine).
+const FIELD_YIELD := 1
+const HAND_YIELD := 1
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 

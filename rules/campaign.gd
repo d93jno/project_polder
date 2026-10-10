@@ -99,6 +99,7 @@ func close_day() -> void:
 	scrap -= posted.size() * SCRAP_PER_POST
 	var result := BasinDay.end(basin, posted)
 	basin = result.basin
+	Economy.harvest(self, result)
 	Economy.eat(self, result)
 	morning = result
 	day += 1

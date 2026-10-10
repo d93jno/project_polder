@@ -85,3 +85,90 @@ func test_the_morning_names_the_meal() -> void:
 	c.close_day()
 	q = Queries.compute(c, "", [] as Array[int])
 	assert_true(q.morning.has("the camp ate 0 food and was short by 3") or q.morning.has("the camp ate 1 food and was short by 2"))
+
+
+## --- Fields feed (plan 09 §9.1) ---
+
+const Ring := preload("res://rules/fixtures/basin_ring.gd")
+
+
+func _late() -> Campaign:
+	var c := Opening.opening()
+	c.basin = Ring.late_ring()
+	c.labor[Campaign.Bucket.FIELDS] = 0
+	return c
+
+
+func test_dry_fields_raise_food_each_day() -> void:
+	var c := _late()
+	var before := c.food
+	c.close_day()
+	assert_eq(c.morning.harvest["fields"], 7)
+	assert_eq(c.morning.harvest["food"], 7 * BasinRules.FIELD_YIELD)
+	assert_eq(c.food, before + 7 - BasinRules.food_for(c.people()))
+
+
+func test_hands_in_fields_add_one_to_a_field_and_no_more() -> void:
+	var c := _late()
+	c.labor[Campaign.Bucket.FIELDS] = 3
+	c.close_day()
+	assert_eq(c.morning.harvest["food"], 7 + 3)
+	c = _late()
+	c.labor[Campaign.Bucket.FIELDS] = 20
+	c.close_day()
+	assert_eq(c.morning.harvest["food"], 7 + 7, "one hand to a field, the rest add nothing")
+
+
+func test_falling_and_mud_yield_nothing() -> void:
+	for step in [Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.MUD, Taxonomy.WaterStep.FLOODED]:
+		var c := _late()
+		c.labor[Campaign.Bucket.FIELDS] = 3
+		for id in c.basin.ids():
+			c.basin.bowl(id).step = step
+		var r := DayResult.new()
+		Economy.harvest(c, r)
+		assert_eq(r.harvest["food"], 0)
+
+
+func test_a_ruined_field_yields_nothing_for_good() -> void:
+	var c := _late()
+	c.basin.bowl(Ring.POLDER_A).ruined = 3
+	c.basin.bowl(Ring.POLDER_A).fields = 0
+	c.close_day()
+	assert_eq(c.morning.harvest["fields"], 4)
+
+
+func test_unwalked_ground_is_counted_apart() -> void:
+	var c := _late()
+	c.basin.bowl(Ring.POLDER_A).known = false
+	c.close_day()
+	assert_eq(c.morning.harvest["unwalked"], 3)
+	assert_eq(c.morning.harvest["food"], 4)
+	var q = Queries.compute(c, "", [] as Array[int])
+	assert_true(q.morning.has("the fields brought in 4 food"))
+	assert_true(q.morning.has("and more from ground you have not walked"))
+	for line in q.morning:
+		assert_false(line.contains("7 food"), "the unwalked number is never stated")
+
+
+func test_the_forecast_counts_the_harvest() -> void:
+	var c := _late()
+	c.food = 0
+	assert_eq(EconomyForecast.days_of_food(c), -1, "seven fields outfeed ten mouths")
+
+
+func test_a_redirection_says_the_food_it_will_cost() -> void:
+	var c := _late()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.MUD
+	c.basin.bowl(Ring.TERRACE).fields = 2
+	var p := RedirectionPreview.read(c, Ring.TERRACE)
+	assert_true(p["ok"])
+	var lost := 0
+	var without := c.duplicate_campaign()
+	var with := c.duplicate_campaign()
+	Redirection.record(with, Ring.TERRACE, BasinRules.wetter(Taxonomy.WaterStep.MUD))
+	for i in RedirectionPreview.DEFAULT_HORIZON_DAYS:
+		with.close_day()
+		without.close_day()
+		lost += int(without.morning.harvest["food"]) - int(with.morning.harvest["food"])
+	assert_eq(p["food_lost"], lost)
