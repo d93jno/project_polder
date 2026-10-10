@@ -39,6 +39,9 @@ var names_given: Array[String] = []
 ## Reports that reached the table this morning (plan 10 §10.3): `MailEntry`s, oldest first.
 var heard: Array[MailEntry] = []
 
+## Bands that went cold overnight: {"band", "bowl", "cause"} (plan 10 §10.4).
+var went_cold: Array[Dictionary] = []
+
 
 func anything_moved() -> bool:
 	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty() and fields_ruined.is_empty())

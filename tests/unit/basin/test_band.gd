@@ -105,7 +105,7 @@ func test_a_cold_band_is_not_warm() -> void:
 
 
 func test_only_the_band_rules_change_a_band() -> void:
-	var pattern := RegEx.create_from_string("\\b(warm|job|met_day|cold_cause|name_given)\\s*=(?!=)")
+	var pattern := RegEx.create_from_string("\\b(warm|job|met_day|cold_cause|cold_at|name_given)\\s*=(?!=)")
 	var offenders: Array[String] = []
 	for root in ["res://rules", "res://presentation"]:
 		_scan(root, pattern, offenders)

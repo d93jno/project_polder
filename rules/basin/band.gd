@@ -18,6 +18,8 @@ var warm: bool = true
 var cold_cause: String = ""
 ## True once its NAME job has put a person on the bench: that job is spent (plan 10 §10.2).
 var name_given: bool = false
+## The bowl it stood in when it went cold, empty while warm (plan 10 §10.4).
+var cold_at: String = ""
 
 
 func _init(p_id: String = "", p_job: Job = Job.EYES, p_route: Array[String] = []) -> void:
@@ -41,4 +43,5 @@ func duplicate_band() -> Band:
 	copy.warm = warm
 	copy.cold_cause = cold_cause
 	copy.name_given = name_given
+	copy.cold_at = cold_at
 	return copy

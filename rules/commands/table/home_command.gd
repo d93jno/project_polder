@@ -33,6 +33,10 @@ func _apply(next: Campaign) -> Campaign:
 		Redirection.record(next, bowl_id, result.water_after)
 	next.deployment = {}
 	var brought := Economy.salvage(next, bowl_id, result.survivors.size())
+	## Taking the cache turns cold a band already met there (plan 10 §10.4); a band met on this trip is not.
+	var cooled: Array[Dictionary] = []
+	if not brought.is_empty():
+		cooled = Bands.cool_for_cache(next, bowl_id)
 	## Someone got out, so the people at that bowl have been met (plan 10, decision 7.1).
 	var met: Array[String] = []
 	if not result.survivors.is_empty():
@@ -40,4 +44,5 @@ func _apply(next: Campaign) -> Campaign:
 	next.close_day()
 	next.morning.salvage = brought
 	next.morning.bands_met = met
+	next.morning.went_cold.append_array(cooled)
 	return next

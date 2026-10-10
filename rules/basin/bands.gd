@@ -121,3 +121,47 @@ static func move_on(campaign: Campaign, new_day: int) -> void:
 	for b in campaign.bands:
 		if b.route.size() > 1:
 			b.at = (b.at + 1) % b.route.size()
+
+
+## A band goes cold, for a cause the table could have read beforehand (decision 7.4). Permanent: a map
+## fact, not a bar.
+static func cool(campaign: Campaign, b: Band, cause: String) -> Dictionary:
+	b.warm = false
+	b.cold_cause = cause
+	b.cold_at = b.bowl_id()
+	return {"band": b.id, "bowl": b.cold_at, "cause": cause}
+
+
+## The flood: a met, warm band standing in a bowl a redirection still holds wetter than before goes cold.
+## Run after the day's water is known, on the bands where they stand that day.
+static func cool_flooded(campaign: Campaign) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for b in campaign.bands:
+		if not (b.met() and b.warm):
+			continue
+		for r in campaign.redirections:
+			if r.bowl_id == b.bowl_id() and r.hangs(campaign.basin):
+				out.append(cool(campaign, b, "flood"))
+				break
+	return out
+
+
+## The cache: taking what a bowl holds turns cold a band that stands there and was met before this
+## fireteam arrived (a band met on this very trip has not yet been wronged). Call before `meet_at`.
+static func cool_for_cache(campaign: Campaign, bowl_id: String) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for b in campaign.bands:
+		if b.met() and b.warm and b.bowl_id() == bowl_id:
+			out.append(cool(campaign, b, "cache"))
+	return out
+
+
+## Whom taking the cache at `bowl_id` would turn cold: the same rule, read without changing anything.
+static func would_cool_for_cache(campaign: Campaign, bowl_id: String) -> Array[String]:
+	var out: Array[String] = []
+	if BowlOpenings.salvage(bowl_id).is_empty() or campaign.salvaged.has(bowl_id):
+		return out
+	for b in campaign.bands:
+		if b.met() and b.warm and b.bowl_id() == bowl_id:
+			out.append(b.id)
+	return out

@@ -33,7 +33,23 @@ static func read(campaign: Campaign, bowl_id: String, horizon_days: int = DEFAUL
 		food_lost += int(without.morning.harvest["food"]) - int(with.morning.harvest["food"])
 	var result := _result(campaign, bowl_id, to_step, horizon_days, with, without, track)
 	result["food_lost"] = food_lost
+	result["bands_cooled"] = _cooled(campaign, with, without)
 	return result
+
+
+## The met bands that go cold in the run with the redirection and not in the run without it: {"id", "bowl",
+## "cause", "warn"}. `bowl` is where the band stood; `warn` is whether a WARN job gives that bowl away.
+static func _cooled(campaign: Campaign, with: Campaign, without: Campaign) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for b in with.bands:
+		var other: Band = Bands.band(without, b.id)
+		if b.met() and not b.warm and other != null and other.warm:
+			var seen: BasinBowl = campaign.basin.bowl(b.cold_at)
+			out.append({
+				"id": b.id, "bowl": b.cold_at, "cause": b.cold_cause, "warn": b.job == Band.Job.WARN,
+				"known": seen != null and seen.known,
+			})
+	return out
 
 
 ## Per bowl: the days it stood wetter than it would have, how much wetter at worst, and where.

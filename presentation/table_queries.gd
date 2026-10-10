@@ -116,6 +116,8 @@ static func _morning(campaign: Campaign) -> Array[String]:
 		var heard := heard_line(campaign, entry)
 		if heard != "":
 			out.append(heard)
+	for cold in result.went_cold:
+		out.append("the %s went quiet: %s" % [str(cold["band"]).replace("_", " "), "their ground is under water" if cold["cause"] == "flood" else "you took what they needed"])
 	for id in result.bands_met:
 		out.append("you met the %s at %s" % [id.replace("_", " "), _met_where(campaign, id)])
 	if result.band_food > 0:
@@ -230,6 +232,10 @@ static func _dispatch(campaign: Campaign, bowl_id: String, chosen: Array[int], h
 		out["bowl_lines"] = _card(read, campaign.basin.bowl(bowl_id))["lines"]
 	if read.get("known", false):
 		out["fuel_line"] = fuel_line(campaign, bowl_id)
+		## Taking the cache here would turn a band cold: said before the fireteam is sent (plan 10 §10.4).
+		var wronged := Bands.would_cool_for_cache(campaign, bowl_id)
+		if not wronged.is_empty():
+			out["cache_warning"] = "the %s stand where the cache is: taking it would turn them cold" % str(wronged[0]).replace("_", " ")
 	out["has_map"] = BowlOpenings.has_map(bowl_id)
 	## The card for a bowl with a sluice, before the fireteam is sent (plan 08 §8.4, UI §8).
 	if read.get("known", false) and BowlOpenings.carries_sluice(bowl_id):
@@ -259,6 +265,13 @@ static func redirection_card(preview: Dictionary, bowl_id: String) -> Array[Stri
 		var stands := _stands_words(entry["stands"])
 		if stands != "":
 			lines.append("   %s" % stands)
+	## A met band the redirection would turn cold (plan 10 §10.4). Its bowl is named when the player has walked
+	## it or a WARN job gives it away; otherwise the card says only that a band would go cold.
+	for cooled in preview.get("bands_cooled", []):
+		if cooled["known"] or cooled["warn"]:
+			lines.append("the %s would go cold at %s" % [str(cooled["id"]).replace("_", " "), cooled["bowl"]])
+		else:
+			lines.append("a band you have met would go cold")
 	## The food it costs, in counts, from the fields the player has walked (plan 09 §7.6).
 	if int(preview.get("food_lost", 0)) > 0:
 		lines.append("it costs %d food over the next %d days" % [preview["food_lost"], preview["horizon_days"]])

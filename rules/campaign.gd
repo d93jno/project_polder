@@ -138,6 +138,7 @@ func close_day() -> void:
 	Economy.eat(self, result)
 	Economy.follow_the_water(self, result)
 	## The eyes read the day where the bands stood in it; then the bands move on, and what is due is heard.
+	result.went_cold = Bands.cool_flooded(self)
 	var reports := Mail.read(self, result, day + 1)
 	Bands.move_on(self, day + 1)
 	morning = result

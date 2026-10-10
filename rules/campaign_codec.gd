@@ -130,7 +130,7 @@ static func _bands_to_array(campaign: Campaign) -> Array:
 	for b in campaign.bands:
 		out.append({
 			"id": b.id, "job": int(b.job), "route": b.route.duplicate(), "at": b.at, "met_day": b.met_day,
-			"warm": b.warm, "cold_cause": b.cold_cause, "name_given": b.name_given,
+			"warm": b.warm, "cold_cause": b.cold_cause, "cold_at": b.cold_at, "name_given": b.name_given,
 		})
 	return out
 
@@ -151,6 +151,7 @@ static func _bands_from(raw: Variant) -> Array[Band]:
 		b.met_day = int(entry.get("met_day", 0))
 		b.warm = bool(entry.get("warm", true))
 		b.cold_cause = str(entry.get("cold_cause", ""))
+		b.cold_at = str(entry.get("cold_at", ""))
 		b.name_given = bool(entry.get("name_given", false))
 		out.append(b)
 	return out
@@ -183,7 +184,7 @@ static func _morning_to_dict(result: DayResult) -> Dictionary:
 		ruined.append({"id": r["id"], "count": int(r["count"])})
 	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep, "fields_ruined": ruined,
 		"meal": result.meal.duplicate(), "harvest": result.harvest.duplicate(),
-		"scrap_made": result.scrap_made, "arrived": result.arrived, "left": result.left, "salvage": result.salvage.duplicate(), "bands_met": result.bands_met.duplicate(), "heard": _entries_to_array(result.heard), "band_food": result.band_food, "names_given": result.names_given.duplicate(),
+		"scrap_made": result.scrap_made, "arrived": result.arrived, "left": result.left, "salvage": result.salvage.duplicate(), "bands_met": result.bands_met.duplicate(), "went_cold": result.went_cold.duplicate(true), "heard": _entries_to_array(result.heard), "band_food": result.band_food, "names_given": result.names_given.duplicate(),
 	}
 
 
@@ -210,6 +211,8 @@ static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
 				fresh[str(k)] = int(kept[k])
 			result.set(key, fresh)
 	result.scrap_made = int(raw.get("scrap_made", 0))
+	for cold in raw.get("went_cold", []):
+		result.went_cold.append({"band": str(cold["band"]), "bowl": str(cold["bowl"]), "cause": str(cold["cause"])})
 	for id in raw.get("bands_met", []):
 		result.bands_met.append(str(id))
 	result.heard = _entries_from(raw.get("heard"))
