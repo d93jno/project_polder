@@ -372,3 +372,8 @@ func test_the_hold_is_not_saved() -> void:
 	var loaded = CampaignSave.load_campaign(path)
 	DirAccess.remove_absolute(path)
 	assert_eq(loaded.deployment.size(), 0, "a dispatch is not saved, so neither is its hold")
+
+
+func test_the_table_says_how_long_the_food_lasts() -> void:
+	var view := _view()
+	assert_true(_text(view).contains("food lasts 4 days"))

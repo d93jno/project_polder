@@ -1,6 +1,6 @@
 # Phase 9 — The day economy: mouths, fields, fuel and scrap
 
-**Status:** drafted; nothing built. Slices 9.0–9.5 below; §7 decisions open.
+**Status:** drafted; §7 decisions locked (A); 9.0 completed. Slices 9.0–9.5 below.
 **Tracks:** GDD v1.18 §4.2 (the four currencies, fuel knowable like water, surplus spendable), §4.3 (food is a problem until the basin feeds the ridge; fields tick on the day clock; people follow the water out; the labor board), §6.4 (a drowned field is a cost), §6.6 (civic lose: food at zero before fields exist); UI/UX v0.23 §8 (previews show capabilities, never bars, percentages or targets).
 **Depends on:** Phase 8 — fields are counted per bowl (`BasinBowl.fields`, `ruined`) and ruin is recorded but costs nothing yet. Phase 7 — `Campaign` holds food, fuel and scrap as plain counts that nothing spends except pump upkeep (scrap), and the labor board has a FIELDS bucket that does nothing. `DayResult` is the morning's data.
 **Goal:** the three counts on the table start to mean something, and every one of them can be read before it bites. Mouths eat, fields feed, a dispatch burns fuel, scrap comes from somewhere, and a ruined field is finally a cost the player can see coming. Nothing is a bar: the table says "food lasts four days", never "food 62%".
@@ -63,6 +63,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 **Ships.** `Economy.eat(campaign)`: each person eats `BasinRules.FOOD_PER_MOUTH` a day, taken in the morning after the basin tick. Food never goes below zero. The people's shortfall is recorded in `DayResult` (the morning says *short by N*, not a bar). `EconomyForecast.days_of_food(campaign)` reads the rule on a copy and returns how many days the current food, hands and fields last.
 
 **Done when.** A day ends with food lower by the mouths; a shortfall is recorded and leaves food at zero; the forecast equals the days the real tick takes to reach zero; and the morning read names the meal.
+
+**What landed.** `Economy.eat` (`rules/basin/economy.gd`), called from `Campaign.close_day` after the basin tick, so day end and the way home both eat. The constant is `BasinRules.MOUTHS_PER_FOOD` = 4 rather than a food-per-mouth number: one ration feeds four and a part-fed group eats a whole one, so the ten at the opening eat three a day and the 12 food lasts four days. `DayResult.meal` is `{ate, short}`. `EconomyForecast.days_of_food` ends real days on copies of the campaign (so it is the tick, not a second implementation) and returns -1 past `BasinRules.FORECAST_DAYS` (30). The table shows *food lasts N days* under the people count, and the morning read opens with *the camp ate N food* (*and was short by M* when it was). People leaving for want of food is 9.4's. Tests in `tests/unit/basin/test_economy.gd` and one in `test_table_view.gd`.
 
 ### 9.1 — Fields feed
 
@@ -130,37 +132,49 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 
 ### 7.1 — How does a field yield? **A fixed yield per Dry, un-ruined field, with hands in FIELDS adding to it.**
 
-- **A. A fixed yield per Dry, un-ruined field; each hand in FIELDS adds a stated extra, up to a field's worth of hands.** It keeps "hands in the food engine" a real labor choice (GDD §4.3), and the forecast is a sum a test can state.
+Locked (A).
+
+- **A (chosen). A fixed yield per Dry, un-ruined field; each hand in FIELDS adds a stated extra, up to a field's worth of hands.** It keeps "hands in the food engine" a real labor choice (GDD §4.3), and the forecast is a sum a test can state.
 - **B. Yield only with hands.** A field with nobody on it feeds nobody. Simple and harsh; it makes a flood over a staffed field and an unstaffed one the same loss.
 - **C. Yield by the ring's wetness gradient.** Realistic and a second water model on the table; GDD §6.1 says do not.
 
 ### 7.2 — What happens when food runs out? **People leave, then the camp is starved (a query, not a screen).**
 
-- **A. A shortfall costs a stated number of people each day it lasts, taken from IDLE first; zero food with no Dry field is `Ending.is_starved`.** Matches GDD §4.3 ("some leave or die") and §6.6 (the civic lose), and it leaves the player a day or two to react.
+Locked (A).
+
+- **A (chosen). A shortfall costs a stated number of people each day it lasts, taken from IDLE first; zero food with no Dry field is `Ending.is_starved`.** Matches GDD §4.3 ("some leave or die") and §6.6 (the civic lose), and it leaves the player a day or two to react.
 - **B. Hard stop: zero food ends the campaign at once.** Clearest, and it reads as a surprise unless the forecast is perfect; GDD says the lose is a state, not a timer.
 - **C. A morale penalty on dispatch.** A fifth bar by another name.
 
 ### 7.3 — What does a leg of fuel cost? **A count by the bowl's step, there and back, shown before sending.**
 
-- **A. Fuel for the leg depends on the bowl's step (Flooded boat, Mud slower, Dry cheapest), paid when the fireteam is sent, and refused if it cannot reach home.** The GDD says fuel is knowable before the leg, and the step is already on the table.
+Locked (A).
+
+- **A (chosen). Fuel for the leg depends on the bowl's step (Flooded boat, Mud slower, Dry cheapest), paid when the fireteam is sent, and refused if it cannot reach home.** The GDD says fuel is knowable before the leg, and the step is already on the table.
 - **B. A flat cost per dispatch.** Simple, and it throws away the point that water decides the road.
 - **C. Fuel burned per fight turn.** Needs a fight clock the table does not own, and breaks the layer rule (the fight reads nothing of the campaign).
 
 ### 7.4 — Where does scrap come from? **Workshop hands, plus what a fight brings home.**
 
-- **A. Hands in WORKSHOP produce a stated amount a day; a fight brought home adds what its extracted units carry.** Two sources, both knowable: one is a rate, the other is on the fixture.
+Locked (A).
+
+- **A (chosen). Hands in WORKSHOP produce a stated amount a day; a fight brought home adds what its extracted units carry.** Two sources, both knowable: one is a rate, the other is on the fixture.
 - **B. Workshop only.** Then a dispatch has no pay and the fireteam is only a cost.
 - **C. Salvage only.** Then WORKSHOP is dead weight and the labor board loses a choice.
 
 ### 7.5 — How does the population grow? **Toward what Dry, un-ruined fields can feed, a stated step a day, never past the food.**
 
-- **A. One number that moves a stated step toward the mouths the fields can feed, and never grows while food is short.** The GDD's "ticks up toward whatever the dry tiles can feed", and it makes a ruined field cost people.
+Locked (A).
+
+- **A (chosen). One number that moves a stated step toward the mouths the fields can feed, and never grows while food is short.** The GDD's "ticks up toward whatever the dry tiles can feed", and it makes a ruined field cost people.
 - **B. Fixed by act.** Easy to test and it cuts the link between the water and the camp the GDD names.
 - **C. Growth by random arrivals.** Breaks determinism.
 
 ### 7.6 — Does the redirection card name the food it costs? **Yes, in counts, for bowls the player has walked.**
 
-- **A. The card gains a line per bowl: fields lost and the days of food that changes, from the same forecast.** Closes plan 8's open end ("a ruined field is recorded, not yet priced") and keeps the preview equal to the rule.
+Locked (A).
+
+- **A (chosen). The card gains a line per bowl: fields lost and the days of food that changes, from the same forecast.** Closes plan 8's open end ("a ruined field is recorded, not yet priced") and keeps the preview equal to the rule.
 - **B. The card stays as is and the cost shows up in the morning.** That is a consequence the table withheld, which §6.4 forbids.
 - **C. A single total.** Hides which bowl is paying.
 

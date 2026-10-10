@@ -19,6 +19,7 @@ var day_label: String = ""
 ## The dispatch slot: leads with the bowl, then the bodies (UI §8).
 var dispatch: Dictionary = {}
 var day_end_text: String = ""
+var food_lasts: String = ""
 
 
 static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int], hold_sluice: bool = false):
@@ -26,6 +27,7 @@ static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int
 	q.day_label = "day %d" % campaign.day
 	q.currencies = "food %d · fuel %d · scrap %d" % [campaign.food, campaign.fuel, campaign.scrap]
 	q.people = "%d people" % campaign.people()
+	q.food_lasts = food_lasts_line(EconomyForecast.days_of_food(campaign))
 	for bucket in Campaign.Bucket.values():
 		q.labor.append({"bucket": bucket, "name": bucket_name(bucket), "hands": campaign.hands(bucket)})
 	var left := Campaign.ASSIGNMENTS_PER_DAY - campaign.assignments_today
@@ -108,6 +110,10 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	var result := campaign.morning
 	if result == null:
 		return out
+	if int(result.meal["short"]) > 0:
+		out.append("the camp ate %d food and was short by %d" % [result.meal["ate"], result.meal["short"]])
+	elif int(result.meal["ate"]) > 0:
+		out.append("the camp ate %d food" % result.meal["ate"])
 	for move in result.moved:
 		if _known(campaign, move["id"]):
 			out.append("%s: %s to %s" % [move["id"], step_word(move["from"]), step_word(move["to"])])
@@ -127,6 +133,14 @@ static func _morning(campaign: Campaign) -> Array[String]:
 		if _known(campaign, ruin["id"]):
 			out.append("%s: %d field%s ruined" % [ruin["id"], ruin["count"], "" if ruin["count"] == 1 else "s"])
 	return out
+
+
+static func food_lasts_line(days: int) -> String:
+	if days < 0:
+		return "food lasts more than %d days" % BasinRules.FORECAST_DAYS
+	if days == 0:
+		return "food does not feed the camp tomorrow"
+	return "food lasts %d day%s" % [days, "" if days == 1 else "s"]
 
 
 static func _known(campaign: Campaign, id: String) -> bool:

@@ -23,8 +23,19 @@ const REDIRECTION_HANG_DAYS := 5
 ## How many steps wetter a feeder must stand before it pushes the bowl it feeds (plan 08 §7.1).
 const SPREAD_STEPS := 2
 
+## Food (plan 09 §9.0): one ration feeds this many people for a day; a part-fed group still eats a whole one.
+## A working default, so ten people eat three a day.
+const MOUTHS_PER_FOOD := 4
+
+## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
+const FORECAST_DAYS := 30
+
 ## One ignored late pump walks Dry to Mud and stops while the rest of the ring holds (GDD §6.2).
 const LEAK_CAP_STEP := Taxonomy.WaterStep.MUD
+
+
+static func food_for(mouths: int) -> int:
+	return (maxi(mouths, 0) + MOUTHS_PER_FOOD - 1) / MOUTHS_PER_FOOD
 
 
 static func wetter(step: Taxonomy.WaterStep) -> Taxonomy.WaterStep:

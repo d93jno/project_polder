@@ -26,6 +26,7 @@ var _board
 var _day: Label
 var _currencies: Label
 var _people: Label
+var _food_lasts: Label
 var _assignments: Label
 var _labor_box: VBoxContainer
 var _morning: Label
@@ -65,6 +66,7 @@ func _build() -> void:
 	_day = _label(panel, 22)
 	_currencies = _label(panel, 16)
 	_people = _label(panel, 16)
+	_food_lasts = _label(panel, 16)
 	_section(panel, "labor")
 	_labor_box = VBoxContainer.new()
 	panel.add_child(_labor_box)
@@ -130,6 +132,7 @@ func _refresh() -> void:
 	_day.text = _queries.day_label
 	_currencies.text = _queries.currencies
 	_people.text = _queries.people
+	_food_lasts.text = _queries.food_lasts
 	_assignments.text = _queries.assignments_left
 	_morning.text = "\n".join(_queries.morning) if not _queries.morning.is_empty() else "nothing moved"
 	_rebuild_labor()
