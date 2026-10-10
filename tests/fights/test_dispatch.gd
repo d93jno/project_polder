@@ -250,3 +250,44 @@ func test_a_redirected_bowl_stays_wet_for_days_and_then_dries_again() -> void:
 	assert_eq(basin.bowl(Ring.TERRACE).hang_days, 0)
 	basin = BasinDay.end(basin, posted).basin
 	assert_eq(basin.bowl(Ring.TERRACE).walk, BasinBowl.Walk.DRIER, "the hang is over, and the water can walk back")
+
+
+## --- Refusing the sluice (plan 08 §8.5) ---
+
+
+func test_a_held_sluice_is_locked_and_refused_with_a_reason() -> void:
+	var c := Opening.opening()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FALLING
+	var cmd := DispatchCommand.new(Ring.TERRACE, _ids([1, 2, 3, 4]), true)
+	assert_true(cmd.validate(c).ok)
+	c = cmd.apply(c)
+	assert_true(bool(c.deployment.get("hold_sluice", false)))
+	var fight := TableDispatch.build_fight(c, Ring.TERRACE, _ids([1, 2, 3, 4]), true)
+	fight.in_contact = true
+	fight.active_side = CombatState.PhaseSide.PLAYER
+	fight.get_unit(FloodedTerrace.P2).cell = FloodedTerrace.SLUICE + Vector3i(-1, 0, 0)
+	var open := MachineCommand.new(FloodedTerrace.P2, FloodedTerrace.SLUICE)
+	var result := open.validate(fight)
+	assert_false(result.ok)
+	assert_eq(result.reason, "the sluice is held shut")
+
+
+func test_holding_the_sluice_locks_only_sluices() -> void:
+	var c := _send(Opening.opening())
+	var held := TableDispatch.build_fight(c, Ring.TERRACE, _ids([1, 2, 3, 4]), true)
+	var free := TableDispatch.build_fight(c, Ring.TERRACE, _ids([1, 2, 3, 4]))
+	for m in held.machines.values():
+		assert_eq(m.locked, m.kind == Machine.Kind.SLUICE)
+	for m in free.machines.values():
+		assert_false(m.locked)
+
+
+func test_a_held_fight_brought_home_redirects_nothing() -> void:
+	var c := Opening.opening()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FALLING
+	c = DispatchCommand.new(Ring.TERRACE, _ids([1, 2, 3, 4]), true).apply(c)
+	var fight := TableDispatch.build_fight(c, Ring.TERRACE, _ids([1, 2, 3, 4]), true)
+	_extract(fight, [1, 2, 3, 4])
+	var home := _home(c, fight)
+	assert_eq(home.basin.bowl(Ring.TERRACE).step, Taxonomy.WaterStep.FALLING)
+	assert_eq(home.redirections.size(), 0)

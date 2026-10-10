@@ -56,7 +56,7 @@ static func from_dict(data: Dictionary) -> Campaign:
 		var ids: Array[int] = []
 		for id in out.get("ids", []):
 			ids.append(int(id))
-		campaign.deployment = {"bowl": str(out.get("bowl", "")), "ids": ids}
+		campaign.deployment = {"bowl": str(out.get("bowl", "")), "ids": ids, "hold_sluice": bool(out.get("hold_sluice", false))}
 	var basin := Basin.new()
 	for raw in data["basin"]:
 		if typeof(raw) != TYPE_DICTIONARY or not (raw as Dictionary).has("id"):

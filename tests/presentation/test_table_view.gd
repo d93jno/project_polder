@@ -337,3 +337,38 @@ func test_the_view_still_decides_nothing_about_redirection() -> void:
 		var text := FileAccess.get_file_as_string(path)
 		for forbidden in ["RedirectionPreview", "Redirection.", "Ending", "hang_days_min", "steps_wetter"]:
 			assert_false(text.contains(forbidden), "%s must not know %s" % [path, forbidden])
+
+
+## --- Refusing the sluice (plan 08 §8.5) ---
+
+
+func test_holding_the_sluice_changes_the_card_to_say_nothing_is_redirected() -> void:
+	var view := _card_view()
+	view._on_bowl(Ring.TERRACE)
+	assert_true(view._queries.dispatch.get("has_sluice", false))
+	view._on_hold(true)
+	var card: Array = view._queries.dispatch["card"]
+	assert_eq(card.size(), 1)
+	assert_true(card[0].contains("held shut"))
+	assert_true(card[0].contains("nothing is redirected"))
+
+
+func test_only_a_bowl_with_a_sluice_offers_the_hold_and_it_resets_on_a_new_bowl() -> void:
+	var view := _card_view()
+	view._on_bowl(Ring.RIDGE_W)
+	assert_false(view._queries.dispatch.get("has_sluice", false))
+	view._on_bowl(Ring.TERRACE)
+	view._on_hold(true)
+	view._on_bowl(Ring.RIDGE_W)
+	view._on_bowl(Ring.TERRACE)
+	assert_false(view._hold_sluice, "the choice belongs to one dispatch")
+
+
+func test_the_hold_is_not_saved() -> void:
+	var c := _card_campaign()
+	c = DispatchCommand.new(Ring.TERRACE, [1, 2, 3, 4] as Array[int], true).apply(c)
+	var path := "user://hold_test_save.json"
+	CampaignSave.save_campaign(c, path)
+	var loaded = CampaignSave.load_campaign(path)
+	DirAccess.remove_absolute(path)
+	assert_eq(loaded.deployment.size(), 0, "a dispatch is not saved, so neither is its hold")

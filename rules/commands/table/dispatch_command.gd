@@ -8,11 +8,14 @@ const MAX_BODIES := 4
 
 var bowl_id: String
 var unit_ids: Array[int]
+## "Refuse the sluice" (plan 08 §8.5, GDD §4.2): an active no. The fight is built with its sluice held shut.
+var hold_sluice: bool
 
 
-func _init(p_bowl_id: String = "", p_unit_ids: Array[int] = []) -> void:
+func _init(p_bowl_id: String = "", p_unit_ids: Array[int] = [], p_hold_sluice: bool = false) -> void:
 	bowl_id = p_bowl_id
 	unit_ids = p_unit_ids
+	hold_sluice = p_hold_sluice
 
 
 func validate(campaign: Campaign) -> CommandResult:
@@ -40,6 +43,6 @@ func validate(campaign: Campaign) -> CommandResult:
 
 
 func _apply(next: Campaign) -> Campaign:
-	next.deployment = {"bowl": bowl_id, "ids": unit_ids.duplicate()}
+	next.deployment = {"bowl": bowl_id, "ids": unit_ids.duplicate(), "hold_sluice": hold_sluice}
 	next.dispatched_today = true
 	return next

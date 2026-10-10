@@ -19,6 +19,7 @@ var campaign: Campaign
 var wired := false
 var _selected_bowl: String = ""
 var _chosen: Array[int] = []
+var _hold_sluice := false
 var _confirm = _Confirm.new()
 var _queries
 var _board
@@ -124,7 +125,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _refresh() -> void:
-	_queries = _Queries.compute(campaign, _selected_bowl, _chosen)
+	_queries = _Queries.compute(campaign, _selected_bowl, _chosen, _hold_sluice)
 	_board.set_state(_queries.cards, _queries.edges, _selected_bowl)
 	_day.text = _queries.day_label
 	_currencies.text = _queries.currencies
@@ -176,6 +177,12 @@ func _rebuild_dispatch() -> void:
 		l.text = str(line)
 		l.add_theme_font_size_override("font_size", 13)
 		_dispatch_box.add_child(l)
+	if d.get("has_sluice", false):
+		var hold := CheckBox.new()
+		hold.text = "hold the sluice"
+		hold.button_pressed = _hold_sluice
+		hold.toggled.connect(_on_hold)
+		_dispatch_box.add_child(hold)
 	var bodies := HBoxContainer.new()
 	for id in d["bench"]:
 		var box := CheckBox.new()
@@ -214,9 +221,15 @@ func _collect(node: Node, out: Array[String]) -> void:
 
 func _on_bowl(id: String) -> void:
 	_selected_bowl = id
+	_hold_sluice = false
 	_chosen = [] as Array[int]
 	_confirm.cancel()
 	_note.text = ""
+	_refresh()
+
+
+func _on_hold(pressed: bool) -> void:
+	_hold_sluice = pressed
 	_refresh()
 
 
@@ -233,7 +246,7 @@ func _assign(from_bucket: Campaign.Bucket, to_bucket: Campaign.Bucket) -> void:
 
 
 func _on_dispatch() -> void:
-	_try(DispatchCommand.new(_selected_bowl, _chosen))
+	_try(DispatchCommand.new(_selected_bowl, _chosen, _hold_sluice))
 
 
 func _on_day_end() -> void:

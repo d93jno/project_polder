@@ -21,7 +21,7 @@ var dispatch: Dictionary = {}
 var day_end_text: String = ""
 
 
-static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int]):
+static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int], hold_sluice: bool = false):
 	var q = load("res://presentation/table_queries.gd").new()
 	q.day_label = "day %d" % campaign.day
 	q.currencies = "food %d · fuel %d · scrap %d" % [campaign.food, campaign.fuel, campaign.scrap]
@@ -38,7 +38,7 @@ static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int
 			for feeder in read["feeders"]:
 				q.edges.append({"from": feeder["id"], "to": id, "pouring": feeder["pouring"]})
 	q.morning = _morning(campaign)
-	q.dispatch = _dispatch(campaign, selected_bowl, chosen)
+	q.dispatch = _dispatch(campaign, selected_bowl, chosen, hold_sluice)
 	q.day_end_text = "end day %d" % campaign.day
 	return q
 
@@ -134,8 +134,8 @@ static func _known(campaign: Campaign, id: String) -> bool:
 	return bowl != null and bowl.known
 
 
-static func _dispatch(campaign: Campaign, bowl_id: String, chosen: Array[int]) -> Dictionary:
-	var out := {"bowl": bowl_id, "bench": campaign.bench.duplicate(), "chosen": chosen.duplicate()}
+static func _dispatch(campaign: Campaign, bowl_id: String, chosen: Array[int], hold_sluice: bool = false) -> Dictionary:
+	var out := {"bowl": bowl_id, "bench": campaign.bench.duplicate(), "chosen": chosen.duplicate(), "hold_sluice": hold_sluice}
 	if not campaign.deployment.is_empty():
 		out["out"] = "the fireteam is out at %s" % campaign.deployment["bowl"]
 		out["ok"] = false
@@ -145,7 +145,7 @@ static func _dispatch(campaign: Campaign, bowl_id: String, chosen: Array[int]) -
 		out["ok"] = false
 		out["reason"] = "choose a bowl"
 		return out
-	var check := DispatchCommand.new(bowl_id, chosen).validate(campaign)
+	var check := DispatchCommand.new(bowl_id, chosen, hold_sluice).validate(campaign)
 	out["ok"] = check.ok
 	out["reason"] = check.reason
 	var read := WaterGraph.read(campaign.basin, bowl_id)
@@ -155,7 +155,12 @@ static func _dispatch(campaign: Campaign, bowl_id: String, chosen: Array[int]) -
 	out["has_map"] = BowlOpenings.has_map(bowl_id)
 	## The card for a bowl with a sluice, before the fireteam is sent (plan 08 §8.4, UI §8).
 	if read.get("known", false) and BowlOpenings.carries_sluice(bowl_id):
-		out["card"] = redirection_card(RedirectionPreview.read(campaign, bowl_id), bowl_id)
+		out["has_sluice"] = true
+		if hold_sluice:
+			## An active no: nothing is redirected, so there is nothing to preview (GDD §4.2).
+			out["card"] = ["the sluice at %s is held shut: nothing is redirected" % bowl_id] as Array[String]
+		else:
+			out["card"] = redirection_card(RedirectionPreview.read(campaign, bowl_id), bowl_id)
 	return out
 
 

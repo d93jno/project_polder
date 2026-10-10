@@ -45,7 +45,7 @@ func _go_to_fight() -> void:
 	for id in campaign.deployment["ids"]:
 		ids.append(int(id))
 	var fight = _Fight.new()
-	fight.fight_state = TableDispatch.build_fight(campaign, bowl_id, ids)
+	fight.fight_state = TableDispatch.build_fight(campaign, bowl_id, ids, bool(campaign.deployment.get("hold_sluice", false)))
 	fight.fight_state.bowl_id = bowl_id
 	fight.store_path = save_path
 	fight.fight_ended.connect(_on_fight_ended)

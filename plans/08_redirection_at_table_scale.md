@@ -1,6 +1,6 @@
 # Phase 8 — Redirection at table scale: spread, hangover and the card
 
-**Status:** 8.0–8.4 completed; 8.5 not built. Slices 8.0–8.5 below; §7 decisions locked.
+**Status:** 8.0–8.5 completed. Slices 8.0–8.5 below; §7 decisions locked.
 **Tracks:** GDD v1.18 §6.2 (creep), §6.4 (redirection: the card, its constraints, its cost), §6.5 (the first-contact sluice), §6.6 (Bitter), §4.3 (what a dry tile is), §4.2 ("refuse the sluice"); UI/UX v0.22 §8 (redirection is previewed before it is spent), §3 (mid-fight water).
 **Depends on:** Phase 7 — the basin, the day tick, the campaign, dispatch and the way home. Phase 6 — a sluice opened in a fight is the redirection; `HomeCommand` already leaves the bowl a step wetter and held (`hang_days`). Phase 5 — the preview ends in a Confirmed action.
 **Goal:** the highest-consequence button in the game is a decision the player made with the consequences in front of them. A redirection spreads in a way the rules can state, leaves a hangover the campaign remembers (and that a later ending can read as Bitter), and is previewed on the table before the fireteam is sent: which bowls step wetter and by how much, whether the creep reaches the next bowl, roughly how long the target hangs wet, and what of the player's own is standing in it. A regretted sluice should be a decision the player made, not a consequence the map withheld (GDD §6.4).
@@ -105,6 +105,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 8.4
 **Ships.** "Refuse the sluice" as a dispatch choice (GDD §4.2: an active no). A checkbox on the dispatch slot that seats the fight with the bowl's sluice locked (`Machine.locked`, which `MachineCommand` refuses with a reason), and a plain line on the card saying so. The first fight at a bowl that carries the authored first-contact card is flagged on the bowl (`BowlOpenings`), so the redirection it records is `first_contact` and never makes the campaign Bitter (GDD §6.5). Everything else about the first-contact sluice is unchanged.
 
 **Done when.** A dispatch with the sluice held produces a fight in which `MachineCommand` refuses to open it with a reason, and the preview card for that dispatch says there is no redirection; the first redirection at the terrace is recorded as first contact and the next is not; and the held choice is not saved (it belongs to a dispatch, which is not).
+
+**What landed.** `Machine.locked`, copied by `duplicate_machine`; `MachineCommand.validate` refuses a locked machine with *the sluice is held shut*. `DispatchCommand` takes `hold_sluice` and records it on the deployment; `TableDispatch.build_fight(campaign, bowl, ids, hold_sluice)` locks every sluice in the seated fight, and `game.gd` passes the deployment's flag. The dispatch slot shows a *hold the sluice* checkbox only for a bowl that carries a sluice and resets it when the bowl changes; while held the card reads *the sluice at <bowl> is held shut: nothing is redirected*. The hold is not saved (a loaded campaign has no deployment). The first-contact flag had already landed in 8.2. Tests: a locked sluice refused with its reason, only sluices locked, a held fight brought home redirecting nothing, the card line, checkbox scope and reset, and the hold not surviving a save.
 
 ---
 

@@ -14,13 +14,19 @@ var cell: Vector3i
 var kind: Kind
 ## Hatch: open. Pump: running. Sluice: open.
 var on: bool = false
+## Held shut for this fight by a choice made at the table (plan 08 §8.5, GDD §4.2: "refuse the sluice").
+## Fight state, never saved: it belongs to a dispatch.
+var locked: bool = false
 
 
-func _init(p_cell: Vector3i = Vector3i.ZERO, p_kind: Kind = Kind.HATCH, p_on: bool = false) -> void:
+func _init(
+	p_cell: Vector3i = Vector3i.ZERO, p_kind: Kind = Kind.HATCH, p_on: bool = false, p_locked: bool = false
+) -> void:
 	cell = p_cell
 	kind = p_kind
 	on = p_on
+	locked = p_locked
 
 
 func duplicate_machine() -> Machine:
-	return Machine.new(cell, kind, on)
+	return Machine.new(cell, kind, on, locked)

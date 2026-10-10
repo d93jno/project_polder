@@ -33,6 +33,8 @@ func validate(state: CombatState) -> CommandResult:
 	var machine: Machine = state.machine_at(machine_cell)
 	if machine == null:
 		return CommandResult.failure("no machine there")
+	if machine.locked:
+		return CommandResult.failure("the %s is held shut" % str(Machine.Kind.keys()[machine.kind]).to_lower())
 	if not in_reach(state):
 		return CommandResult.failure("too far from the machine")
 	if machine.on == turn_on:
