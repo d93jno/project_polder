@@ -29,12 +29,8 @@ func _apply(next: Campaign) -> Campaign:
 	for id in result.lost:
 		next.bench.erase(id)
 		next.lose_person()
-	var bowl: BasinBowl = next.basin.bowl(bowl_id)
-	if result.water_after != bowl.step:
-		bowl.step = result.water_after
-		bowl.walk = BasinBowl.Walk.NONE
-		bowl.walk_days_left = 0
-		bowl.hang_days = BasinRules.REDIRECTION_HANG_DAYS
+	if result.water_after != next.basin.bowl(bowl_id).step:
+		Redirection.record(next, bowl_id, result.water_after)
 	next.deployment = {}
 	next.close_day()
 	return next

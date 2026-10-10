@@ -25,6 +25,8 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 		"deployment": campaign.deployment.duplicate(true),
 		"basin": bowls,
 		"morning": _morning_to_dict(campaign.morning),
+		"redirections": _redirections_to_array(campaign),
+		"cards_spent": campaign.cards_spent.keys(),
 	}
 
 
@@ -79,8 +81,27 @@ static func from_dict(data: Dictionary) -> Campaign:
 		bowl.road = bool(raw.get("road", false))
 		basin.add_bowl(bowl)
 	campaign.basin = basin
+	for raw in data.get("redirections", []):
+		if typeof(raw) == TYPE_DICTIONARY and (raw as Dictionary).has("bowl"):
+			campaign.redirections.append(Redirection.new(
+				str(raw["bowl"]), int(raw.get("day", 0)),
+				int(raw.get("from", 0)) as Taxonomy.WaterStep, int(raw.get("to", 0)) as Taxonomy.WaterStep,
+				bool(raw.get("first_contact", false)),
+			))
+	for id in data.get("cards_spent", []):
+		campaign.cards_spent[str(id)] = true
 	campaign.morning = _morning_from_dict(data.get("morning"), basin)
 	return campaign
+
+
+static func _redirections_to_array(campaign: Campaign) -> Array:
+	var out: Array = []
+	for r in campaign.redirections:
+		out.append({
+			"bowl": r.bowl_id, "day": r.day, "from": int(r.from_step), "to": int(r.to_step),
+			"first_contact": r.first_contact,
+		})
+	return out
 
 
 static func _morning_to_dict(result: DayResult) -> Dictionary:

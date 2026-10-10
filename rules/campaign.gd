@@ -34,6 +34,9 @@ var assignments_today: int = 0
 var dispatched_today: bool = false
 ## The fireteam that is out: {"bowl": String, "ids": Array[int]}. Empty while everyone is home.
 var deployment: Dictionary = {}
+## Every redirection the player has chosen, and the bowls whose first-contact card is spent (plan 08 §8.2).
+var redirections: Array[Redirection] = []
+var cards_spent: Dictionary = {} ## bowl id -> true
 ## What the last Day end did, as data: the morning read draws from this.
 var morning: DayResult = null
 
@@ -114,5 +117,8 @@ func duplicate_campaign() -> Campaign:
 	copy.assignments_today = assignments_today
 	copy.dispatched_today = dispatched_today
 	copy.deployment = deployment.duplicate(true)
+	for r in redirections:
+		copy.redirections.append(r.duplicate_redirection())
+	copy.cards_spent = cards_spent.duplicate()
 	copy.morning = morning
 	return copy
