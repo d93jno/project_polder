@@ -27,3 +27,8 @@ static func is_starved(campaign: Campaign) -> bool:
 	if campaign.food > 0:
 		return false
 	return Economy.capacity(campaign) == 0
+
+
+## A warm band is half of the door left open (GDD §6.6, plan 10). A query; nothing draws it.
+static func has_warm_band(campaign: Campaign) -> bool:
+	return Bands.warm_count(campaign) > 0

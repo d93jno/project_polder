@@ -18,4 +18,5 @@ static func opening() -> Campaign:
 	campaign.labor[Campaign.Bucket.ROSTER] = 1
 	campaign.bench = [1, 2, 3, 4] as Array[int]
 	campaign.basin = BasinRing.opening()
+	campaign.bands = Bands.authored()
 	return campaign

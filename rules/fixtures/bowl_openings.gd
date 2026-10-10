@@ -21,6 +21,16 @@ static func carries_first_contact_card(bowl_id: String) -> bool:
 	return bowl_id == "terrace"
 
 
+## The bands the basin opens with (plan 10, GDD §5.12), unmet and standing at the start of their route: a
+## Wake-Rider boat that works the terrace and the first polder, and a roof-clan on the west ridge. Data,
+## not a guess about the player's history. `job` is a `Band.Job`.
+static func bands() -> Array:
+	return [
+		{"id": "wake_riders", "job": Band.Job.EYES, "route": ["terrace", "polder_a"]},
+		{"id": "roof_clan", "job": Band.Job.FOOD, "route": ["ridge_w"]},
+	]
+
+
 ## The cache a fireteam brings home from this bowl the first time someone gets out with it (plan 09
 ## §9.3, GDD §4.2: diesel salvaged in Flooded and Mud). Authored data on the bowl, so it is knowable.
 static func salvage(bowl_id: String) -> Dictionary:

@@ -28,6 +28,7 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 		"redirections": _redirections_to_array(campaign),
 		"cards_spent": campaign.cards_spent.keys(),
 		"salvaged": campaign.salvaged.keys(),
+		"bands": _bands_to_array(campaign),
 	}
 
 
@@ -93,8 +94,40 @@ static func from_dict(data: Dictionary) -> Campaign:
 		campaign.cards_spent[str(id)] = true
 	for id in data.get("salvaged", []):
 		campaign.salvaged[str(id)] = true
+	campaign.bands = _bands_from(data.get("bands"))
 	campaign.morning = _morning_from_dict(data.get("morning"), basin)
 	return campaign
+
+
+static func _bands_to_array(campaign: Campaign) -> Array:
+	var out: Array = []
+	for b in campaign.bands:
+		out.append({
+			"id": b.id, "job": int(b.job), "route": b.route.duplicate(), "at": b.at, "met_day": b.met_day,
+			"warm": b.warm, "cold_cause": b.cold_cause, "name_given": b.name_given,
+		})
+	return out
+
+
+## A save from before bands has none; those campaigns open with the authored, unmet ones.
+static func _bands_from(raw: Variant) -> Array[Band]:
+	var out: Array[Band] = []
+	if typeof(raw) != TYPE_ARRAY:
+		return Bands.authored()
+	for entry in raw:
+		if typeof(entry) != TYPE_DICTIONARY or not (entry as Dictionary).has("id"):
+			continue
+		var route: Array[String] = []
+		for id in entry.get("route", []):
+			route.append(str(id))
+		var b := Band.new(str(entry["id"]), int(entry.get("job", 0)) as Band.Job, route)
+		b.at = int(entry.get("at", 0))
+		b.met_day = int(entry.get("met_day", 0))
+		b.warm = bool(entry.get("warm", true))
+		b.cold_cause = str(entry.get("cold_cause", ""))
+		b.name_given = bool(entry.get("name_given", false))
+		out.append(b)
+	return out
 
 
 static func _redirections_to_array(campaign: Campaign) -> Array:

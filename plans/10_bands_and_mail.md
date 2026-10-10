@@ -1,6 +1,6 @@
 # Phase 10 — Bands and mail: people in places, and news that arrives late
 
-**Status:** drafted; nothing built. Slices 10.0–10.5 below; §7 decisions open.
+**Status:** drafted; §7 decisions locked (A); 10.0 completed. Slices 10.0–10.5 below.
 **Tracks:** GDD v1.18 §5.12 (bands: one job each, capped per ring, warm or cold, a band is a person in a place; rumours arrive late until radio), §5.11 (meeting, flight, the band that remembers), §4.2 ("answer mail" as a table verb), §6.4 (a redirection's consequences: "the new canal becomes someone's home"), §6.6 (a warm band is half of the door left open); UI/UX v0.24 §6 (map facts and ageing), §8 (*bands are people in places*; no meter on a face; no quest log).
 **Depends on:** Phase 9 — the economy gives a band's food job something to add to and the camp something to take a name from. Phase 8 — the redirection ledger is what makes a band go cold, and the card is where the player is warned. Phase 7 — the basin, the day tick, the campaign and its assignments. Phase 4 — the `facts` layer the store reserved beside `bowls`, and the rule that a fact is current on bowls the dome reaches and last-seen elsewhere.
 **Goal:** the basin has other people in it. A band is a person in a place with one job; what it knows reaches the table late, as a mark on the map where it was heard; and a player who floods its canal or takes the crate it needed finds the part of the basin that was talking has gone quiet. None of it is a number: no warmth meter, no reputation bar, no quest log (GDD §5.12, UI §8).
@@ -69,6 +69,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 10.
 
 **Done when.** A band exists unmet, is met by the rule, never exceeds its ring's cap, survives a save and a branch (`duplicate_campaign`) untouched, and `Ending.has_warm_band` is true exactly when a met band is warm.
 
+**What landed.** `Band` (`rules/basin/band.gd`: id, `Job` EYES/FOOD/NAME/WARN, an authored `route` and where on it it stands, `met_day` (0 while unmet), `warm`, `cold_cause`, and `name_given` for 10.2's spent NAME job) and `Bands` (`rules/basin/bands.gd`: `authored`, `band`, `met_in_ring`, `why_not_met`, `meet_at`, `warm_count`). `BowlOpenings.bands()` authors two, unmet: the Wake-Riders (EYES, a route of the terrace then polder_a) and a roof-clan on the west ridge (FOOD). The ring is the bowl's grade, `BasinRules.BANDS_PER_RING` = 2, and a met band counts toward it warm or cold; `why_not_met` says *not there*, *already met* or *the ring holds no more bands*, and `meet_at` meets every band the cap allows at a bowl in authored order. `Campaign.bands` is copied by `duplicate_campaign` and saved by the codec; a save from before bands opens with the authored ones. `Ending.has_warm_band` is true when a met band is warm. A test reads every file under `rules/` and `presentation/` and fails on any assignment to a band's warmth, job, meeting, cause or spent name outside `Band`, `Bands` and the codec. **Not yet:** nothing meets a band (10.1), a band does not yet move along its route (it comes with mail, 10.3), and nothing draws one. Tests in `tests/unit/basin/test_band.gd`.
+
 ### 10.1 — Meeting a band at table scale
 
 **Ships.** `HomeCommand` meets the band of the bowl the fireteam came home from, when someone got out, as decision 7.1 says. A met band is warm, holds the job the opening authors for it, and appears in the morning read (*you met a band at the terrace*). Nothing about a band is read from a bowl the player has not been to.
@@ -134,37 +136,49 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 10.
 
 ### 7.1 — How is a band first met, before there is a tactical meeting? **A dispatch to its bowl that comes home with someone, authored per bowl.**
 
-- **A. A bowl whose opening carries a band meets it when a dispatch to that bowl comes home with at least one survivor; the band is warm and holds its authored job.** It is data on the bowl like the first-contact sluice (plan 8 §7.4), needs no new fight rule, and a later tactical meeting replaces it without changing what a band is.
+Locked (A).
+
+- **A (chosen). A bowl whose opening carries a band meets it when a dispatch to that bowl comes home with at least one survivor; the band is warm and holds its authored job.** It is data on the bowl like the first-contact sluice (plan 8 §7.4), needs no new fight rule, and a later tactical meeting replaces it without changing what a band is.
 - **B. Build the knock and the truce in the fight now.** The honest answer to GDD §5.11, and a fight-scale plan with new commands, a prompt and a flee rule; larger than this one.
 - **C. A table verb that "finds" a band for a day and a scrap.** Quick, and a band is then a purchase, which the GDD calls a conversation, not a recruit.
 
 ### 7.2 — How late does mail arrive? **A fixed lag in days, shortened only by radio.**
 
-- **A. Every report arrives `MAIL_LAG_DAYS` after its event (working default: 2), and radio (a flag nothing sets yet) removes the lag.** It is the GDD's "a day, a dusk, a boat that has to find you" as one number a test can state, and the forecast and the tick agree on it.
+Locked (A).
+
+- **A (chosen). Every report arrives `MAIL_LAG_DAYS` after its event (working default: 2), and radio (a flag nothing sets yet) removes the lag.** It is the GDD's "a day, a dusk, a boat that has to find you" as one number a test can state, and the forecast and the tick agree on it.
 - **B. Lag by distance: the number of bowl-to-bowl hops between the band and the camp.** Closer to "a boat has to find you", and a second graph rule and a second number to preview; worth it once a mast exists.
 - **C. No lag.** Then mail is the dome by another name and radio has nothing to improve.
 
 ### 7.3 — What can a report say, and does hearing a bowl make it known? **It names the bowl and the event, and never makes the bowl known.**
 
-- **A. An entry names the bowl and one of three events (a step landed, a walk began, a pump broke) with its age, and the table's own reads of that bowl stay unknown.** It keeps the plan 4 and plan 7 rule that a bowl is known by walking, and it gives the player a reason to go.
+Locked (A).
+
+- **A (chosen). An entry names the bowl and one of three events (a step landed, a walk began, a pump broke) with its age, and the table's own reads of that bowl stay unknown.** It keeps the plan 4 and plan 7 rule that a bowl is known by walking, and it gives the player a reason to go.
 - **B. Hearing marks the bowl known.** Cheaper, and it undoes the knowability test: a walk would land without the player having walked.
 - **C. A report only says "something happened somewhere".** Safe, and useless: the GDD's example is *wrench on the north rim*.
 
 ### 7.4 — What makes a band go cold, and does it come back? **A redirection that leaves its bowl wetter and hanging, or taking its bowl's cache; permanent.**
 
-- **A. Two causes the table can read beforehand, both from the ledger: a redirection of the band's bowl that is still hanging, and the fireteam taking the cache at the bowl the band stands in. Going cold is permanent.** These are the GDD's "flood their canal" and "take the crate they needed"; both are already recorded (`redirections`, `salvaged`), and a permanent state is a map fact, not a bar.
+Locked (A).
+
+- **A (chosen). Two causes the table can read beforehand, both from the ledger: a redirection of the band's bowl that is still hanging, and the fireteam taking the cache at the bowl the band stands in. Going cold is permanent.** These are the GDD's "flood their canal" and "take the crate they needed"; both are already recorded (`redirections`, `salvaged`), and a permanent state is a map fact, not a bar.
 - **B. The same causes, and the band thaws after N days.** Kinder, and a timer on a person is a meter in disguise.
 - **C. Only the flood.** The cleanest, and it drops "take the crate" and the shot-the-spared and gun-post causes the GDD lists; those wait for the tactical meeting and the posts rule.
 
 ### 7.5 — Does a band stand still? **A fixed authored route, one step a few days, deterministic.**
 
-- **A. A band follows an authored route (a short cycle of bowls it moves along every `BAND_MOVE_DAYS`), so its eyes move with it (GDD §5.12: "information moves with them").** The table shows where it was *last seen*, and an old mark ages. No randomness.
+Locked (A).
+
+- **A (chosen). A band follows an authored route (a short cycle of bowls it moves along every `BAND_MOVE_DAYS`), so its eyes move with it (GDD §5.12: "information moves with them").** The table shows where it was *last seen*, and an old mark ages. No randomness.
 - **B. A band never moves.** The simplest, and then it is a fixed post, which the GDD says early bands are not.
 - **C. A band wanders by a seeded roll.** Closest to "wanderers still wander", and it makes the mark unpredictable in a way a test cannot hold to the knowability rule.
 
 ### 7.6 — What does changing a job cost? **The table day.**
 
-- **A. A job change is a Confirmed action that uses the day's dispatch (so no fireteam goes that day).** GDD §5.12 says a job change "costs a day at the table", and the dispatch is how the table already spends a day.
+Locked (A).
+
+- **A (chosen). A job change is a Confirmed action that uses the day's dispatch (so no fireteam goes that day).** GDD §5.12 says a job change "costs a day at the table", and the dispatch is how the table already spends a day.
 - **B. One of the day's three assignments.** Cheaper than the GDD says, and then jobs can be reshuffled freely.
 - **C. Free.** Jobs are then a dial, not a commitment, which is the opposite of the sentence it came from.
 

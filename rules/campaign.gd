@@ -39,6 +39,9 @@ var redirections: Array[Redirection] = []
 var cards_spent: Dictionary = {} ## bowl id -> true
 ## Bowls whose cache the fireteam has already brought home (plan 09 §9.3): there is no infinite well.
 var salvaged: Dictionary = {} ## bowl id -> true
+## Every band in the basin, met or not (plan 10): truth lives here; what the player last saw of each is the
+## store's `facts` layer.
+var bands: Array[Band] = []
 ## What the last Day end did, as data: the morning read draws from this.
 var morning: DayResult = null
 
@@ -150,5 +153,7 @@ func duplicate_campaign() -> Campaign:
 		copy.redirections.append(r.duplicate_redirection())
 	copy.cards_spent = cards_spent.duplicate()
 	copy.salvaged = salvaged.duplicate()
+	for b in bands:
+		copy.bands.append(b.duplicate_band())
 	copy.morning = morning
 	return copy

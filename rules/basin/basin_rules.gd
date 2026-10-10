@@ -52,6 +52,9 @@ const ARRIVALS_PER_DAY := 1
 const LEAVERS_PER_RATION_SHORT := 1
 const LEAVERS_PER_RUINED_FIELD := 1
 
+## Bands (plan 10 §10.0): how many met bands one ring (grade) holds (GDD §5.12: "cap bands per ring").
+const BANDS_PER_RING := 2
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 
