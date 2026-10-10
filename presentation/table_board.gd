@@ -6,7 +6,7 @@ extends Control
 
 signal bowl_pressed(id: String)
 
-const NODE_SIZE := Vector2(236.0, 132.0)
+const NODE_SIZE := Vector2(236.0, 150.0)
 const MARGIN := 18.0
 const INK := Color(0.86, 0.87, 0.84)
 const DIM := Color(0.56, 0.58, 0.57)

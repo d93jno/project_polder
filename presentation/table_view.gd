@@ -28,6 +28,7 @@ var _currencies: Label
 var _people: Label
 var _food_lasts: Label
 var _scrap_line: Label
+var _bands_box: VBoxContainer
 var _assignments: Label
 var _labor_box: VBoxContainer
 var _morning: Label
@@ -58,11 +59,17 @@ func _build() -> void:
 	_board.bowl_pressed.connect(_on_bowl)
 	add_child(_board)
 
+	## The panel scrolls rather than clipping: the table says more than one window holds (plan 10 §10.5).
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(864, 8)
+	scroll.size = Vector2(404, 664)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
 	var panel := VBoxContainer.new()
-	panel.position = Vector2(864, 8)
-	panel.size = Vector2(404, 660)
-	panel.add_theme_constant_override("separation", 3)
-	add_child(panel)
+	panel.custom_minimum_size = Vector2(384, 0)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_constant_override("separation", 2)
+	scroll.add_child(panel)
 
 	_day = _label(panel, 22)
 	_currencies = _label(panel, 16)
@@ -94,6 +101,13 @@ func _build() -> void:
 	_card.add_theme_font_size_override("font_size", 13)
 	_card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_card)
+
+	## The bands the player has met sit at the foot of the board, beside the sump (plan 10 §10.5).
+	_bands_box = VBoxContainer.new()
+	_bands_box.position = Vector2(16, 560)
+	_bands_box.size = Vector2(290, 108)
+	_bands_box.add_theme_constant_override("separation", 2)
+	add_child(_bands_box)
 
 	_note = Label.new()
 	_note.position = Vector2(8, 676)
@@ -136,11 +150,39 @@ func _refresh() -> void:
 	_people.text = _queries.people
 	_food_lasts.text = _queries.food_lasts
 	_scrap_line.text = _queries.scrap_line
+	_scrap_line.visible = _queries.scrap_line != ""
 	_assignments.text = _queries.assignments_left
 	_morning.text = "\n".join(_queries.morning) if not _queries.morning.is_empty() else "nothing moved"
 	_rebuild_labor()
+	_rebuild_bands()
 	_rebuild_dispatch()
 	_day_end.text = _queries.day_end_text
+
+
+func _rebuild_bands() -> void:
+	for child in _bands_box.get_children():
+		child.queue_free()
+	if _queries.bands.is_empty():
+		return
+	_section(_bands_box, "bands")
+	for band in _queries.bands:
+		var head := _label(_bands_box, 13)
+		head.text = str(band["line"])
+		if not band["warm"]:
+			continue
+		var row := HBoxContainer.new()
+		for job in Band.Job.values():
+			var button := Button.new()
+			button.text = _Queries.job_word(job)
+			button.disabled = job == band["job"]
+			button.add_theme_font_size_override("font_size", 12)
+			button.pressed.connect(_on_job.bind(band["id"], job))
+			row.add_child(button)
+		_bands_box.add_child(row)
+
+
+func _on_job(band_id: String, job: Band.Job) -> void:
+	_try(SetJobCommand.new(band_id, job))
 
 
 func _rebuild_labor() -> void:
@@ -151,6 +193,7 @@ func _rebuild_labor() -> void:
 		var name := Label.new()
 		name.text = row["name"]
 		name.custom_minimum_size = Vector2(230, 0)
+		name.add_theme_font_size_override("font_size", 15)
 		line.add_child(name)
 		var count := Label.new()
 		count.text = str(row["hands"])
@@ -159,10 +202,12 @@ func _rebuild_labor() -> void:
 		if row["bucket"] != Campaign.Bucket.IDLE:
 			var less := Button.new()
 			less.text = "−"
+			less.custom_minimum_size = Vector2(26, 22)
 			less.pressed.connect(_assign.bind(row["bucket"], Campaign.Bucket.IDLE))
 			line.add_child(less)
 			var more := Button.new()
 			more.text = "+"
+			more.custom_minimum_size = Vector2(26, 22)
 			more.pressed.connect(_assign.bind(Campaign.Bucket.IDLE, row["bucket"]))
 			line.add_child(more)
 		_labor_box.add_child(line)
@@ -187,6 +232,8 @@ func _rebuild_dispatch() -> void:
 		var cache := Label.new()
 		cache.text = str(d["cache_warning"])
 		cache.add_theme_font_size_override("font_size", 13)
+		cache.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cache.custom_minimum_size = Vector2(370, 0)
 		_dispatch_box.add_child(cache)
 	if d.has("fuel_line"):
 		var fuel := Label.new()
@@ -275,7 +322,7 @@ func _try(command: TableCommand) -> void:
 		_note.text = check.reason
 		return
 	if command.needs_confirm(campaign) and not _confirm.press(command):
-		_note.text = _Confirm.text_for_day_end(campaign)
+		_note.text = _Confirm.text_for_job(command) if command is SetJobCommand else _Confirm.text_for_day_end(campaign)
 		return
 	_confirm.cancel()
 	campaign = command.apply(campaign)

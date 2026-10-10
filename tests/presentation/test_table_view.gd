@@ -384,3 +384,107 @@ func test_the_dispatch_slot_shows_the_fuel_for_the_leg_before_anyone_is_sent() -
 	view._on_bowl(Ring.TERRACE)
 	assert_true(_text(view).contains("fuel there and back"))
 	assert_eq(view.campaign.deployment.size(), 0)
+
+
+## --- Bands on the table (plan 10 §10.5) ---
+
+
+func _bands_view() -> Control:
+	var view = TableView.new()
+	view.campaign = Opening.opening()
+	view.campaign.day = 2
+	Bands.meet_at(view.campaign, Ring.TERRACE)
+	Bands.meet_at(view.campaign, Ring.RIDGE_W)
+	add_child_autofree(view)
+	return view
+
+
+func test_no_band_is_drawn_before_one_is_met() -> void:
+	var view := _view()
+	assert_eq(view._queries.bands.size(), 0)
+	assert_false(_text(view).contains("wake riders"))
+
+
+func test_a_met_band_is_a_mark_on_the_bowl_where_it_was_seen_with_its_job_in_a_word() -> void:
+	var view := _bands_view()
+	var card: Dictionary = {}
+	for c in view._queries.cards:
+		if c["id"] == Ring.TERRACE:
+			card = c
+	assert_true(card["lines"].has("wake riders · eyes"))
+	assert_true(_text(view).contains("the roof clan · food"))
+
+
+func test_a_band_on_ground_the_player_has_not_walked_is_last_seen_and_aged() -> void:
+	var view := _bands_view()
+	for i in BasinRules.BAND_MOVE_DAYS * 2:
+		view.campaign.close_day()
+	view._refresh()
+	var seen_at: String = view.campaign.sightings["wake_riders"]["bowl"]
+	assert_true(view.campaign.basin.bowl(seen_at).known, "only a walked bowl ever shows it")
+	for c in view._queries.cards:
+		if not c["known"]:
+			for line in c["lines"]:
+				assert_false(line.contains("wake riders"), "never drawn over Unknown")
+	var polder_a_days := 0
+	for i in BasinRules.BAND_MOVE_DAYS:
+		view.campaign.close_day() ## the riders are on polder_a, which nobody has walked
+	view._refresh()
+	var line := ""
+	for b in view._queries.bands:
+		if b["id"] == "wake_riders":
+			line = b["line"]
+	assert_true(line.contains("last seen"), line)
+	assert_true(line.contains("day"))
+
+
+func test_a_band_that_went_quiet_says_so_and_offers_no_job() -> void:
+	var view := _bands_view()
+	view.campaign.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FALLING
+	Redirection.record(view.campaign, Ring.TERRACE, Taxonomy.WaterStep.FLOODED)
+	view.campaign.close_day()
+	view._refresh()
+	var line := ""
+	for b in view._queries.bands:
+		if b["id"] == "wake_riders":
+			line = b["line"]
+			assert_false(b["warm"])
+	assert_true(line.contains("gone quiet"), line)
+	var buttons := 0
+	for child in view._bands_box.get_children():
+		if child is HBoxContainer and not child.is_queued_for_deletion():
+			buttons += 1
+	assert_eq(buttons, 1, "only the band still warm has a job row")
+
+
+func test_changing_a_job_is_two_presses_and_spends_the_day() -> void:
+	var view := _bands_view()
+	view._on_job("wake_riders", Band.Job.FOOD)
+	assert_eq(Bands.band(view.campaign, "wake_riders").job, Band.Job.EYES, "armed, not yet taken")
+	assert_true(view._note.text.contains("the day is spent"))
+	view._on_job("wake_riders", Band.Job.FOOD)
+	assert_eq(Bands.band(view.campaign, "wake_riders").job, Band.Job.FOOD)
+	assert_true(view.campaign.dispatched_today)
+
+
+func test_the_job_in_hand_is_not_offered_again() -> void:
+	var view := _bands_view()
+	var disabled: Array[String] = []
+	for child in view._bands_box.get_children():
+		if child is HBoxContainer and not child.is_queued_for_deletion():
+			for button in child.get_children():
+				if button.disabled:
+					disabled.append(button.text)
+	assert_eq(disabled, ["eyes", "food"])
+
+
+func test_no_band_text_is_a_meter_a_percentage_or_a_judgement() -> void:
+	var view := _bands_view()
+	view.campaign.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FALLING
+	Redirection.record(view.campaign, Ring.TERRACE, Taxonomy.WaterStep.FLOODED)
+	view.campaign.close_day()
+	view._refresh()
+	var text := _text(view).to_lower()
+	for banned in ["%", "warmth", "trust", "reputation", "loyalty", "friend", "hostile", "progress"]:
+		assert_false(text.contains(banned), "UI 8 never shows '%s'" % banned)
+	assert_false(_has_node_of(view, "ProgressBar"))

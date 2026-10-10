@@ -112,7 +112,7 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"street_undo_shown", "street_undo_hidden":
 			return _setup_street_undo()
-		"table_opening", "table_morning", "table_dispatch", "table_card", "table_economy":
+		"table_opening", "table_morning", "table_dispatch", "table_card", "table_economy", "table_bands":
 			return _setup_table()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek", \
 		"terrace_interact_sluice", "terrace_machines":
@@ -219,6 +219,18 @@ func _setup_table() -> bool:
 		view.campaign.labor[Campaign.Bucket.IDLE] = 1
 		view.campaign.labor[Campaign.Bucket.FIELDS] = 2
 		view._on_bowl("terrace")
+	if _setup == "table_bands":
+		## Both bands met; the Wake-Riders have gone downstream to a bowl nobody has walked and the
+		## roof-clan has gone quiet under a redirection of the west ridge (plan 10 §10.5).
+		view.campaign.day = 2
+		Bands.meet_at(view.campaign, "terrace")
+		Bands.meet_at(view.campaign, "ridge_w")
+		view.campaign.basin.bowl("ridge_w").step = Taxonomy.WaterStep.FALLING
+		Redirection.record(view.campaign, "ridge_w", Taxonomy.WaterStep.FLOODED)
+		for _day in BasinRules.BAND_MOVE_DAYS * 2:
+			view.campaign.close_day()
+		view._on_bowl("terrace")
+		view._refresh()
 	if _setup == "table_dispatch":
 		view._on_bowl("terrace")
 		for id in [1, 2, 3]:
@@ -432,7 +444,7 @@ func _capture_and_probe() -> void:
 			_probe_spent_ap_darker(img)
 		"street_yaw180":
 			_probe_quay_faded()
-		"table_opening", "table_morning", "table_dispatch", "table_card", "table_economy":
+		"table_opening", "table_morning", "table_dispatch", "table_card", "table_economy", "table_bands":
 			_probe_table()
 		"street_undo_shown":
 			_probe_undo(img, true)
@@ -526,6 +538,13 @@ func _probe_table() -> void:
 		print("shots: card: %s" % " | ".join(card))
 		if card.size() < 4 or not joined.contains("if the sluice at terrace is opened"):
 			failures.append("the redirection card is not on the dispatch slot")
+	if _setup == "table_bands":
+		for want in ["wake riders", "the roof clan · gone quiet", "BANDS"]:
+			if not joined.contains(want):
+				failures.append("the table does not say '%s'" % want)
+		for banned in ["warmth", "trust", "reputation", "loyalty"]:
+			if joined.to_lower().contains(banned):
+				failures.append("UI 8 never shows '%s'" % banned)
 	if _setup == "table_economy":
 		for want in ["food lasts", "fuel there and back", "scrap will not keep"]:
 			if not joined.contains(want):

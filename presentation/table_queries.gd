@@ -21,6 +21,8 @@ var dispatch: Dictionary = {}
 var day_end_text: String = ""
 var food_lasts: String = ""
 var scrap_line: String = ""
+## The bands the player has met: {id, name, job, warm, line}, for the board and the job row (plan 10 §10.5).
+var bands: Array[Dictionary] = []
 
 
 static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int], hold_sluice: bool = false):
@@ -37,11 +39,14 @@ static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int
 	for id in campaign.basin.ids():
 		var read := WaterGraph.read(campaign.basin, id)
 		var bowl: BasinBowl = campaign.basin.bowl(id)
-		q.cards.append(_card(read, bowl))
+		q.cards.append(_with_bands(campaign, _card(read, bowl)))
 		if read.get("known", false) and read.has("feeders"):
 			for feeder in read["feeders"]:
 				q.edges.append({"from": feeder["id"], "to": id, "pouring": feeder["pouring"]})
 	q.morning = _morning(campaign)
+	for b in campaign.bands:
+		if b.met():
+			q.bands.append({"id": b.id, "name": band_name(b.id), "job": b.job, "warm": b.warm, "line": band_line(campaign, b)})
 	q.dispatch = _dispatch(campaign, selected_bowl, chosen, hold_sluice)
 	q.day_end_text = "end day %d" % campaign.day
 	return q
@@ -89,6 +94,49 @@ static func _card(read: Dictionary, bowl: BasinBowl) -> Dictionary:
 		"id": bowl.id, "known": true, "grade": bowl.grade, "step": read["step"], "lines": lines,
 		"instrumented": read["instrumented"],
 	}
+
+
+static func band_name(id: String) -> String:
+	return id.replace("_", " ")
+
+
+static func job_word(job: Band.Job) -> String:
+	return str(Band.Job.keys()[job]).to_lower()
+
+
+## A band as the board shows it: where it is *now* is only known on a bowl the dome reaches, so this is
+## "last seen" with its age, in words. A band that has gone quiet is not seen again, and says so; nothing
+## here is a meter (UI §8).
+static func band_line(campaign: Campaign, b: Band) -> String:
+	var seen: Dictionary = campaign.sightings.get(b.id, {})
+	var age := ""
+	if not seen.is_empty():
+		var days: int = campaign.day - int(seen["day"])
+		if days > 0:
+			age = "last seen %d day%s ago" % [days, "" if days == 1 else "s"]
+	var state := job_word(b.job) if b.warm else "gone quiet"
+	return "the %s · %s" % [band_name(b.id), state] + (", " + age if age != "" else "")
+
+
+## The same, short enough for a bowl's card on the board.
+static func band_mark(campaign: Campaign, b: Band) -> String:
+	var seen: Dictionary = campaign.sightings.get(b.id, {})
+	var days: int = campaign.day - int(seen["day"]) if not seen.is_empty() else 0
+	var state := job_word(b.job) if b.warm else "quiet"
+	if days <= 0:
+		return "%s · %s" % [band_name(b.id), state]
+	return "%s · %s, seen %d day%s ago" % [band_name(b.id), state, days, "" if days == 1 else "s"]
+
+
+## A met band is drawn on the bowl where it was last seen, and never on one the player has not walked.
+static func _with_bands(campaign: Campaign, card: Dictionary) -> Dictionary:
+	if not card["known"]:
+		return card
+	for b in campaign.bands:
+		var seen: Dictionary = campaign.sightings.get(b.id, {})
+		if b.met() and not seen.is_empty() and seen["bowl"] == card["id"]:
+			card["lines"].append(band_mark(campaign, b))
+	return card
 
 
 static func _pump_line(read: Dictionary) -> String:

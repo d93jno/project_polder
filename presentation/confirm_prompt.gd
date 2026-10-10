@@ -49,9 +49,18 @@ static func text_for_day_end(campaign: Campaign) -> String:
 	return "confirm: end day %d, %s and the water walks — click again · Esc cancels" % [campaign.day, kept]
 
 
+## A job change spends the table day: say so (plan 10 §10.2, decision 7.6).
+static func text_for_job(command: SetJobCommand) -> String:
+	return "confirm: the %s take the %s job and the day is spent — click again · Esc cancels" % [
+		str(command.band_id).replace("_", " "), str(Band.Job.keys()[command.new_job]).to_lower()
+	]
+
+
 static func key_of(command: RefCounted) -> String:
 	if command is EndDayCommand:
 		return "end_day"
+	if command is SetJobCommand:
+		return "job:%s:%d" % [command.band_id, command.new_job]
 
 	if command is ShootCommand:
 		return "shoot:%d:%d" % [command.attacker_id, command.target_id]

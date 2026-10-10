@@ -29,7 +29,7 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 		"cards_spent": campaign.cards_spent.keys(),
 		"salvaged": campaign.salvaged.keys(),
 		"bands": _bands_to_array(campaign),
-		"inbox": _entries_to_array(campaign.inbox), "radio": campaign.radio,
+		"inbox": _entries_to_array(campaign.inbox), "sightings": campaign.sightings.duplicate(true), "radio": campaign.radio,
 	}
 
 
@@ -98,6 +98,10 @@ static func from_dict(data: Dictionary) -> Campaign:
 	campaign.bands = _bands_from(data.get("bands"))
 	campaign.inbox = _entries_from(data.get("inbox"))
 	campaign.radio = bool(data.get("radio", false))
+	var seen = data.get("sightings")
+	if typeof(seen) == TYPE_DICTIONARY:
+		for id in seen:
+			campaign.sightings[str(id)] = {"bowl": str(seen[id]["bowl"]), "day": int(seen[id]["day"])}
 	campaign.morning = _morning_from_dict(data.get("morning"), basin)
 	return campaign
 

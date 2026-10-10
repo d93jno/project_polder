@@ -42,6 +42,9 @@ var salvaged: Dictionary = {} ## bowl id -> true
 ## Every band in the basin, met or not (plan 10): truth lives here; what the player last saw of each is the
 ## store's `facts` layer.
 var bands: Array[Band] = []
+## Where each met band was last seen and the day: band id -> {"bowl", "day"} (plan 10 §10.5). A band is
+## seen only on a bowl the dome reaches; on any other it is where it was last seen, aging. Only `Bands` writes it.
+var sightings: Dictionary = {}
 ## Reports on their way to the table, and whether a mast has taken the lag away (plan 10 §10.3). Nothing sets
 ## `radio` yet: research does, in a later plan.
 var inbox: Array[MailEntry] = []
@@ -146,6 +149,7 @@ func close_day() -> void:
 	for e in reports:
 		inbox.append(e)
 	result.heard = Mail.deliver(self, day)
+	Bands.see(self)
 	assignments_today = 0
 	dispatched_today = false
 
@@ -171,5 +175,6 @@ func duplicate_campaign() -> Campaign:
 	for e in inbox:
 		copy.inbox.append(e.duplicate_entry())
 	copy.radio = radio
+	copy.sightings = sightings.duplicate(true)
 	copy.morning = morning
 	return copy

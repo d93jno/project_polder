@@ -56,6 +56,7 @@ static func meet_at(campaign: Campaign, bowl_id: String) -> Array[String]:
 			b.met_day = campaign.day
 			b.warm = true
 			met.append(b.id)
+	see(campaign)
 	return met
 
 
@@ -165,3 +166,15 @@ static func would_cool_for_cache(campaign: Campaign, bowl_id: String) -> Array[S
 		if b.met() and b.warm and b.bowl_id() == bowl_id:
 			out.append(b.id)
 	return out
+
+
+## The table sees a warm, met band wherever it stands on a bowl the player has walked: the dome reads it now
+## (plan 4 §7.9). A band elsewhere is where it was last seen, and a cold band is not seen again, so its
+## mark ages like any stale tile (plan 10 §10.5).
+static func see(campaign: Campaign) -> void:
+	for b in campaign.bands:
+		if not (b.met() and b.warm):
+			continue
+		var bowl: BasinBowl = campaign.basin.bowl(b.bowl_id())
+		if bowl != null and bowl.known:
+			campaign.sightings[b.id] = {"bowl": b.bowl_id(), "day": campaign.day}
