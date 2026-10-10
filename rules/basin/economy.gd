@@ -76,3 +76,31 @@ static func salvage(campaign: Campaign, bowl_id: String, survivors: int) -> Dict
 	campaign.scrap += int(cache.get("scrap", 0))
 	campaign.fuel += int(cache.get("fuel", 0))
 	return cache.duplicate()
+
+
+## How many people the Dry, un-ruined fields can feed (GDD §4.3: "toward whatever the dry tiles can feed").
+static func capacity(campaign: Campaign) -> int:
+	var fields := 0
+	for id in campaign.basin.order:
+		var bowl: BasinBowl = campaign.basin.bowl(id)
+		if bowl.step == Taxonomy.WaterStep.DRY:
+			fields += bowl.fields
+	return fields * BasinRules.FIELD_YIELD * BasinRules.MOUTHS_PER_FOOD
+
+
+## People follow the water out. Runs after the meal: a hungry camp and a drowned field send people away,
+## a fed camp under its fields' capacity takes a stranger in. Arrivals are idle hands. Pure arithmetic,
+## no dice.
+static func follow_the_water(campaign: Campaign, result: DayResult) -> void:
+	var leaving := int(result.meal["short"]) * BasinRules.LEAVERS_PER_RATION_SHORT
+	for ruin in result.fields_ruined:
+		leaving += int(ruin["count"]) * BasinRules.LEAVERS_PER_RUINED_FIELD
+	for i in leaving:
+		if not campaign.lose_leaver():
+			break
+		result.left += 1
+	if leaving == 0 and int(result.meal["short"]) == 0:
+		var people := campaign.people()
+		if people < capacity(campaign) and campaign.food >= BasinRules.food_for(people + BasinRules.ARRIVALS_PER_DAY):
+			campaign.labor[Campaign.Bucket.IDLE] = campaign.hands(Campaign.Bucket.IDLE) + BasinRules.ARRIVALS_PER_DAY
+			result.arrived = BasinRules.ARRIVALS_PER_DAY

@@ -1,6 +1,6 @@
 # Phase 9 — The day economy: mouths, fields, fuel and scrap
 
-**Status:** drafted; §7 decisions locked (A); 9.0–9.3 completed. Slices 9.0–9.5 below.
+**Status:** drafted; §7 decisions locked (A); 9.0–9.4 completed. Slices 9.0–9.5 below.
 **Tracks:** GDD v1.18 §4.2 (the four currencies, fuel knowable like water, surplus spendable), §4.3 (food is a problem until the basin feeds the ridge; fields tick on the day clock; people follow the water out; the labor board), §6.4 (a drowned field is a cost), §6.6 (civic lose: food at zero before fields exist); UI/UX v0.23 §8 (previews show capabilities, never bars, percentages or targets).
 **Depends on:** Phase 8 — fields are counted per bowl (`BasinBowl.fields`, `ruined`) and ruin is recorded but costs nothing yet. Phase 7 — `Campaign` holds food, fuel and scrap as plain counts that nothing spends except pump upkeep (scrap), and the labor board has a FIELDS bucket that does nothing. `DayResult` is the morning's data.
 **Goal:** the three counts on the table start to mean something, and every one of them can be read before it bites. Mouths eat, fields feed, a dispatch burns fuel, scrap comes from somewhere, and a ruined field is finally a cost the player can see coming. Nothing is a bar: the table says "food lasts four days", never "food 62%".
@@ -95,6 +95,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 **Ships.** Population growth (GDD §4.3): one number that ticks up toward what the dry, un-ruined tiles can feed, and down when a field is ruined or a suburb drowned. New hands arrive idle. Leavers come out of IDLE first, then the least-posted bucket, the way the lost leave the bench (plan 7).
 
 **Done when.** A well-fed camp with spare fields grows by the stated rule; a drowned field makes a stated number leave; the pool never goes negative or invents hands; and the morning read says who came or left in words, not a graph.
+
+**What landed.** `Economy.capacity` (what the Dry, un-ruined fields can feed: fields × yield × `MOUTHS_PER_FOOD`) and `Economy.follow_the_water`, run in `close_day` after the meal. One person leaves for each ration the camp was short and for each field the water ruined (`LEAVERS_PER_RATION_SHORT`, `LEAVERS_PER_RUINED_FIELD`); on a day nobody left and the camp ate in full, it takes in one idle hand (`ARRIVALS_PER_DAY`) while it is under capacity and has food for one more. `Campaign.lose_leaver` takes idle hands first, then workshop, research, posts, fields and pumps in that fixed order, and never the roster (the bench is named people; a false return means nobody could go). `DayResult.arrived` and `left` are saved with the morning; the morning says *N came to the camp* and *N left the camp*. A consequence worth knowing: a camp that runs out of food now loses the hands it had on its pumps, so the older end-day tests that run many days on the opening's 12 food were given ample food to stay about water. The opening has no Dry fields, so it never grows. Tests in `tests/unit/basin/test_economy.gd`.
 
 ### 9.5 — The surface: the table says what it costs
 

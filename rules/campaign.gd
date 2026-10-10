@@ -95,6 +95,17 @@ func pumps_scrap_cannot_keep() -> int:
 	return wanted - posted_pumps().size()
 
 
+## Someone leaves the camp (plan 09 §9.4). Idle hands go first, then the least-posted buckets in a
+## fixed order; the roster never walks away, because the bench is named people. False if there is no one
+## who can go.
+func lose_leaver() -> bool:
+	for bucket in [Bucket.IDLE, Bucket.WORKSHOP, Bucket.RESEARCH, Bucket.POSTS, Bucket.FIELDS, Bucket.PUMPS]:
+		if hands(bucket) > 0:
+			labor[bucket] = hands(bucket) - 1
+			return true
+	return false
+
+
 ## One person is gone: a roster death shrinks the pool (GDD §4.2). Taken from the roster first, then
 ## wherever hands are idle, then from the rest in a fixed order, so it is always the same person.
 func lose_person() -> void:
@@ -116,6 +127,7 @@ func close_day() -> void:
 	Economy.work(self, result)
 	Economy.harvest(self, result)
 	Economy.eat(self, result)
+	Economy.follow_the_water(self, result)
 	morning = result
 	day += 1
 	assignments_today = 0

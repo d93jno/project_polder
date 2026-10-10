@@ -45,6 +45,13 @@ const FUEL_PER_WAY := {
 ## a day's scrap cannot pay for that same night's posts (readable the evening before).
 const SCRAP_PER_WORKSHOP_HAND := 1
 
+## People (plan 09 §9.4, §7.5): the camp grows by this many a day toward what its Dry fields can feed,
+## and only while it ate in full and has food for one more. One person leaves for each ration the camp
+## was short, and for each field the water ruined (GDD §4.3: "ruin a field ... and some leave or die").
+const ARRIVALS_PER_DAY := 1
+const LEAVERS_PER_RATION_SHORT := 1
+const LEAVERS_PER_RUINED_FIELD := 1
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 

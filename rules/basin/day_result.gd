@@ -25,6 +25,10 @@ var harvest: Dictionary = {"food": 0, "unwalked": 0, "fields": 0}
 var scrap_made: int = 0
 var salvage: Dictionary = {}
 
+## People who came to the camp and people who left it overnight (plan 09 §9.4).
+var arrived: int = 0
+var left: int = 0
+
 
 func anything_moved() -> bool:
 	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty() and fields_ruined.is_empty())

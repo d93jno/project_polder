@@ -30,13 +30,12 @@ func test_a_shortfall_is_recorded_and_food_stops_at_zero() -> void:
 	assert_eq(c.morning.meal, {"ate": 1, "short": 2})
 	c.close_day()
 	assert_eq(c.food, 0, "food never goes below zero")
-	assert_eq(c.morning.meal, {"ate": 0, "short": 3})
+	assert_eq(c.morning.meal, {"ate": 0, "short": 2}, "and the two who left no longer eat")
 
 
 func test_eating_does_not_touch_the_people_or_the_labor() -> void:
 	var c := Opening.opening()
 	var labor := c.labor.duplicate()
-	c.food = 0
 	c.close_day()
 	assert_eq(c.labor, labor)
 
@@ -99,13 +98,22 @@ func _late() -> Campaign:
 	return c
 
 
+## A late ring whose pumps are kept for good, so the water holds while the days run.
+func _held() -> Campaign:
+	var c := _late()
+	c.scrap = 10000
+	c.labor[Campaign.Bucket.PUMPS] = 7
+	return c
+
+
 func test_dry_fields_raise_food_each_day() -> void:
 	var c := _late()
 	var before := c.food
+	var mouths := c.people()
 	c.close_day()
 	assert_eq(c.morning.harvest["fields"], 7)
 	assert_eq(c.morning.harvest["food"], 7 * BasinRules.FIELD_YIELD)
-	assert_eq(c.food, before + 7 - BasinRules.food_for(c.people()))
+	assert_eq(c.food, before + 7 - BasinRules.food_for(mouths))
 
 
 func test_hands_in_fields_add_one_to_a_field_and_no_more() -> void:
@@ -152,7 +160,7 @@ func test_unwalked_ground_is_counted_apart() -> void:
 
 
 func test_the_forecast_counts_the_harvest() -> void:
-	var c := _late()
+	var c := _held()
 	c.food = 0
 	assert_eq(EconomyForecast.days_of_food(c), -1, "seven fields outfeed ten mouths")
 
@@ -264,3 +272,91 @@ func _scan(dir_path: String, pattern: RegEx, offenders: Array[String]) -> void:
 		if sub == "fixtures":
 			continue
 		_scan(dir_path.path_join(sub), pattern, offenders)
+
+
+## --- People follow the water (plan 09 §9.4) ---
+
+
+func test_capacity_is_what_the_dry_fields_can_feed() -> void:
+	assert_eq(Economy.capacity(_late()), 7 * BasinRules.FIELD_YIELD * BasinRules.MOUTHS_PER_FOOD)
+	assert_eq(Economy.capacity(Opening.opening()), 0, "promises feed nobody")
+
+
+func test_a_fed_camp_under_capacity_takes_in_one_idle_hand_a_day() -> void:
+	var c := _late()
+	var idle := c.hands(Campaign.Bucket.IDLE)
+	var people := c.people()
+	c.close_day()
+	assert_eq(c.people(), people + 1)
+	assert_eq(c.hands(Campaign.Bucket.IDLE), idle + 1)
+	assert_eq(c.morning.arrived, 1)
+
+
+func test_the_camp_never_grows_past_what_the_fields_feed() -> void:
+	var c := _held()
+	for i in 40:
+		c.close_day()
+	assert_eq(c.people(), Economy.capacity(c))
+
+
+func test_a_camp_with_no_dry_fields_does_not_grow_or_shrink() -> void:
+	var c := Opening.opening()
+	var people := c.people()
+	c.close_day()
+	assert_eq(c.people(), people)
+	assert_eq([c.morning.arrived, c.morning.left], [0, 0])
+
+
+func test_a_short_meal_sends_one_person_away_per_ration_and_nobody_arrives() -> void:
+	var c := _late()
+	c.basin.bowl(Ring.POLDER_A).fields = 0
+	c.basin.bowl(Ring.POLDER_B).fields = 0
+	c.basin.bowl(Ring.TERRACE).fields = 0
+	c.food = 0
+	var people := c.people()
+	c.close_day()
+	var short: int = c.morning.meal["short"]
+	assert_true(short > 0)
+	assert_eq(c.morning.left, short)
+	assert_eq(c.people(), people - short)
+	assert_eq(c.morning.arrived, 0)
+
+
+func test_a_ruined_field_sends_a_person_away() -> void:
+	var c := Opening.opening()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.MUD
+	c.basin.bowl(Ring.TERRACE).fields = 2
+	var people := c.people()
+	c.close_day()
+	assert_eq(c.morning.fields_ruined.size(), 1)
+	assert_eq(c.morning.left, 2)
+	assert_eq(c.people(), people - 2)
+
+
+func test_leavers_are_idle_first_and_never_the_roster() -> void:
+	var c := Opening.opening()
+	var roster := c.hands(Campaign.Bucket.ROSTER)
+	for i in 30:
+		c.lose_leaver()
+	assert_eq(c.hands(Campaign.Bucket.IDLE), 0)
+	assert_eq(c.hands(Campaign.Bucket.ROSTER), roster)
+	assert_false(c.lose_leaver())
+	assert_eq(c.people(), roster)
+
+
+func test_the_pool_never_goes_negative_or_invents_hands() -> void:
+	var c := _late()
+	for i in 60:
+		c.close_day()
+		for bucket in Campaign.Bucket.values():
+			assert_true(c.hands(bucket) >= 0)
+
+
+func test_the_morning_says_who_came_and_who_left_in_words() -> void:
+	var c := _late()
+	c.close_day()
+	var q = Queries.compute(c, "", [] as Array[int])
+	assert_true(q.morning.has("1 came to the camp"))
+	c.morning.left = 2
+	q = Queries.compute(c, "", [] as Array[int])
+	assert_true(q.morning.has("2 left the camp"))

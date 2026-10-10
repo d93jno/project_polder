@@ -112,6 +112,10 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	var result := campaign.morning
 	if result == null:
 		return out
+	if result.arrived > 0:
+		out.append("%d came to the camp" % result.arrived)
+	if result.left > 0:
+		out.append("%d left the camp" % result.left)
 	if result.scrap_made > 0:
 		out.append("the workshop made %d scrap" % result.scrap_made)
 	if not result.salvage.is_empty():

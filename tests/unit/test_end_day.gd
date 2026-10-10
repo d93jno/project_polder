@@ -20,6 +20,7 @@ func _with_pumps(hands: int, scrap: int = 99) -> Campaign:
 	c.labor[B.IDLE] = c.hands(B.IDLE) + c.hands(B.PUMPS) - hands
 	c.labor[B.PUMPS] = hands
 	c.scrap = scrap
+	c.food = 10000 ## these tests are about the water; a hungry camp sends its hands away (plan 09)
 	return c
 
 
