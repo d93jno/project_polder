@@ -377,3 +377,10 @@ func test_the_hold_is_not_saved() -> void:
 func test_the_table_says_how_long_the_food_lasts() -> void:
 	var view := _view()
 	assert_true(_text(view).contains("food lasts 4 days"))
+
+
+func test_the_dispatch_slot_shows_the_fuel_for_the_leg_before_anyone_is_sent() -> void:
+	var view := _card_view()
+	view._on_bowl(Ring.TERRACE)
+	assert_true(_text(view).contains("fuel there and back"))
+	assert_eq(view.campaign.deployment.size(), 0)

@@ -33,3 +33,16 @@ static func eat(campaign: Campaign, result: DayResult) -> void:
 	var ate := mini(campaign.food, need)
 	campaign.food -= ate
 	result.meal = {"ate": ate, "short": need - ate}
+
+
+## Fuel for a dispatch to `bowl_id`, there and back, paid when the fireteam is sent. A bowl the table has
+## never seen has no known cost; ask only about bowls the player can name.
+static func leg_cost(campaign: Campaign, bowl_id: String) -> int:
+	var bowl: BasinBowl = campaign.basin.bowl(bowl_id)
+	return 2 * int(BasinRules.FUEL_PER_WAY[bowl.step])
+
+
+## Whether the fuel on hand reaches home from `bowl_id` (GDD §4.2: running dry is a decision that was
+## available to read). The dispatch command refuses on exactly this.
+static func leg_reaches_home(campaign: Campaign, bowl_id: String) -> bool:
+	return campaign.fuel >= leg_cost(campaign, bowl_id)

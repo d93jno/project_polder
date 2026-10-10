@@ -291,3 +291,55 @@ func test_a_held_fight_brought_home_redirects_nothing() -> void:
 	var home := _home(c, fight)
 	assert_eq(home.basin.bowl(Ring.TERRACE).step, Taxonomy.WaterStep.FALLING)
 	assert_eq(home.redirections.size(), 0)
+
+
+## --- Fuel for the leg (plan 09 §9.2) ---
+
+const Queries := preload("res://presentation/table_queries.gd")
+
+
+func test_a_dispatch_spends_the_fuel_for_the_leg_there_and_back() -> void:
+	var c := Opening.opening()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.MUD
+	c.fuel = 5
+	var sent := _send(c)
+	assert_eq(sent.fuel, 1, "mud costs two each way")
+	assert_eq(c.fuel, 5, "the campaign before it is unchanged")
+
+
+func test_each_step_prices_the_leg_by_its_water() -> void:
+	var c := Opening.opening()
+	var cost := {}
+	for step in [Taxonomy.WaterStep.FLOODED, Taxonomy.WaterStep.FALLING, Taxonomy.WaterStep.MUD, Taxonomy.WaterStep.DRY]:
+		c.basin.bowl(Ring.TERRACE).step = step
+		cost[step] = Economy.leg_cost(c, Ring.TERRACE)
+	assert_eq(cost[Taxonomy.WaterStep.FLOODED], 2)
+	assert_eq(cost[Taxonomy.WaterStep.MUD], 4)
+	assert_eq(cost[Taxonomy.WaterStep.DRY], 0, "they walk")
+
+
+func test_a_dispatch_the_fuel_cannot_cover_is_refused_with_a_reason() -> void:
+	var c := Opening.opening()
+	c.fuel = 1
+	var cmd := DispatchCommand.new(Ring.TERRACE, _ids([1, 2, 3, 4]))
+	var result := cmd.validate(c)
+	assert_false(result.ok)
+	assert_true(result.reason.contains("fuel"))
+	assert_true(result.reason.contains("needs 2, have 1"))
+
+
+func test_the_slot_says_the_leg_reaches_home_exactly_when_the_command_allows_it() -> void:
+	for fuel in [0, 1, 2, 3, 4]:
+		var c := Opening.opening()
+		c.fuel = fuel
+		var line := Queries.fuel_line(c, Ring.TERRACE)
+		var allowed := DispatchCommand.new(Ring.TERRACE, _ids([1, 2, 3, 4])).validate(c).ok
+		assert_eq(not line.contains("does not reach home"), allowed, "fuel %d: %s" % [fuel, line])
+
+
+func test_a_dry_bowl_needs_no_fuel() -> void:
+	var c := Opening.opening()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.DRY
+	c.fuel = 0
+	assert_true(DispatchCommand.new(Ring.TERRACE, _ids([1, 2, 3, 4])).validate(c).ok)
+	assert_eq(Queries.fuel_line(c, Ring.TERRACE), "on foot: no fuel needed")

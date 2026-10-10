@@ -32,6 +32,15 @@ const MOUTHS_PER_FOOD := 4
 const FIELD_YIELD := 1
 const HAND_YIELD := 1
 
+## Fuel for the fireteam's leg, each way, by the bowl's water (plan 09 §9.2, GDD §4.2 "Travel"): boats on
+## Flooded and Falling, slow going through Mud, and nothing on Dry ground, where they walk.
+const FUEL_PER_WAY := {
+	Taxonomy.WaterStep.FLOODED: 1,
+	Taxonomy.WaterStep.FALLING: 1,
+	Taxonomy.WaterStep.MUD: 2,
+	Taxonomy.WaterStep.DRY: 0,
+}
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 

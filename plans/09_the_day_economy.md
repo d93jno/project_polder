@@ -1,6 +1,6 @@
 # Phase 9 — The day economy: mouths, fields, fuel and scrap
 
-**Status:** drafted; §7 decisions locked (A); 9.0–9.1 completed. Slices 9.0–9.5 below.
+**Status:** drafted; §7 decisions locked (A); 9.0–9.2 completed. Slices 9.0–9.5 below.
 **Tracks:** GDD v1.18 §4.2 (the four currencies, fuel knowable like water, surplus spendable), §4.3 (food is a problem until the basin feeds the ridge; fields tick on the day clock; people follow the water out; the labor board), §6.4 (a drowned field is a cost), §6.6 (civic lose: food at zero before fields exist); UI/UX v0.23 §8 (previews show capabilities, never bars, percentages or targets).
 **Depends on:** Phase 8 — fields are counted per bowl (`BasinBowl.fields`, `ruined`) and ruin is recorded but costs nothing yet. Phase 7 — `Campaign` holds food, fuel and scrap as plain counts that nothing spends except pump upkeep (scrap), and the labor board has a FIELDS bucket that does nothing. `DayResult` is the morning's data.
 **Goal:** the three counts on the table start to mean something, and every one of them can be read before it bites. Mouths eat, fields feed, a dispatch burns fuel, scrap comes from somewhere, and a ruined field is finally a cost the player can see coming. Nothing is a bar: the table says "food lasts four days", never "food 62%".
@@ -79,6 +79,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 **Ships.** A dispatch costs fuel for the leg to its bowl and home again (`BasinRules.fuel_for_leg(bowl, step)`: Flooded by boat, Mud slower, Dry cheapest; GDD §4.2 "Travel"). `DispatchCommand.validate` refuses a dispatch the fuel cannot cover and says why. The dispatch slot shows the leg's cost and whether the fuel left reaches home *before* the fireteam is sent (GDD §4.2: "never a surprise on the way back").
 
 **Done when.** A dispatch spends the stated fuel; a dispatch the fuel cannot cover is refused with a reason; the slot's line equals the command's cost; and a test proves the slot cannot say "reaches home" when the rule says it does not.
+
+**What landed.** `BasinRules.FUEL_PER_WAY` (Flooded 1, Falling 1, Mud 2, Dry 0: boats, slow going, and walking), `Economy.leg_cost` (there and back) and `Economy.leg_reaches_home`. `DispatchCommand.validate` refuses with *not enough fuel to get there and back: needs N, have M* (checked last, after the bench and map reasons) and `_apply` spends the cost. The dispatch slot gains one line from `TableQueries.fuel_line`: *fuel there and back: N, leaves M*, *…it does not reach home*, or *on foot: no fuel needed*; a test runs the line against the command over a range of fuel. The fuel is paid when the fireteam is sent and not refunded. **Not yet:** nothing earns fuel, so the opening four is two terrace trips; salvaged diesel from a fight is the open source (GDD §4.2), to be decided with 9.3's loot. Tests in `tests/fights/test_dispatch.gd` and one in `test_table_view.gd`.
 
 ### 9.3 — Scrap in and out
 

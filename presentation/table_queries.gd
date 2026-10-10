@@ -139,6 +139,15 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	return out
 
 
+static func fuel_line(campaign: Campaign, bowl_id: String) -> String:
+	var cost := Economy.leg_cost(campaign, bowl_id)
+	if cost == 0:
+		return "on foot: no fuel needed"
+	if Economy.leg_reaches_home(campaign, bowl_id):
+		return "fuel there and back: %d, leaves %d" % [cost, campaign.fuel - cost]
+	return "fuel there and back: %d, you have %d: it does not reach home" % [cost, campaign.fuel]
+
+
 static func food_lasts_line(days: int) -> String:
 	if days < 0:
 		return "food lasts more than %d days" % BasinRules.FORECAST_DAYS
@@ -170,6 +179,8 @@ static func _dispatch(campaign: Campaign, bowl_id: String, chosen: Array[int], h
 	## The dispatch leads with the bowl: its water, its grade, the reach to it (plan 07 §7.4).
 	if read.get("known", false):
 		out["bowl_lines"] = _card(read, campaign.basin.bowl(bowl_id))["lines"]
+	if read.get("known", false):
+		out["fuel_line"] = fuel_line(campaign, bowl_id)
 	out["has_map"] = BowlOpenings.has_map(bowl_id)
 	## The card for a bowl with a sluice, before the fireteam is sent (plan 08 §8.4, UI §8).
 	if read.get("known", false) and BowlOpenings.carries_sluice(bowl_id):

@@ -180,6 +180,11 @@ func _rebuild_dispatch() -> void:
 		l.text = str(line)
 		l.add_theme_font_size_override("font_size", 13)
 		_dispatch_box.add_child(l)
+	if d.has("fuel_line"):
+		var fuel := Label.new()
+		fuel.text = str(d["fuel_line"])
+		fuel.add_theme_font_size_override("font_size", 13)
+		_dispatch_box.add_child(fuel)
 	if d.get("has_sluice", false):
 		var hold := CheckBox.new()
 		hold.text = "hold the sluice"

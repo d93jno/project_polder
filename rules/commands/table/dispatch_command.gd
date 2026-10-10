@@ -39,10 +39,15 @@ func validate(campaign: Campaign) -> CommandResult:
 		seen[id] = true
 		if id not in campaign.bench:
 			return CommandResult.failure("%d is not on the bench" % id)
+	if not Economy.leg_reaches_home(campaign, bowl_id):
+		return CommandResult.failure("not enough fuel to get there and back: needs %d, have %d" % [
+			Economy.leg_cost(campaign, bowl_id), campaign.fuel
+		])
 	return CommandResult.success()
 
 
 func _apply(next: Campaign) -> Campaign:
 	next.deployment = {"bowl": bowl_id, "ids": unit_ids.duplicate(), "hold_sluice": hold_sluice}
+	next.fuel -= Economy.leg_cost(next, bowl_id)
 	next.dispatched_today = true
 	return next
