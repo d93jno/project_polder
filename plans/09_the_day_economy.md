@@ -192,4 +192,4 @@ Locked (A).
 
 ## 8. What comes after
 
-`plans/10` is **bands and mail** as map facts on the facts layer plan 4 reserved: the marks heard and where, arriving late until radio; a band as a person in a place with one job, warm or cold as a map fact; and the consequences GDD §6.4 lists for a redirection (the new canal becomes someone's home). Then research and the handoff, the base cutaway, the causeway and Vanguard FOBs with the push-has-broken check, the founder as a unit, and last a 3D basin table over the same rules.
+`plans/10` is **bands and mail** (drafted): bands as people in places with one job, and rumours that arrive late, on the facts layer plan 4 reserved. Then the Vanguard on the table (plan 11), research and the handoff, the base cutaway, the founder as a unit, and last a 3D basin table over the same rules.
