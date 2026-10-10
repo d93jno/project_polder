@@ -21,6 +21,10 @@ var meal: Dictionary = {"ate": 0, "short": 0}
 ## "fields": the Dry fields it came from} (plan 09 §9.1).
 var harvest: Dictionary = {"food": 0, "unwalked": 0, "fields": 0}
 
+## Scrap the workshop made, and what the fireteam brought home: {"scrap", "fuel"} (plan 09 §9.3).
+var scrap_made: int = 0
+var salvage: Dictionary = {}
+
 
 func anything_moved() -> bool:
 	return not (moved.is_empty() and walks_started.is_empty() and pumps_broke.is_empty() and upkeep_changed.is_empty() and fields_ruined.is_empty())

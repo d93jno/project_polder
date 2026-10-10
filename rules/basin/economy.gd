@@ -1,5 +1,7 @@
 class_name Economy
 extends Object
+
+const BowlOpenings := preload("res://rules/fixtures/bowl_openings.gd")
 ## The day economy (plan 09): the one place the camp's food, fuel, scrap and people change by the
 ## day's arithmetic. Pure and deterministic. Slice 9.0 is the meal; the harvest, the leg, scrap and
 ## growth arrive in the slices after it.
@@ -46,3 +48,31 @@ static func leg_cost(campaign: Campaign, bowl_id: String) -> int:
 ## available to read). The dispatch command refuses on exactly this.
 static func leg_reaches_home(campaign: Campaign, bowl_id: String) -> bool:
 	return campaign.fuel >= leg_cost(campaign, bowl_id)
+
+
+## Fuel for the leg is paid when the fireteam is sent (plan 09 §9.2).
+static func pay_leg(campaign: Campaign, bowl_id: String) -> void:
+	campaign.fuel -= leg_cost(campaign, bowl_id)
+
+
+## Pumps the hands reach are kept with scrap (GDD §6.2: posted hands + scrap).
+static func post_pumps(campaign: Campaign, posted: Dictionary) -> void:
+	campaign.scrap -= posted.size() * Campaign.SCRAP_PER_POST
+
+
+## The workshop turns hands and time into scrap (plan 09 §9.3, decision 7.4).
+static func work(campaign: Campaign, result: DayResult) -> void:
+	result.scrap_made = campaign.hands(Campaign.Bucket.WORKSHOP) * BasinRules.SCRAP_PER_WORKSHOP_HAND
+	campaign.scrap += result.scrap_made
+
+
+## What a fireteam brings home from a bowl's cache, once, when at least one of them got out. Returns
+## {"scrap", "fuel"} for the morning, empty when nothing came.
+static func salvage(campaign: Campaign, bowl_id: String, survivors: int) -> Dictionary:
+	var cache := BowlOpenings.salvage(bowl_id)
+	if survivors <= 0 or cache.is_empty() or campaign.salvaged.has(bowl_id):
+		return {}
+	campaign.salvaged[bowl_id] = true
+	campaign.scrap += int(cache.get("scrap", 0))
+	campaign.fuel += int(cache.get("fuel", 0))
+	return cache.duplicate()

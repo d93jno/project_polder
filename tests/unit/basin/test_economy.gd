@@ -172,3 +172,95 @@ func test_a_redirection_says_the_food_it_will_cost() -> void:
 		without.close_day()
 		lost += int(without.morning.harvest["food"]) - int(with.morning.harvest["food"])
 	assert_eq(p["food_lost"], lost)
+
+
+## --- Scrap in and out (plan 09 §9.3) ---
+
+const Bowls := preload("res://rules/fixtures/bowl_openings.gd")
+
+
+func test_workshop_hands_make_scrap_after_the_pumps_are_kept() -> void:
+	var c := Opening.opening()
+	c.labor[Campaign.Bucket.WORKSHOP] = 3
+	var posted := c.posted_pumps().size()
+	var before := c.scrap
+	c.close_day()
+	assert_eq(c.scrap, before - posted * Campaign.SCRAP_PER_POST + 3 * BasinRules.SCRAP_PER_WORKSHOP_HAND)
+	assert_eq(c.morning.scrap_made, 3)
+
+
+func test_no_workshop_hands_make_none() -> void:
+	var c := Opening.opening()
+	c.close_day()
+	assert_eq(c.morning.scrap_made, 0)
+
+
+func test_the_cache_comes_home_once_and_only_with_someone() -> void:
+	var c := Opening.opening()
+	var fuel := c.fuel
+	var scrap := c.scrap
+	assert_eq(Economy.salvage(c, Ring.TERRACE, 0), {}, "nobody got out")
+	var got := Economy.salvage(c, Ring.TERRACE, 1)
+	assert_eq(got, {"scrap": 2, "fuel": 2})
+	assert_eq([c.fuel, c.scrap], [fuel + 2, scrap + 2])
+	assert_eq(Economy.salvage(c, Ring.TERRACE, 3), {}, "no infinite well")
+	assert_eq(Economy.salvage(c, Ring.RIDGE_W, 3), {}, "a bowl with no cache")
+
+
+func test_a_cache_that_came_home_is_saved() -> void:
+	var c := Opening.opening()
+	Economy.salvage(c, Ring.TERRACE, 1)
+	var path := "user://salvage_test_save.json"
+	CampaignSave.save_campaign(c, path)
+	var loaded = CampaignSave.load_campaign(path)
+	DirAccess.remove_absolute(path)
+	assert_true(loaded.salvaged.has(Ring.TERRACE))
+	assert_eq(Economy.salvage(loaded, Ring.TERRACE, 1), {})
+
+
+func test_the_table_says_ahead_when_scrap_will_not_keep_a_pump() -> void:
+	var c := Opening.opening()
+	c.scrap = 0
+	c.basin.bowl(Ring.RIDGE_W).pump = BasinBowl.Pump.ON
+	assert_true(c.pumps_scrap_cannot_keep() > 0)
+	assert_true(Queries.scrap_short_line(c.pumps_scrap_cannot_keep()).begins_with("scrap will not keep"))
+	c.scrap = 20
+	assert_eq(c.pumps_scrap_cannot_keep(), 0)
+	assert_eq(Queries.scrap_short_line(0), "")
+
+
+func test_the_morning_names_the_workshop_and_the_cache() -> void:
+	var c := Opening.opening()
+	c.labor[Campaign.Bucket.WORKSHOP] = 2
+	c.close_day()
+	c.morning.salvage = {"scrap": 2, "fuel": 2}
+	var q = Queries.compute(c, "", [] as Array[int])
+	assert_true(q.morning.has("the workshop made 2 scrap"))
+	assert_true(q.morning.has("the fireteam brought back 2 scrap and 2 fuel"))
+
+
+func test_only_the_economy_changes_food_fuel_or_scrap() -> void:
+	var pattern := RegEx.create_from_string("\\b(food|fuel|scrap)\\s*[-+]?=(?!=)")
+	var offenders: Array[String] = []
+	for root in ["res://rules", "res://presentation"]:
+		_scan(root, pattern, offenders)
+	assert_eq(offenders, [], "plan 09: one place changes a count")
+
+
+func _scan(dir_path: String, pattern: RegEx, offenders: Array[String]) -> void:
+	for name in DirAccess.get_files_at(dir_path):
+		if not name.ends_with(".gd") or name in ["economy.gd", "campaign_codec.gd"]:
+			continue
+		var text := FileAccess.get_file_as_string(dir_path.path_join(name))
+		var n := 0
+		for line in text.split("\n"):
+			n += 1
+			var t := line.strip_edges()
+			if t.begins_with("#") or t.begins_with("var ") or t.begins_with("copy."):
+				continue
+			if pattern.search(t) != null:
+				offenders.append("%s/%s:%d %s" % [dir_path, name, n, t])
+	for sub in DirAccess.get_directories_at(dir_path):
+		if sub == "fixtures":
+			continue
+		_scan(dir_path.path_join(sub), pattern, offenders)

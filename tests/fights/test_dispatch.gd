@@ -343,3 +343,27 @@ func test_a_dry_bowl_needs_no_fuel() -> void:
 	c.fuel = 0
 	assert_true(DispatchCommand.new(Ring.TERRACE, _ids([1, 2, 3, 4])).validate(c).ok)
 	assert_eq(Queries.fuel_line(c, Ring.TERRACE), "on foot: no fuel needed")
+
+
+func test_coming_home_with_someone_brings_the_cache_once() -> void:
+	var c := _send(Opening.opening())
+	var fuel_after_leg := c.fuel
+	var fight := TableDispatch.build_fight(c, Ring.TERRACE, _ids([1, 2, 3, 4]))
+	_extract(fight, [1, 2, 3, 4])
+	var home := _home(c, fight)
+	assert_eq(home.fuel, fuel_after_leg + 2)
+	assert_eq(home.morning.salvage, {"scrap": 2, "fuel": 2})
+	assert_true(home.salvaged.has(Ring.TERRACE))
+	var again := _send(home)
+	var fight2 := TableDispatch.build_fight(again, Ring.TERRACE, _ids([1, 2, 3, 4]))
+	_extract(fight2, [1, 2, 3, 4])
+	assert_eq(_home(again, fight2).morning.salvage, {}, "no infinite well")
+
+
+func test_a_wiped_squad_brings_nothing_home() -> void:
+	var c := _send(Opening.opening())
+	var fight := TableDispatch.build_fight(c, Ring.TERRACE, _ids([1, 2, 3, 4]))
+	_kill(fight, [1, 2, 3, 4])
+	var home := _home(c, fight)
+	assert_eq(home.morning.salvage, {})
+	assert_false(home.salvaged.has(Ring.TERRACE))

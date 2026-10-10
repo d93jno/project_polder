@@ -1,6 +1,6 @@
 # Phase 9 — The day economy: mouths, fields, fuel and scrap
 
-**Status:** drafted; §7 decisions locked (A); 9.0–9.2 completed. Slices 9.0–9.5 below.
+**Status:** drafted; §7 decisions locked (A); 9.0–9.3 completed. Slices 9.0–9.5 below.
 **Tracks:** GDD v1.18 §4.2 (the four currencies, fuel knowable like water, surplus spendable), §4.3 (food is a problem until the basin feeds the ridge; fields tick on the day clock; people follow the water out; the labor board), §6.4 (a drowned field is a cost), §6.6 (civic lose: food at zero before fields exist); UI/UX v0.23 §8 (previews show capabilities, never bars, percentages or targets).
 **Depends on:** Phase 8 — fields are counted per bowl (`BasinBowl.fields`, `ruined`) and ruin is recorded but costs nothing yet. Phase 7 — `Campaign` holds food, fuel and scrap as plain counts that nothing spends except pump upkeep (scrap), and the labor board has a FIELDS bucket that does nothing. `DayResult` is the morning's data.
 **Goal:** the three counts on the table start to mean something, and every one of them can be read before it bites. Mouths eat, fields feed, a dispatch burns fuel, scrap comes from somewhere, and a ruined field is finally a cost the player can see coming. Nothing is a bar: the table says "food lasts four days", never "food 62%".
@@ -87,6 +87,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 **Ships.** Scrap income: hands in WORKSHOP turn time into scrap at a stated rate; a fight brought home with extracted units brings back what the fixture's loot carries (§7.4). Out: pump upkeep (already built) and a simple dredge cost for a bowl the player chooses to clear (a labor move, not a new screen). `Economy` is the only place scrap changes.
 
 **Done when.** Scrap rises with workshop hands and falls with upkeep; a pump that cannot be kept for want of scrap is shown as such before the day ends; and nothing outside `Economy`, `AssignLabor`'s refusal and the pump post spends scrap (a test reads every file).
+
+**What landed.** `Economy` is now the only code that changes food, fuel or scrap: `post_pumps` (the pump upkeep that `close_day` used to do inline), `work`, `pay_leg`, `salvage`, `harvest` and `eat`; a test reads every file under `rules/` and `presentation/` and fails on any other assignment (the codec and fixtures excepted, as plan 8 did). `work`: each hand in WORKSHOP makes `SCRAP_PER_WORKSHOP_HAND` (1) a day, after the pumps are posted, so a day's scrap never pays for that same night's posts. `BowlOpenings.salvage(bowl)` is the authored cache (the terrace: 2 scrap, 2 fuel), `Economy.salvage` brings it home once and only when someone got out, and `Campaign.salvaged` records it (copied and saved). This is the fuel source 9.2 left open. `Campaign.pumps_scrap_cannot_keep` and the line *scrap will not keep N pumps tonight* make an unkept pump readable before the day ends. The morning gains *the workshop made N scrap* and *the fireteam brought back N scrap and M fuel*; the saved morning now also carries the meal, harvest, workshop and cache. **Not built:** the dredge cost. Nothing on the table can be dredged yet (the Citadel's floors are a later plan), so it is left to that plan rather than invented here. Tests in `tests/unit/basin/test_economy.gd` and `tests/fights/test_dispatch.gd`.
 
 ### 9.4 — People follow the water
 

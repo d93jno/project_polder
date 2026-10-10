@@ -21,6 +21,14 @@ static func carries_first_contact_card(bowl_id: String) -> bool:
 	return bowl_id == "terrace"
 
 
+## The cache a fireteam brings home from this bowl the first time someone gets out with it (plan 09
+## §9.3, GDD §4.2: diesel salvaged in Flooded and Mud). Authored data on the bowl, so it is knowable.
+static func salvage(bowl_id: String) -> Dictionary:
+	if bowl_id == "terrace":
+		return {"scrap": 2, "fuel": 2}
+	return {}
+
+
 ## The authored opening for `bowl_id` with its squad seated. Null for a bowl with no map.
 static func opening(bowl_id: String, step: Taxonomy.WaterStep) -> CombatState:
 	if bowl_id == "terrace":

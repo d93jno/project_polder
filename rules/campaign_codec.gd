@@ -27,6 +27,7 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 		"morning": _morning_to_dict(campaign.morning),
 		"redirections": _redirections_to_array(campaign),
 		"cards_spent": campaign.cards_spent.keys(),
+		"salvaged": campaign.salvaged.keys(),
 	}
 
 
@@ -90,6 +91,8 @@ static func from_dict(data: Dictionary) -> Campaign:
 			))
 	for id in data.get("cards_spent", []):
 		campaign.cards_spent[str(id)] = true
+	for id in data.get("salvaged", []):
+		campaign.salvaged[str(id)] = true
 	campaign.morning = _morning_from_dict(data.get("morning"), basin)
 	return campaign
 
@@ -119,7 +122,10 @@ static func _morning_to_dict(result: DayResult) -> Dictionary:
 	var ruined: Array = []
 	for r in result.fields_ruined:
 		ruined.append({"id": r["id"], "count": int(r["count"])})
-	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep, "fields_ruined": ruined}
+	return {"moved": moved, "walks_started": started, "pumps_broke": result.pumps_broke.duplicate(), "upkeep_changed": upkeep, "fields_ruined": ruined,
+		"meal": result.meal.duplicate(), "harvest": result.harvest.duplicate(),
+		"scrap_made": result.scrap_made, "salvage": result.salvage.duplicate(),
+	}
 
 
 static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
@@ -137,4 +143,12 @@ static func _morning_from_dict(raw: Variant, basin: Basin) -> DayResult:
 		result.fields_ruined.append({"id": str(r["id"]), "count": int(r["count"])})
 	for u in raw.get("upkeep_changed", []):
 		result.upkeep_changed.append({"id": str(u["id"]), "from": int(u["from"]) as BasinBowl.Upkeep, "to": int(u["to"]) as BasinBowl.Upkeep})
+	for key in ["meal", "harvest", "salvage"]:
+		var kept = raw.get(key)
+		if typeof(kept) == TYPE_DICTIONARY:
+			var fresh: Dictionary = {}
+			for k in kept:
+				fresh[str(k)] = int(kept[k])
+			result.set(key, fresh)
+	result.scrap_made = int(raw.get("scrap_made", 0))
 	return result

@@ -37,6 +37,8 @@ var deployment: Dictionary = {}
 ## Every redirection the player has chosen, and the bowls whose first-contact card is spent (plan 08 §8.2).
 var redirections: Array[Redirection] = []
 var cards_spent: Dictionary = {} ## bowl id -> true
+## Bowls whose cache the fireteam has already brought home (plan 09 §9.3): there is no infinite well.
+var salvaged: Dictionary = {} ## bowl id -> true
 ## What the last Day end did, as data: the morning read draws from this.
 var morning: DayResult = null
 
@@ -81,6 +83,18 @@ func posted_pumps() -> Dictionary:
 	return posted
 
 
+## How many pumps the hands could reach tonight that the scrap cannot (plan 09 §9.3): readable before the
+## day is ended, so a pump going unkept for want of scrap is never a surprise.
+func pumps_scrap_cannot_keep() -> int:
+	var live := 0
+	for id in basin.order:
+		var bowl: BasinBowl = basin.bowl(id)
+		if bowl.known and bowl.pump != BasinBowl.Pump.DEAD:
+			live += 1
+	var wanted := mini(hands(Bucket.PUMPS) / HANDS_PER_POST, live)
+	return wanted - posted_pumps().size()
+
+
 ## One person is gone: a roster death shrinks the pool (GDD §4.2). Taken from the roster first, then
 ## wherever hands are idle, then from the rest in a fixed order, so it is always the same person.
 func lose_person() -> void:
@@ -96,9 +110,10 @@ func lose_person() -> void:
 ## what moved. Call it on a campaign you own. Day end and the way home both end a day through here.
 func close_day() -> void:
 	var posted := posted_pumps()
-	scrap -= posted.size() * SCRAP_PER_POST
+	Economy.post_pumps(self, posted)
 	var result := BasinDay.end(basin, posted)
 	basin = result.basin
+	Economy.work(self, result)
 	Economy.harvest(self, result)
 	Economy.eat(self, result)
 	morning = result
@@ -122,5 +137,6 @@ func duplicate_campaign() -> Campaign:
 	for r in redirections:
 		copy.redirections.append(r.duplicate_redirection())
 	copy.cards_spent = cards_spent.duplicate()
+	copy.salvaged = salvaged.duplicate()
 	copy.morning = morning
 	return copy

@@ -20,6 +20,7 @@ var day_label: String = ""
 var dispatch: Dictionary = {}
 var day_end_text: String = ""
 var food_lasts: String = ""
+var scrap_line: String = ""
 
 
 static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int], hold_sluice: bool = false):
@@ -28,6 +29,7 @@ static func compute(campaign: Campaign, selected_bowl: String, chosen: Array[int
 	q.currencies = "food %d · fuel %d · scrap %d" % [campaign.food, campaign.fuel, campaign.scrap]
 	q.people = "%d people" % campaign.people()
 	q.food_lasts = food_lasts_line(EconomyForecast.days_of_food(campaign))
+	q.scrap_line = scrap_short_line(campaign.pumps_scrap_cannot_keep())
 	for bucket in Campaign.Bucket.values():
 		q.labor.append({"bucket": bucket, "name": bucket_name(bucket), "hands": campaign.hands(bucket)})
 	var left := Campaign.ASSIGNMENTS_PER_DAY - campaign.assignments_today
@@ -110,6 +112,10 @@ static func _morning(campaign: Campaign) -> Array[String]:
 	var result := campaign.morning
 	if result == null:
 		return out
+	if result.scrap_made > 0:
+		out.append("the workshop made %d scrap" % result.scrap_made)
+	if not result.salvage.is_empty():
+		out.append("the fireteam brought back %d scrap and %d fuel" % [result.salvage.get("scrap", 0), result.salvage.get("fuel", 0)])
 	if int(result.harvest["food"]) > 0:
 		out.append("the fields brought in %d food" % result.harvest["food"])
 	if int(result.harvest["unwalked"]) > 0:
@@ -146,6 +152,12 @@ static func fuel_line(campaign: Campaign, bowl_id: String) -> String:
 	if Economy.leg_reaches_home(campaign, bowl_id):
 		return "fuel there and back: %d, leaves %d" % [cost, campaign.fuel - cost]
 	return "fuel there and back: %d, you have %d: it does not reach home" % [cost, campaign.fuel]
+
+
+static func scrap_short_line(unkept: int) -> String:
+	if unkept <= 0:
+		return ""
+	return "scrap will not keep %d pump%s tonight" % [unkept, "" if unkept == 1 else "s"]
 
 
 static func food_lasts_line(days: int) -> String:

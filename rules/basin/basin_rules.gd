@@ -41,6 +41,10 @@ const FUEL_PER_WAY := {
 	Taxonomy.WaterStep.DRY: 0,
 }
 
+## Scrap (plan 09 §9.3, §7.4): each hand in WORKSHOP makes this much a day, after the pumps are posted, so
+## a day's scrap cannot pay for that same night's posts (readable the evening before).
+const SCRAP_PER_WORKSHOP_HAND := 1
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 

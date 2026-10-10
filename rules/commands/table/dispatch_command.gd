@@ -48,6 +48,6 @@ func validate(campaign: Campaign) -> CommandResult:
 
 func _apply(next: Campaign) -> Campaign:
 	next.deployment = {"bowl": bowl_id, "ids": unit_ids.duplicate(), "hold_sluice": hold_sluice}
-	next.fuel -= Economy.leg_cost(next, bowl_id)
+	Economy.pay_leg(next, bowl_id)
 	next.dispatched_today = true
 	return next

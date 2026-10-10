@@ -32,5 +32,7 @@ func _apply(next: Campaign) -> Campaign:
 	if result.water_after != next.basin.bowl(bowl_id).step:
 		Redirection.record(next, bowl_id, result.water_after)
 	next.deployment = {}
+	var brought := Economy.salvage(next, bowl_id, result.survivors.size())
 	next.close_day()
+	next.morning.salvage = brought
 	return next
