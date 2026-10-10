@@ -19,3 +19,11 @@ static func hanging_redirections(campaign: Campaign) -> Array[Redirection]:
 ## end. Neighbours kept, land spent (GDD §6.6).
 static func is_bitter(campaign: Campaign) -> bool:
 	return not hanging_redirections(campaign).is_empty()
+
+
+## Starved (GDD §6.6, civic lose): the food is gone and no Dry, un-ruined field stands to bring more in.
+## A query for the plan that writes the endings; nothing draws it.
+static func is_starved(campaign: Campaign) -> bool:
+	if campaign.food > 0:
+		return false
+	return Economy.capacity(campaign) == 0

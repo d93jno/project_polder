@@ -1,6 +1,6 @@
 # Phase 9 — The day economy: mouths, fields, fuel and scrap
 
-**Status:** drafted; §7 decisions locked (A); 9.0–9.4 completed. Slices 9.0–9.5 below.
+**Status:** completed — 9.0–9.5 shipped. §7 decisions locked (A). Slices 9.0–9.5 below.
 **Tracks:** GDD v1.18 §4.2 (the four currencies, fuel knowable like water, surplus spendable), §4.3 (food is a problem until the basin feeds the ridge; fields tick on the day clock; people follow the water out; the labor board), §6.4 (a drowned field is a cost), §6.6 (civic lose: food at zero before fields exist); UI/UX v0.23 §8 (previews show capabilities, never bars, percentages or targets).
 **Depends on:** Phase 8 — fields are counted per bowl (`BasinBowl.fields`, `ruined`) and ruin is recorded but costs nothing yet. Phase 7 — `Campaign` holds food, fuel and scrap as plain counts that nothing spends except pump upkeep (scrap), and the labor board has a FIELDS bucket that does nothing. `DayResult` is the morning's data.
 **Goal:** the three counts on the table start to mean something, and every one of them can be read before it bites. Mouths eat, fields feed, a dispatch burns fuel, scrap comes from somewhere, and a ruined field is finally a cost the player can see coming. Nothing is a bar: the table says "food lasts four days", never "food 62%".
@@ -103,6 +103,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 9.5
 **Ships.** The table shows *food lasts N days*, the harvest in counts, the fuel line on the dispatch slot, scrap upkeep, and the people who came or left, all from `EconomyForecast`. The redirection card (plan 8) gains its food line. No bar, no percentage, no target, no icon that implies one (UI §8). Food at zero with no fields is the civic lose of GDD §6.6 and is a query (`Ending.is_starved`), not a screen.
 
 **Done when.** A shot shows the forecast lines on the board and the fuel line on the dispatch slot; every number on screen equals a rule's output; the `never shows` assertions still hold; and `Ending.is_starved` is true exactly when food is zero and no un-ruined field is Dry.
+
+**What landed.** The table's economy lines were built slice by slice (*food lasts N days* and the scrap line under the people count, the fuel line on the dispatch slot, the morning's meal, harvest, workshop, cache and arrivals and leavers); 9.5 adds the card's food line (*it costs N food over the next D days*, in counts, from the walked fields only) and `Ending.is_starved` (food is zero and the Dry, un-ruined fields can feed nobody; a query, nothing draws it). Decision 7.6 said the card would also give *the days of food that changes*; that is not built, because the forecast counts food from ground the player has not walked and would leak it, so the card states only the walked fields' food. UI 0.24. Shot `table_economy` (the late ring with fields, scrap short of its pumps, the terrace as a Falling boat leg) probes that the three lines are on the table and no banned word is; the earlier table shots still pass, and the frame was viewed. Tests in `tests/unit/basin/test_economy.gd`, among them that no economy line carries a percent, goal, target or per-day rate.
 
 ---
 

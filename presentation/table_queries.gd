@@ -226,6 +226,9 @@ static func redirection_card(preview: Dictionary, bowl_id: String) -> Array[Stri
 		var stands := _stands_words(entry["stands"])
 		if stands != "":
 			lines.append("   %s" % stands)
+	## The food it costs, in counts, from the fields the player has walked (plan 09 §7.6).
+	if int(preview.get("food_lost", 0)) > 0:
+		lines.append("it costs %d food over the next %d days" % [preview["food_lost"], preview["horizon_days"]])
 	if preview["beyond_first"]:
 		lines.append("the creep goes beyond the next bowl")
 	elif preview["creeps"]:

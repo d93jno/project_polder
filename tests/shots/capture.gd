@@ -112,7 +112,7 @@ func _apply_setup() -> bool:
 			return _setup_street_yaw180()
 		"street_undo_shown", "street_undo_hidden":
 			return _setup_street_undo()
-		"table_opening", "table_morning", "table_dispatch", "table_card":
+		"table_opening", "table_morning", "table_dispatch", "table_card", "table_economy":
 			return _setup_table()
 		"terrace_flooded", "terrace_falling", "terrace_roof_cutaway", "terrace_ridge_peek", \
 		"terrace_interact_sluice", "terrace_machines":
@@ -209,6 +209,15 @@ func _setup_table() -> bool:
 		view.campaign.basin.bowl("polder_b").posts = 1
 		view.campaign.basin.bowl("polder_a").road = true
 		view.campaign.basin.bowl("polder_a").fields = 3
+		view._on_bowl("terrace")
+	if _setup == "table_economy":
+		## A late camp with fields, scrap short of its pumps, the terrace chosen as a Falling boat leg (plan 09).
+		view.campaign.basin = load("res://rules/fixtures/basin_ring.gd").late_ring()
+		view.campaign.basin.bowl("terrace").step = Taxonomy.WaterStep.FALLING
+		view.campaign.scrap = 0
+		view.campaign.labor[Campaign.Bucket.PUMPS] = 3
+		view.campaign.labor[Campaign.Bucket.IDLE] = 1
+		view.campaign.labor[Campaign.Bucket.FIELDS] = 2
 		view._on_bowl("terrace")
 	if _setup == "table_dispatch":
 		view._on_bowl("terrace")
@@ -423,7 +432,7 @@ func _capture_and_probe() -> void:
 			_probe_spent_ap_darker(img)
 		"street_yaw180":
 			_probe_quay_faded()
-		"table_opening", "table_morning", "table_dispatch", "table_card":
+		"table_opening", "table_morning", "table_dispatch", "table_card", "table_economy":
 			_probe_table()
 		"street_undo_shown":
 			_probe_undo(img, true)
@@ -503,7 +512,7 @@ func _probe_table() -> void:
 	var joined := "\n".join(text)
 	print("shots: table text lines %d, morning '%s'" % [text.size(), _fight._morning.text.replace("\n", " | ")])
 	var failures: Array[String] = []
-	if not joined.contains("terrace") or (_setup != "table_card" and not joined.contains("unknown")):
+	if not joined.contains("terrace") or (_setup not in ["table_card", "table_economy"] and not joined.contains("unknown")):
 		failures.append("the board is not drawn (a known bowl and an unknown one)")
 	for banned in ["%", "goal", "target"]:
 		if joined.contains(banned):
@@ -517,6 +526,10 @@ func _probe_table() -> void:
 		print("shots: card: %s" % " | ".join(card))
 		if card.size() < 4 or not joined.contains("if the sluice at terrace is opened"):
 			failures.append("the redirection card is not on the dispatch slot")
+	if _setup == "table_economy":
+		for want in ["food lasts", "fuel there and back", "scrap will not keep"]:
+			if not joined.contains(want):
+				failures.append("the table does not say '%s'" % want)
 	for failure in failures:
 		push_error("shots: table: %s" % failure)
 		_exit_code = 1

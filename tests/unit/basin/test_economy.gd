@@ -360,3 +360,44 @@ func test_the_morning_says_who_came_and_who_left_in_words() -> void:
 	c.morning.left = 2
 	q = Queries.compute(c, "", [] as Array[int])
 	assert_true(q.morning.has("2 left the camp"))
+
+
+## --- Starved, and the card's food line (plan 09 §9.5) ---
+
+
+func test_starved_is_no_food_and_no_dry_field() -> void:
+	var c := Opening.opening()
+	assert_false(Ending.is_starved(c), "there is food")
+	c.food = 0
+	assert_true(Ending.is_starved(c), "no food, and the fields are promises")
+	c = _late()
+	c.food = 0
+	assert_false(Ending.is_starved(c), "dry fields stand to bring more")
+	for id in c.basin.ids():
+		c.basin.bowl(id).fields = 0
+	assert_true(Ending.is_starved(c))
+
+
+func test_the_card_names_the_food_a_redirection_costs_in_counts() -> void:
+	var c := _held()
+	c.basin.bowl(Ring.TERRACE).step = Taxonomy.WaterStep.FALLING
+	c.basin.bowl(Ring.TERRACE).fields = 2
+	var p := RedirectionPreview.read(c, Ring.TERRACE)
+	var lines := Queries.redirection_card(p, Ring.TERRACE)
+	if int(p["food_lost"]) > 0:
+		assert_true(lines.has("it costs %d food over the next %d days" % [p["food_lost"], p["horizon_days"]]))
+	else:
+		for line in lines:
+			assert_false(line.contains("it costs"))
+	p["food_lost"] = 5
+	assert_true(Queries.redirection_card(p, Ring.TERRACE).has("it costs 5 food over the next %d days" % p["horizon_days"]))
+
+
+func test_nothing_the_table_says_about_the_economy_is_a_bar_or_a_rate() -> void:
+	var c := _late()
+	c.close_day()
+	var q = Queries.compute(c, Ring.TERRACE, [] as Array[int])
+	var all = [q.food_lasts, q.scrap_line, q.currencies, q.people] + q.morning + q.dispatch.get("bowl_lines", []) + [q.dispatch.get("fuel_line", "")]
+	for line in all:
+		for banned in ["%", "goal", "target", "progress", "per day", "/day"]:
+			assert_false(str(line).to_lower().contains(banned), "UI 8: '%s' in '%s'" % [banned, line])
