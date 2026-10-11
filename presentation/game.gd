@@ -8,18 +8,55 @@ extends Node
 
 const _Table := preload("res://presentation/table_view.gd")
 const _Fight := preload("res://presentation/fight_view.gd")
+const _Start := preload("res://presentation/start_view.gd")
 
+## True when the game opens on the start screen (the game scene sets it); false opens straight on the table.
+@export var start_screen: bool = false
 var campaign: Campaign
 var save_path: String = KnowledgeStore.DEFAULT_PATH
 var _current: Node = null
 
 
 func _ready() -> void:
+	if start_screen and campaign == null:
+		_show_start()
+		return
+	_open_table()
+
+
+func _open_table() -> void:
 	if campaign == null:
 		campaign = CampaignSave.load_campaign(save_path)
 	if campaign == null:
 		campaign = preload("res://rules/fixtures/table_opening.gd").opening()
 	_show_table()
+
+
+func _show_start() -> void:
+	var start = _Start.new()
+	start.has_save = CampaignSave.has_save(save_path)
+	start.continue_pressed.connect(_on_continue)
+	start.new_game_pressed.connect(_on_new_game)
+	start.quit_pressed.connect(func() -> void: get_tree().quit())
+	_swap(start)
+
+
+func _on_continue() -> void:
+	campaign = CampaignSave.load_campaign(save_path)
+	_open_table()
+
+
+func _on_new_game() -> void:
+	CampaignSave.erase(save_path)
+	campaign = null
+	_open_table()
+
+
+## Back to the start screen from the table. Nothing is saved here: the save is written at day end and when the
+## fireteam is home, so the screen offers exactly the last of those.
+func _on_menu() -> void:
+	campaign = null
+	_show_start()
 
 
 func _show_table() -> void:
@@ -28,6 +65,7 @@ func _show_table() -> void:
 	table.campaign = campaign
 	table.wired = true
 	table.campaign_committed.connect(_on_committed)
+	table.menu_requested.connect(_on_menu)
 	_swap(table)
 
 

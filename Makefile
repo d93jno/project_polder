@@ -10,8 +10,8 @@ help:
 	@echo "Project Polder — local Godot targets"
 	@echo "  make check-godot  Verify editor at \$$GODOT matches .godot-version ($(GODOT_VERSION))"
 	@echo "  make editor       Open the Godot editor"
-	@echo "  make run          Run the project (BOWL=terrace for the flooded terrace)"
-	@echo "  make table        Run the table: dispatch to a fight and come home to it (plan 07)"
+	@echo "  make run          Run the shared opening fight (BOWL=terrace for the flooded terrace)"
+	@echo "  make table        Run the game: start screen, the table, dispatch to a fight and home again"
 	@echo "  make import       Headless reimport assets"
 	@echo "  make test         Run GUT headless; fails on load errors and empty runs too (ARGS=\"-gselect=name\" to filter)"
 	@echo "  make shots        Render smoke in a real window; PNGs under build/shots/ (needs GPU+display)"
@@ -29,7 +29,7 @@ editor: check-godot
 	$(GODOT) --path . --editor
 
 run: check-godot
-	$(GODOT) --path . $(if $(BOWL),-- --bowl=$(BOWL),)
+	$(GODOT) --path . res://scenes/main.tscn $(if $(BOWL),-- --bowl=$(BOWL),)
 
 table: check-godot
 	$(GODOT) --path . res://scenes/game.tscn

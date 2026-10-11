@@ -21,6 +21,18 @@ static func load_campaign(path: String = KnowledgeStore.DEFAULT_PATH) -> Campaig
 	return campaign
 
 
+## Whether there is a campaign to continue from: one that loads. A damaged save counts as none.
+static func has_save(path: String = KnowledgeStore.DEFAULT_PATH) -> bool:
+	return load_campaign(path) != null
+
+
+## A new game forgets the old one entirely: the campaign and what its squads learned of the bowls.
+static func erase(path: String = KnowledgeStore.DEFAULT_PATH) -> void:
+	for p in [path, path + ".tmp"]:
+		if FileAccess.file_exists(p):
+			DirAccess.remove_absolute(p)
+
+
 static func save_campaign(campaign: Campaign, path: String = KnowledgeStore.DEFAULT_PATH) -> void:
 	var store := KnowledgeStore.load_from(path)
 	store.campaign_data = CampaignCodec.to_dict(campaign)

@@ -12,6 +12,7 @@ const _Confirm := preload("res://presentation/confirm_prompt.gd")
 const _Opening := preload("res://rules/fixtures/table_opening.gd")
 
 ## `what` is "day_end" or "dispatch": the moments the game saves or leaves for a fight.
+signal menu_requested
 signal campaign_committed(campaign: Campaign, what: String)
 
 var campaign: Campaign
@@ -109,9 +110,17 @@ func _build() -> void:
 	_bands_box.add_theme_constant_override("separation", 2)
 	add_child(_bands_box)
 
+	## Back to the start screen; the table saves at day end, so nothing is lost by leaving.
+	var menu := Button.new()
+	menu.text = "menu"
+	menu.position = Vector2(1196, 680)
+	menu.size = Vector2(72, 28)
+	menu.pressed.connect(func() -> void: menu_requested.emit())
+	add_child(menu)
+
 	_note = Label.new()
 	_note.position = Vector2(8, 676)
-	_note.size = Vector2(1264, 36)
+	_note.size = Vector2(1180, 36)
 	_note.add_theme_font_size_override("font_size", 16)
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_note)
