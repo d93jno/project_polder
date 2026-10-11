@@ -196,4 +196,4 @@ Locked (A).
 
 ## 8. What comes after
 
-`plans/11` is **the Vanguard on the table**: the highland pressure bands (watching, surveying, building) as readable map facts on the same facts layer, the causeway that grows day by day, FOBs as table objects and targets, and the push-has-broken check that sits beside a warm band in GDD §6.6. Then research and the handoff (including the radio that removes mail's lag), the base cutaway, the founder as a unit, the tactical meeting (replacing 7.1), and last a 3D basin table over the same rules.
+`plans/11` is **the Vanguard on the table** (drafted): the highland pressure bands as readable map facts on the same facts layer, the causeway that grows day by day, FOBs as table objects, and the push-has-broken check that sits beside a warm band in GDD §6.6. Then research and the handoff (including the radio that removes mail's lag), the tactical Vanguard, the base cutaway, the founder as a unit, the tactical meeting (replacing 7.1), and last a 3D basin table over the same rules.
