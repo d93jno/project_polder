@@ -63,6 +63,15 @@ const BAND_FOOD_PER_DAY := 1
 const MAIL_LAG_DAYS := 2
 const BAND_MOVE_DAYS := 3
 
+## The highland's pressure (plan 11 §11.0, decision 7.1): how loud the town must be for each stage, how much a
+## Dry field adds to the noise, and the fewest days between one stage and the next. Working defaults; the
+## thresholds are hidden from the player (GDD §3.2).
+const LOUDNESS_PER_FIELD := 3
+const WATCH_AT := 16
+const SURVEY_AT := 24
+const BUILD_AT := 32
+const PRESSURE_STAGE_DAYS := 4
+
 ## How many days ahead the food forecast looks before it says "more than" (plan 09 §9.0).
 const FORECAST_DAYS := 30
 

@@ -32,3 +32,18 @@ static func is_starved(campaign: Campaign) -> bool:
 ## A warm band is half of the door left open (GDD §6.6, plan 10). A query; nothing draws it.
 static func has_warm_band(campaign: Campaign) -> bool:
 	return Bands.warm_count(campaign) > 0
+
+
+enum Act { I, II, III }
+
+
+## Which act the campaign is in, read from the state and never stored (plan 11 §11.0, GDD §3.2). Act II when the
+## terrace has dried; Act III when the highland has begun to build. A land bridge the player made also starts
+## Act III, once plan 11.2 can say so.
+static func act(campaign: Campaign) -> Act:
+	if campaign.pressure.stage == Pressure.Stage.BUILDING:
+		return Act.III
+	var terrace: BasinBowl = campaign.basin.bowl("terrace")
+	if terrace != null and terrace.step == Taxonomy.WaterStep.DRY:
+		return Act.II
+	return Act.I

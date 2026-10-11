@@ -49,6 +49,8 @@ var sightings: Dictionary = {}
 ## `radio` yet: research does, in a later plan.
 var inbox: Array[MailEntry] = []
 var radio: bool = false
+## The highland pressure (plan 11): a stage, never shown as a number.
+var pressure: Pressure = Pressure.new()
 ## What the last Day end did, as data: the morning read draws from this.
 var morning: DayResult = null
 
@@ -150,6 +152,7 @@ func close_day() -> void:
 		inbox.append(e)
 	result.heard = Mail.deliver(self, day)
 	Bands.see(self)
+	pressure.tick(self)
 	assignments_today = 0
 	dispatched_today = false
 
@@ -176,5 +179,6 @@ func duplicate_campaign() -> Campaign:
 		copy.inbox.append(e.duplicate_entry())
 	copy.radio = radio
 	copy.sightings = sightings.duplicate(true)
+	copy.pressure = pressure.duplicate_pressure()
 	copy.morning = morning
 	return copy

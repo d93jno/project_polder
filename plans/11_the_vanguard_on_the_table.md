@@ -1,6 +1,6 @@
 # Phase 11 — The Vanguard on the table: pressure, the causeway, FOBs and the push
 
-**Status:** drafted; nothing built. Slices 11.0–11.5 below; §7 decisions open.
+**Status:** drafted; §7 decisions locked (A); 11.0 completed. Slices 11.0–11.5 below.
 **Tracks:** GDD v1.18 §3.2 (acts and triggers, *highland pressure is not a meter*, the causeway as a target, a bridge over a wet floor), §6.3 (the Vanguard invasion and FOBs, a land bridge is a chain of dry-enough sectors), §6.4 (you can drown a bridge), §6.6 (when the push has broken; the civic lose; a warm band and a dislodge for the door left open); UI/UX v0.25 §6 (map facts: current on the dome, last-seen elsewhere), §8 (*enemy structures are table objects*; no threat meter).
 **Depends on:** Phase 10 — a warm band's eyes are how a fact reaches a bowl the player has not walked, and a warm band is half of the door left open. Phase 9 — population and fields are what make the town loud. Phase 8 — the redirection ledger and the preview are how a stretch is drowned, and the Bitter rule is already there. Phase 7 — the basin, the day tick and the campaign. Phase 4 — the map-facts rule (§7.9): current where the dome reaches, last-seen and aged elsewhere.
 **Goal:** the war arrives as things on the map that the player can read and answer with water. A loud town is watched, then surveyed, then a causeway grows from the rim toward the terrace, with FOBs at its head. None of it is a meter: the player sees marks, a route and a head, and a redirection that drowns a stretch is previewed like any other. The ending queries (the push has broken, the civic lose) exist and are tested, and nothing draws them.
@@ -66,6 +66,8 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 11.
 **Ships.** `Pressure` on the campaign: a hidden loudness from the people and Dry fields of plan 9, a stage (none, watching, surveying, building), and `VanguardDay.tick` calling it from `close_day`. Stages advance one at a time, with a minimum of days between them (`BasinRules.PRESSURE_*`, working defaults), by decision 7.1. *Building* is refused while the inner ring (the terrace plus the first floor ring) is not Dry, as GDD §3.2 says; watching and surveying advance regardless. `Ending.act(campaign)` reads the act from the state: Act I, II, or III when a player land bridge exists or the stage is Building.
 
 **Done when.** A quiet town never leaves *none*; a loud one reaches *watching* then *surveying* in order and no sooner than the minimum days; *building* waits for a Dry inner ring and then comes; the stage cannot go backwards; `Ending.act` is a pure read; and the count is never exposed by any query the table uses.
+
+**What landed.** `Pressure` (`rules/vanguard/pressure.gd`: a `Stage` NONE, WATCHING, SURVEYING, BUILDING and the morning it last changed) on the campaign, saved and copied. The loudness is never stored: `Pressure.loudness_of` is the people plus `LOUDNESS_PER_FIELD` (3) for each Dry field, so no query can leak it, and a test reads the table's three presentation files and fails if any names *loudness*, *pressure* or *threshold*. `Pressure.tick`, called from `close_day`, moves at most one stage, no sooner than `PRESSURE_STAGE_DAYS` (4) after the last: watching at loudness 16, surveying at 24 and a Dry field, building at 32, a Dry field and a Dry inner ring (every floor-grade bowl). The stage never goes back. `Ending.act` reads Act I, II (the terrace Dry) or III (building) from the state; a player-made bridge joins it with 11.2. A test reads every file and fails on an assignment to the stage outside `Pressure` and the codec. Facts for each stage are 11.1's, so the stage changes here without a mark yet. Tests in `tests/unit/vanguard/test_pressure.gd`.
 
 ### 11.1 — Map facts, and who can see them
 
@@ -133,37 +135,49 @@ Each slice ends with `make test` green. `make shots` joins the checkpoint at 11.
 
 ### 7.1 — What is the pressure and how does it advance? **A hidden loudness that crosses authored thresholds, one stage at a time, with a minimum number of days between.**
 
-- **A. A hidden loudness (the people and the Dry fields of plan 9, scaled) that must cross a threshold to leave *none*, *watching* and *surveying*; each stage change waits a minimum of days after the last and is preceded by its fact.** It is GDD §3.2's "population plus at least one field, advancing through readable bands", it is a pure function of state the campaign already holds, and the minimum is what makes it never a surprise.
+Locked (A).
+
+- **A (chosen). A hidden loudness (the people and the Dry fields of plan 9, scaled) that must cross a threshold to leave *none*, *watching* and *surveying*; each stage change waits a minimum of days after the last and is preceded by its fact.** It is GDD §3.2's "population plus at least one field, advancing through readable bands", it is a pure function of state the campaign already holds, and the minimum is what makes it never a surprise.
 - **B. A calendar: stages arrive on authored days.** Simple and testable, and the town's loudness would not matter, which the GDD says it does (turtling is a legitimate line).
 - **C. A seeded roll each day.** Closest to "the highland notices", and it makes the stage unforecastable, which breaks the clause this plan is built on.
 
 ### 7.2 — What is a land bridge? **A chain of Mud-or-drier bowls from a rim bowl to the terrace.**
 
-- **A. A chain of bowls, each at Mud or drier, linked by the basin's own feeder links, from a rim bowl to the terrace.** GDD §6.3 says "a chain of dry-enough sectors", Mud is walkable slowly (GDD §4.2 Travel), and it makes the redirection (one step wetter) the thing that breaks a bridge.
+Locked (A).
+
+- **A (chosen). A chain of bowls, each at Mud or drier, linked by the basin's own feeder links, from a rim bowl to the terrace.** GDD §6.3 says "a chain of dry-enough sectors", Mud is walkable slowly (GDD §4.2 Travel), and it makes the redirection (one step wetter) the thing that breaks a bridge.
 - **B. Dry only.** Cleaner, and a causeway on a Mud bowl would then be impossible, which makes the Vanguard's first stretches too hard to build while the basin is still drying.
 - **C. Falling or drier.** Generous: the Vanguard would then build across ground the player still boats on, which fights the "masters of Dry" premise.
 
 ### 7.3 — How does a causeway grow, and what stops it? **An authored route, one stretch (one bowl) every few days once Building, stalled by a drowned stretch.**
 
-- **A. An authored route of bowls from the rim toward the terrace; one stretch is built every `STRETCH_DAYS` days while the stage is Building; a stretch whose bowl stands at Falling or wetter is drowned, stalls everything past it, and is resumed only when the bowl is Mud or drier again; stretches behind it stay.** It gives the player the one move the GDD names (drown a bridge), it is a function of the water that already exists, and the head is a place, not a percentage.
+Locked (A).
+
+- **A (chosen). An authored route of bowls from the rim toward the terrace; one stretch is built every `STRETCH_DAYS` days while the stage is Building; a stretch whose bowl stands at Falling or wetter is drowned, stalls everything past it, and is resumed only when the bowl is Mud or drier again; stretches behind it stay.** It gives the player the one move the GDD names (drown a bridge), it is a function of the water that already exists, and the head is a place, not a percentage.
 - **B. A continuous progress value per day.** It reads naturally and is a bar by another name (UI §8).
 - **C. The whole causeway appears at once when Building starts.** No growth to read, no raid or flood to slow, and no lead time (GDD §10 tuning).
 
 ### 7.4 — FOBs, and how the player answers them **A FOB at the head every few stretches, abandoned when its bowl is drowned; no raids in this plan.**
 
-- **A. A FOB is placed at the head every `FOB_EVERY_STRETCHES` stretches and at the end of any chain the Vanguard stand on; it is abandoned when its bowl stands at Falling or wetter. The only answer in this plan is water.** GDD §6.4 names "a FOB you wanted" as what a redirection costs; raids need a tactical Vanguard fight, which is a later plan, and the force stays a count.
+Locked (A).
+
+- **A (chosen). A FOB is placed at the head every `FOB_EVERY_STRETCHES` stretches and at the end of any chain the Vanguard stand on; it is abandoned when its bowl stands at Falling or wetter. The only answer in this plan is water.** GDD §6.4 names "a FOB you wanted" as what a redirection costs; raids need a tactical Vanguard fight, which is a later plan, and the force stays a count.
 - **B. Raids now: a dispatch to a FOB's bowl runs an authored fight and a win removes it.** The better game and a new faction, a new map and a prompt: larger than this plan.
 - **C. FOBs are permanent.** Then the push can never break by the quiet-days rule, and the ending would be unreachable.
 
 ### 7.5 — Do bands' eyes see the Vanguard? **Yes: a warm EYES band reports a fact at its bowl, through the mail lag.**
 
-- **A. A warm, met band on EYES reports a Vanguard fact at the bowl it stands in as mail, two mornings late.** It gives bands a reason beyond the pump, it extends plan 10's mail without a new rule, and it answers the GDD's "a rumour arrives late until radio".
+Locked (A).
+
+- **A (chosen). A warm, met band on EYES reports a Vanguard fact at the bowl it stands in as mail, two mornings late.** It gives bands a reason beyond the pump, it extends plan 10's mail without a new rule, and it answers the GDD's "a rumour arrives late until radio".
 - **B. Only the dome and walking reveal facts.** Safer, and it leaves the bands' eyes with nothing to do about the enemy, which is what they were promised for.
 - **C. Bands reveal facts instantly.** Radio's job, before there is radio.
 
 ### 7.6 — When has the push broken, and when is the basin lost? **Five quiet days in a row; or the head reaches the terrace.**
 
-- **A. *Quiet* is no FOB and no column head pointing at the terrace for `QUIET_DAYS` (working default: 5) in a row, with Act III already started; *overrun* is a head that reaches the terrace or the slope.** GDD §6.6's own check, as a count a test can hold; both are queries and nothing draws them.
+Locked (A).
+
+- **A (chosen). *Quiet* is no FOB and no column head pointing at the terrace for `QUIET_DAYS` (working default: 5) in a row, with Act III already started; *overrun* is a head that reaches the terrace or the slope.** GDD §6.6's own check, as a count a test can hold; both are queries and nothing draws them.
 - **B. A single quiet day.** GDD §6.6: "one quiet day between waves is not credits".
 - **C. Force spent only.** Needs raids to spend a force, which §7.4 leaves out; the quiet-days rule is the one reachable here.
 

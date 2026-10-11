@@ -29,7 +29,8 @@ static func to_dict(campaign: Campaign) -> Dictionary:
 		"cards_spent": campaign.cards_spent.keys(),
 		"salvaged": campaign.salvaged.keys(),
 		"bands": _bands_to_array(campaign),
-		"inbox": _entries_to_array(campaign.inbox), "sightings": campaign.sightings.duplicate(true), "radio": campaign.radio,
+		"inbox": _entries_to_array(campaign.inbox), "sightings": campaign.sightings.duplicate(true),
+		"pressure": {"stage": int(campaign.pressure.stage), "last_change_day": campaign.pressure.last_change_day}, "radio": campaign.radio,
 	}
 
 
@@ -98,6 +99,10 @@ static func from_dict(data: Dictionary) -> Campaign:
 	campaign.bands = _bands_from(data.get("bands"))
 	campaign.inbox = _entries_from(data.get("inbox"))
 	campaign.radio = bool(data.get("radio", false))
+	var pressure = data.get("pressure")
+	if typeof(pressure) == TYPE_DICTIONARY:
+		campaign.pressure.stage = int(pressure.get("stage", 0)) as Pressure.Stage
+		campaign.pressure.last_change_day = int(pressure.get("last_change_day", 0))
 	var seen = data.get("sightings")
 	if typeof(seen) == TYPE_DICTIONARY:
 		for id in seen:
